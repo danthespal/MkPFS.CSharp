@@ -1,0 +1,2 @@
+# Shell scripts run on Linux/macOS runners and WSL; keep LF on every checkout.
+*.sh text eol=lf

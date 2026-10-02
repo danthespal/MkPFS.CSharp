@@ -4,6 +4,14 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Release.yml reuses this workflow so a release always ships binaries that passed CI.
+  workflow_call:
+    inputs:
+      version:
+        description: Version stamped into the binaries (empty = Directory.Build.props default)
+        type: string
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -13,20 +21,20 @@ jobs:
     name: Oracle corpus (Python MkPFS)
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Checkout Python MkPFS
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: PSBrew/MkPFS
           path: mkpfs-python
 
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v7
 
       - name: Build golden corpus
         run: uv run --project mkpfs-python python tools/oracle/build_goldens.py --check
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: oracle-corpus
           path: |
@@ -50,13 +58,13 @@ jobs:
           - os: macos-latest
             rid: osx-arm64
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: oracle-corpus
           path: tests/fixtures/generated
@@ -84,7 +92,9 @@ jobs:
 
       - name: Publish (Native AOT)
         shell: bash
-        run: dotnet publish src/MkPFS.Cli -r ${{ matrix.rid }} -c Release -o publish
+        env:
+          VERSION: ${{ inputs.version }}
+        run: dotnet publish src/MkPFS.Cli -r ${{ matrix.rid }} -c Release -o publish ${VERSION:+-p:Version=$VERSION}
 
       - name: Smoke test
         shell: bash
@@ -92,7 +102,7 @@ jobs:
           ./publish/mkpfs --version
           ./publish/mkpfs selftest
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: mkpfs-${{ matrix.rid }}
           path: |

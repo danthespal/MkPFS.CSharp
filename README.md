@@ -60,6 +60,20 @@ folder is on `PATH`:
 setx PATH "%PATH%;C:\Program Files (x86)\Microsoft Visual Studio\Installer"
 ```
 
+## Releases
+
+Push a version tag to publish a GitHub release. The release workflow reruns the full CI, then
+uploads Windows, Linux and macOS archives with `SHA256SUMS.txt`, a changelog since the previous
+tag, and the contributor list. Tags with a suffix (`-alpha.1`, `-rc.1`) become pre-releases.
+
+```bash
+git tag v2.0.0-alpha.1
+```
+
+```bash
+git push origin v2.0.0-alpha.1
+```
+
 ## Regenerate the oracle corpus
 
 ```bash
