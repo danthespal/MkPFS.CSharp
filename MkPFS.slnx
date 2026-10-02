@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MkPFS.Build/MkPFS.Build.csproj" />
+    <Project Path="src/MkPFS.Cli/MkPFS.Cli.csproj" />
+    <Project Path="src/MkPFS.Core/MkPFS.Core.csproj" />
+    <Project Path="src/MkPFS.Repair/MkPFS.Repair.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/MkPFS.Parity/MkPFS.Parity.csproj" />
+    <Project Path="tests/MkPFS.Tests/MkPFS.Tests.csproj" />
+  </Folder>
+</Solution>
