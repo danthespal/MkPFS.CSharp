@@ -20,6 +20,10 @@ public sealed partial class CliParityTests
     [GeneratedRegex(@"MkPFS \S+ - https://github\.com/PSBrew/MkPFS")]
     private static partial Regex TitleLine();
 
+    // A path below the case folder, raw or JSON-escaped: <CASE>\out.ffpfs, <CASE>\\out.ffpfs, <CASE>/out.ffpfs.
+    [GeneratedRegex(@"<CASE>(?:(?:\\\\|\\|/)[^\\/\s""]+)+")]
+    private static partial Regex CasePath();
+
     public static TheoryData<string, string> Logs()
     {
         TheoryData<string, string> data = [];
@@ -66,8 +70,12 @@ public sealed partial class CliParityTests
         int exit = MkPFSCli.Run(resolved, new CliContext(stdout, stderr, useColor: false, utf8: false, progress: true));
         string actual = Normalize($"$ mkpfs {string.Join(' ', argv)}\nexit={exit}\n--- stdout\n{stdout}\n--- stderr\n{stderr}", caseDir);
 
-        Assert.Equal(expected, actual);
+        // The oracle corpus is recorded on Windows; compare paths below the case folder separator-neutral.
+        Assert.Equal(NeutralSeparators(expected), NeutralSeparators(actual));
     }
+
+    private static string NeutralSeparators(string text) =>
+        CasePath().Replace(text, match => match.Value.Replace(@"\\", "/", StringComparison.Ordinal).Replace('\\', '/'));
 
     private static string TreeOf(string caseName)
     {
