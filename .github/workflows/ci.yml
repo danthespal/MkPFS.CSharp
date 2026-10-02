@@ -34,6 +34,16 @@ jobs:
       - name: Build golden corpus
         run: uv run --project mkpfs-python python tools/oracle/build_goldens.py --check
 
+      # Artifacts drop empty directories, but they are part of the fixture trees (an empty directory
+      # still takes a cluster in exFAT). Record them so the build jobs can restore them.
+      - name: Record empty directories
+        shell: bash
+        working-directory: tests/fixtures/generated
+        run: |
+          find . -type d -empty | grep -Ev '^\./goldens/[^/]*/src(/|$)' > empty-dirs.txt || true
+          find ./goldens/*ampr*/src -type d -empty >> empty-dirs.txt 2>/dev/null || true
+          cat empty-dirs.txt
+
       - uses: actions/upload-artifact@v7
         with:
           name: oracle-corpus
@@ -80,6 +90,11 @@ jobs:
         with:
           name: oracle-corpus-ampr-src
           path: tests/fixtures/generated/goldens
+
+      - name: Restore empty directories
+        shell: bash
+        working-directory: tests/fixtures/generated
+        run: tr -d '\r' < empty-dirs.txt | while IFS= read -r dir; do mkdir -p "$dir"; done
 
       # vcvarsall.bat (used by native/build.ps1 and the AOT linker) calls vswhere.exe by name.
       - name: Put vswhere on PATH (Windows)
