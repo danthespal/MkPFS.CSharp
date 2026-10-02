@@ -32,14 +32,15 @@ cat <<EOF
 
 ## Downloads
 
-| Platform | File |
-|---|---|
-| Windows x64 | \`mkpfs-${version}-win-x64.zip\` |
-| Linux x64 | \`mkpfs-${version}-linux-x64.tar.gz\` |
-| macOS Apple silicon | \`mkpfs-${version}-osx-arm64.tar.gz\` |
+| Platform | Command line | Desktop app |
+|---|---|---|
+| Windows x64 | \`mkpfs-${version}-win-x64.zip\` | \`mkpfs-gui-${version}-win-x64.zip\` |
+| Linux x64 | \`mkpfs-${version}-linux-x64.tar.gz\` | \`mkpfs-gui-${version}-linux-x64.tar.gz\` |
+| macOS Apple silicon | \`mkpfs-${version}-osx-arm64.tar.gz\` | \`mkpfs-gui-${version}-osx-arm64.tar.gz\` |
 
-Each archive holds the \`mkpfs\` executable and its \`mkpfs_zlib\` library; keep them in the same
-folder. Verify downloads with \`SHA256SUMS.txt\`.
+Keep each program with the libraries next to it (\`mkpfs_zlib\`, and Skia/HarfBuzz for the desktop
+app). On macOS the desktop app is \`MkPFS.C#.app\`; it is not notarized, so open it the first time
+with right-click > Open. Verify downloads with \`SHA256SUMS.txt\`.
 
 ## Changes${prev:+ since ${prev}}
 

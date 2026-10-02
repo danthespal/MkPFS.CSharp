@@ -138,3 +138,36 @@ jobs:
             !publish/*.dbg
             !publish/*.dSYM
           retention-days: 7
+
+      - name: Publish GUI (Native AOT)
+        shell: bash
+        env:
+          VERSION: ${{ inputs.version }}
+        run: dotnet publish src/MkPFS.Gui -r ${{ matrix.rid }} -c Release -o publish-gui ${VERSION:+-p:Version=$VERSION}
+
+      # Loads the string tables and the native zlib without opening a window.
+      - name: Smoke test GUI
+        shell: bash
+        run: ./publish-gui/mkpfs-gui --selftest
+
+      # macOS gets an app bundle; elsewhere the folder ships as is. Debug symbols and the CLI's
+      # runtimeconfig (copied in by the project reference) stay out.
+      - name: Stage GUI
+        shell: bash
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          mkdir -p gui
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
+            bash tools/ci/macos-app.sh publish-gui gui "${VERSION:-0.0.0}"
+          else
+            cp -R publish-gui/. gui/
+            find gui \( -name '*.pdb' -o -name '*.dbg' -o -name '*.runtimeconfig.json' \) -prune -exec rm -rf {} +
+          fi
+          find gui -maxdepth 3 | sort
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: mkpfs-gui-${{ matrix.rid }}
+          path: gui
+          retention-days: 7

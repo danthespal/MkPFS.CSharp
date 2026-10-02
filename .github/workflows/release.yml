@@ -48,6 +48,7 @@ jobs:
       TAG: ${{ github.ref_name }}
       VERSION: ${{ needs.meta.outputs.version }}
       GH_TOKEN: ${{ github.token }}
+      VT_API_KEY: ${{ secrets.VT_API_KEY }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -58,18 +59,21 @@ jobs:
           pattern: mkpfs-*
           path: build
 
+      # One archive per program and RID: mkpfs-<version>-<rid> and mkpfs-gui-<version>-<rid>.
       # Artifacts lose the executable bit, so restore it before archiving Unix builds.
       - name: Package archives
         run: |
           mkdir -p dist
           for dir in build/mkpfs-*; do
-            rid="${dir#build/mkpfs-}"
-            name="mkpfs-${VERSION}-${rid}"
+            base="${dir#build/}"
+            if [[ "$base" == mkpfs-gui-* ]]; then product=mkpfs-gui; else product=mkpfs; fi
+            rid="${base#"$product"-}"
+            name="${product}-${VERSION}-${rid}"
             cp README.md LICENSE.md "$dir/"
             if [[ "$rid" == win-* ]]; then
               (cd "$dir" && zip -q -r "../../dist/${name}.zip" .)
             else
-              chmod +x "$dir/mkpfs"
+              find "$dir" -type f \( -name mkpfs -o -name mkpfs-gui \) -exec chmod +x {} +
               tar -C "$dir" -czf "dist/${name}.tar.gz" .
             fi
           done
@@ -78,6 +82,33 @@ jobs:
 
       - name: Write release notes
         run: bash tools/ci/release-notes.sh "$TAG" "$GITHUB_REPOSITORY" > notes.md
+
+      # Uploads each archive to VirusTotal (free API: 4 requests a minute) and links the reports in the
+      # notes. Skipped without the VT_API_KEY secret; a VirusTotal outage does not block the release.
+      - name: VirusTotal scan
+        id: virustotal
+        if: env.VT_API_KEY != ''
+        continue-on-error: true
+        uses: crazy-max/ghaction-virustotal@v5
+        with:
+          vt_api_key: ${{ env.VT_API_KEY }}
+          request_rate: 4
+          files: |
+            dist/*.zip
+            dist/*.tar.gz
+
+      # The action reports "file=url" pairs separated by commas; the URL may itself end in "=".
+      - name: Add VirusTotal links to the notes
+        if: steps.virustotal.outputs.analysis != ''
+        env:
+          ANALYSIS: ${{ steps.virustotal.outputs.analysis }}
+        run: |
+          {
+            printf '\n## VirusTotal\n\n'
+            tr ',' '\n' <<< "$ANALYSIS" | while IFS='=' read -r file url; do
+              if [[ -n "$file" ]]; then printf -- '- [%s](%s)\n' "$(basename "$file")" "$url"; fi
+            done
+          } >> notes.md
 
       - name: Create release
         run: gh release create "$TAG" dist/* --verify-tag --latest --title "MkPFS.C# ${VERSION}" --notes-file notes.md
