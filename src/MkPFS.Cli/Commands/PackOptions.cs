@@ -51,6 +51,8 @@ internal sealed record PackArgs
 
     public string? EkpfsKey { get; init; }
 
+    public bool NewCrypt { get; init; }
+
     public bool RequireGameFiles { get; init; }
 
     public bool Verbose { get; init; }
@@ -75,6 +77,7 @@ internal sealed record PackBuildConfig(
     bool CaseInsensitive,
     long PFSVersion,
     bool Encrypted,
+    bool NewCrypt,
     byte[] Ekpfs,
     int ZlibLevel,
     int CpuCount,
@@ -144,6 +147,7 @@ internal sealed record PackBuildConfig(
             args.CaseInsensitive || !args.CaseSensitive,
             args.Version == "PS5" ? PFSConstants.PFSVersionPS5 : PFSConstants.PFSVersionPS4,
             args.Encrypted,
+            args.NewCrypt,
             ekpfs,
             args.CompressionLevel,
             args.CpuCount,
@@ -287,7 +291,7 @@ internal static class PackReport
         ctx.Info($"    Signed:          {yes((mode & PFSConstants.PFSModeSigned) != 0)}");
         ctx.Info($"    64-bit inodes:   {yes((mode & PFSConstants.PFSMode64BitInodes) != 0)}");
         ctx.Info($"    Encrypted:       {yes((mode & PFSConstants.PFSModeEncrypted) != 0)}");
-        ctx.Info("    New crypt:       no");
+        ctx.Info($"    New crypt:       {yes(config.NewCrypt)}");
         ctx.Info($"    Case insensitive: {yes((mode & PFSConstants.PFSModeCaseInsensitive) != 0)}");
         ctx.Info($"  Compression:       {(config.Compress ? "enabled" : "disabled")}");
         if (config.Compress)

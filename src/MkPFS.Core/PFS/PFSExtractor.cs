@@ -322,11 +322,27 @@ public static class PFSExtractor
     /// <returns>Errors and warnings.</returns>
     public static (List<string> Errors, List<string> Warnings) VerifyExfat(string imagePath, string? source)
     {
+        try
+        {
+            using FileStream stream = File.OpenRead(imagePath);
+            return VerifyExfat(stream, source);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return ([$"failed to parse exFAT image: {ex.Message}"], []);
+        }
+    }
+
+    /// <summary>Same as <see cref="VerifyExfat(string, string?)"/> over an exFAT volume stream (for example a wrapped image's inner file).</summary>
+    /// <param name="stream">Seekable exFAT volume.</param>
+    /// <param name="source">Optional source directory.</param>
+    /// <returns>Errors and warnings.</returns>
+    public static (List<string> Errors, List<string> Warnings) VerifyExfat(Stream stream, string? source)
+    {
         List<string> errors = [];
         List<string> warnings = [];
         try
         {
-            using FileStream stream = File.OpenRead(imagePath);
             ExfatReader reader = new(stream);
             if (source is null)
             {

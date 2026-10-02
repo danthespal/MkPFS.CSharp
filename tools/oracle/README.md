@@ -46,6 +46,8 @@ Both default to `tests/fixtures/generated/` (git-ignored, about 270 MB).
 | `pack folder` | exFAT-wrapped default for 3 trees |
 | `pack folder --raw` | PS5, PS4, inode 64, case-sensitive, no-compress, signed, signed 64, encrypted, encrypted + key, filters, level 1, FPT collision (CI/CS), many files, AMPR, non-ASCII (expected failure) |
 | Post-pack checks | default structure verify (`pack file`, `--raw`), `--verify` (`pack file`, `--raw`, exFAT-wrapped `pack folder`) |
+| `batch` | folder + exFAT file: convert, rerun (skipped), dry run; output images hashed |
+| Game metadata | `metadata.json` / `metadata_src.json`: Python `read_game_metadata` for each image and its source |
 
 Logs (`*.log`) are UTF-8 with `
 ` line endings: Python runs with `PYTHONIOENCODING=utf-8` and
@@ -96,3 +98,8 @@ Images are platform independent.
     bytes for ASCII and common accented names, including every fixture).
 13. `exfat_writer` writes whatever a source file holds at read time, so a file that changes size
     after the scan yields a corrupt volume. Port: fails with "source file changed size".
+14. **Bug:** `batch` prints `Version : PS4` for every run: `print_batch_pre_stats` compares the profile with
+    `0x5000000` while PS5 is `2`. Port: prints the real profile.
+15. **Bug:** `batch --verify` verifies folder items against the source folder, but the image holds one
+    exFAT file, so every folder item fails with "missing in image". Port: verifies the image payloads and
+    compares the inner exFAT with the folder.

@@ -51,7 +51,7 @@ class Case:
 
     name: str
     tree: str
-    kind: str  # exfat | file | folder | raw
+    kind: str  # exfat | file | folder | raw | batch
     flags: list[str] = field(default_factory=list)
     expect_ok: bool = True
     ekpfs_hex: str | None = None
@@ -110,13 +110,21 @@ def cases() -> list[Case]:
     out.append(Case("raw_app_postcheck", "app_basic", "raw", ["--raw"], post_flags=[]))
     out.append(Case("raw_app_fullcheck", "app_basic", "raw", ["--raw", "--verify"], post_flags=[]))
     out.append(Case("folder_app_fullcheck", "app_basic", "folder", ["--verify"], post_flags=[]))
+
+    # batch over a folder item and an exFAT file item: convert, rerun (skipped), dry run.
+    out.append(Case("batch_mixed", "app_basic", "batch", ["--cpu-count", "1"]))
     return out
+
+
+BATCH_TIMING: re.Pattern[str] = re.compile(r"((?:  in |^Total elapsed: ))\d+\.\ds$", re.MULTILINE)
 
 
 def normalize_log(text: str, cwd: Path) -> str:
     """Replace the absolute case folder with ``<CASE>`` and drop timing-dependent progress lines."""
     root: str = str(cwd.resolve())
     text = text.replace(root.replace("\\", "\\\\"), "<CASE>").replace(root, "<CASE>")
+    # batch prints wall-clock times (MkPFS pins time only inside mkpfs.pfs).
+    text = BATCH_TIMING.sub(lambda m: m.group(1) + "<t>s", text)
     lines: list[str] = [ln for ln in text.splitlines() if not PROGRESS_LINE.match(ln)]
     return "\n".join(lines) + "\n"
 
@@ -157,6 +165,15 @@ def build_case(case: Case, trees: Path, goldens: Path) -> dict[str, object]:
         image = "out.exfat"
         steps.append(("build", ["pack", "exfat", "src", image, "--overwrite", "--no-progress", *case.flags]))
         verify_src: list[str] = ["--source-dir", "src"]
+    elif case.kind == "batch":
+        image = "out"
+        shutil.copytree(work / "src", work / "batch" / "PPSA01234-app")
+        pin_mtimes(work / "batch")
+        steps.append(("pre", ["pack", "exfat", "src", "batch/data.exfat", "--overwrite", "--no-progress"]))
+        steps.append(("build", ["batch", "batch", "out", *case.flags]))
+        steps.append(("rerun", ["batch", "batch", "out", *case.flags]))
+        steps.append(("dry", ["batch", "batch", "dry", "--dry-run", *case.flags]))
+        verify_src = []
     elif case.kind == "file":
         image = "out.ffpfsc"
         steps.append(("pre", ["pack", "exfat", "src", "in.exfat", "--overwrite", "--no-progress"]))
@@ -175,19 +192,26 @@ def build_case(case: Case, trees: Path, goldens: Path) -> dict[str, object]:
             break
 
     built: bool = exit_codes.get("build") == 0 and (work / image).exists()
-    if built:
+    if built and case.kind != "batch":
         if case.kind != "exfat":
             exit_codes["inspect"] = run_oracle(["inspect", image, "--format", "json", *key_flags], work, "inspect.log")
         exit_codes["tree"] = run_oracle(["tree", image, *key_flags], work, "tree.log")
         exit_codes["verify"] = run_oracle(["verify", image, *verify_src, *key_flags], work, "verify.log")
         if case.kind in ("file", "folder"):
             exit_codes["tree_deep"] = run_oracle(["tree", image, "--deep", *key_flags], work, "tree_deep.log")
+        if not key_flags and "enc" not in case.name:
+            write_metadata(work / image, work / "metadata.json")
+            write_metadata(work / "src", work / "metadata_src.json")
 
     # Every stored compressed block must be exactly what Python zlib produces, except in the
     # ISA-L case (MkPFS worker pools used to ignore --compression-backend; see oracle.py).
     zlib_check: dict[str, int] = {"blocks": 0, "mismatches": 0}
-    if built and case.kind != "exfat":
+    if built and case.kind not in ("exfat", "batch"):
         zlib_check = check_zlib_blocks(work / image, compression_level(case.flags))
+    elif built:
+        for produced in sorted((work / image).glob("*.ffpfsc")):
+            found: dict[str, int] = check_zlib_blocks(produced, compression_level(case.flags))
+            zlib_check = {k: zlib_check[k] + found[k] for k in zlib_check}
     expect_pure: bool = "isal" not in case.name
     zlib_ok: bool = (zlib_check["mismatches"] == 0) if expect_pure else (zlib_check["mismatches"] > 0)
 
@@ -195,6 +219,9 @@ def build_case(case: Case, trees: Path, goldens: Path) -> dict[str, object]:
     for path in sorted(work.iterdir()):
         if path.is_file():
             hashes[path.name] = hashlib.sha256(path.read_bytes()).hexdigest()
+    if case.kind == "batch" and (work / "out").is_dir():
+        for path in sorted((work / "out").iterdir()):
+            hashes[f"out/{path.name}"] = hashlib.sha256(path.read_bytes()).hexdigest()
     return {
         "tree": case.tree,
         "kind": case.kind,
@@ -207,6 +234,28 @@ def build_case(case: Case, trees: Path, goldens: Path) -> dict[str, object]:
         "note": case.note,
         "sha256": hashes,
     }
+
+
+def write_metadata(target: Path, out_path: Path) -> None:
+    """Store Python ``read_game_metadata`` for ``target`` (icon as SHA-256, no absolute path)."""
+    from mkpfs.game_metadata import read_game_metadata  # MkPFS is importable: this script runs in its environment
+
+    meta = read_game_metadata(target)
+    record: dict[str, object] = {
+        "file_name": meta.file_name,
+        "file_size": meta.file_size,
+        "game_title": meta.game_title,
+        "content_id": meta.content_id,
+        "title_id": meta.title_id,
+        "package_type": meta.package_type,
+        "version": meta.version,
+        "region": meta.region,
+        "icon_sha256": hashlib.sha256(meta.icon_bytes).hexdigest() if meta.icon_bytes else None,
+        "has_apr_emu": meta.has_apr_emu,
+        "size_display": meta.size_display,
+        "error": meta.error,
+    }
+    out_path.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
 
 
 def compression_level(flags: list[str]) -> int:

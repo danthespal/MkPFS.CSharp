@@ -4,7 +4,7 @@
 PFS images (`.ffpfs`, `.ffpfsc`, `.exfat`), plus PFSC block repair ported from PS5 Game Compressor.
 
 Status: read side (`inspect`, `tree`, `unpack`, `verify`), `repair` and every `pack` mode (with the AMPR
-emulation index) done; `batch` is next.
+emulation index) and `batch` done; the GUI is next.
 
 ## Usage
 
@@ -60,6 +60,12 @@ mkpfs unpack PPSA12345.ffpfsc out --deep
 ```
 
 Encrypted images take `--ekpfs-key <64 hex>` (and `--new-crypt` for the alternate key derivation).
+
+Pack every game folder and image file in a folder into `<name>.ffpfsc` (existing outputs are skipped):
+
+```bash
+mkpfs batch ./games ./output
+```
 
 Find and fix PFSC blocks the PS5 may decode wrongly in a single-file `.ffpfsc` (ISA-L output):
 
