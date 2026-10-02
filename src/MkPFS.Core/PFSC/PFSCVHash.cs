@@ -110,14 +110,21 @@ public static class PFSCVHash
         }
 
         string temp = path + ".tmp";
-        using (FileStream stream = new(temp, FileMode.Create, FileAccess.Write, FileShare.None))
+        try
         {
-            stream.Write(BuildHeader(identity));
-            stream.Write(hashes);
-            stream.Flush(flushToDisk: true);
-        }
+            using (FileStream stream = new(temp, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
+                stream.Write(BuildHeader(identity));
+                stream.Write(hashes);
+                stream.Flush(flushToDisk: true);
+            }
 
-        File.Move(temp, path, overwrite: true);
+            File.Move(temp, path, overwrite: true);
+        }
+        finally
+        {
+            TryDelete(temp);
+        }
     }
 
     /// <summary>Check a sidecar against an image identity (GC <c>pfs_vhash_reader_open_for_image</c>).</summary>
@@ -166,6 +173,18 @@ public static class PFSCVHash
     /// <param name="rawBlock">Unpadded block bytes.</param>
     /// <returns>Hash.</returns>
     public static byte[] HashBlock(ReadOnlySpan<byte> rawBlock) => SHA256.HashData(rawBlock);
+
+    private static void TryDelete(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Preserve the original write failure when cleanup cannot remove the temporary file.
+        }
+    }
 
     private static PFSCVHashMode MatchHeader(ReadOnlySpan<byte> header, PFSCVHashIdentity identity)
     {

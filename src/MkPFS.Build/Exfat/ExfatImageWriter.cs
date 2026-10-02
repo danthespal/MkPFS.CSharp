@@ -84,8 +84,21 @@ public sealed class ExfatImageWriter
         }
 
         ExfatImageWriter writer = Plan(sourceRoot, clusterSize);
-        using FileStream output = new(outputPath, FileMode.Create, FileAccess.Write, FileShare.None, 1 << 20);
-        writer.WriteTo(output, progress);
+        string tempPath = outputPath + ".tmp";
+        try
+        {
+            using (FileStream output = new(tempPath, FileMode.Create, FileAccess.Write, FileShare.None, 1 << 20))
+            {
+                writer.WriteTo(output, progress);
+            }
+
+            File.Move(tempPath, outputPath, overwrite: true);
+        }
+        finally
+        {
+            TryDelete(tempPath);
+        }
+
         return outputPath;
     }
 
@@ -575,6 +588,18 @@ public sealed class ExfatImageWriter
         public long FirstCluster { get; set; }
 
         public long ClusterCount { get; set; }
+    }
+
+    private static void TryDelete(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Preserve the write failure when cleanup cannot remove the temporary image.
+        }
     }
 
     // Python compares str by code point; UTF-16 ordinal order differs only for supplementary characters.

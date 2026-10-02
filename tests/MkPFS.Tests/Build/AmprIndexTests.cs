@@ -45,6 +45,19 @@ public sealed class AmprIndexTests
     }
 
     [Fact]
+    public void Failed_build_removes_its_temporary_index()
+    {
+        using TempDir dir = new();
+        string source = AmprTree(dir);
+        string output = dir.Dir("blocked.index");
+
+        Exception? error = Record.Exception(() => AmprIndex.Build(source, output));
+
+        Assert.True(error is IOException or UnauthorizedAccessException);
+        Assert.False(File.Exists(output + ".tmp"));
+    }
+
+    [Fact]
     public void Hash_table_finds_every_row_by_probing()
     {
         using TempDir dir = new();

@@ -17,6 +17,7 @@ internal static class RepairApplier
     /// <summary>
     /// Rewrite the image in place, walking from the last block so data only moves toward the end.
     /// An interruption leaves the image unusable; callers prefer <see cref="CopyReplace"/> when space allows.
+    /// Cancellation is honored only before the first write; after that the rewrite always runs to the end.
     /// </summary>
     /// <returns>Bytes written to the payload.</returns>
     public static long ApplyInPlace(PFSCImage image, RepairPlan plan, IProgressSink? progress, CancellationToken cancellationToken)
@@ -26,6 +27,7 @@ internal static class RepairApplier
             throw new InvalidOperationException("in-place repair cannot move blocks toward the start of the image");
         }
 
+        cancellationToken.ThrowIfCancellationRequested();
         SafeFileHandle handle = image.Stream.SafeFileHandle;
         long finalSize = FinalSize(image, plan.NewStoredSize);
         if (finalSize > RandomAccess.GetLength(handle))
@@ -38,7 +40,6 @@ internal static class RepairApplier
         using RepairPlan.BlockEncoder encoder = new();
         for (long remaining = image.BlockCount; remaining > 0;)
         {
-            cancellationToken.ThrowIfCancellationRequested();
             long i = remaining - 1;
             long oldStart = image.Offsets[i];
             long newStart = plan.NewOffsets[i];
@@ -71,7 +72,14 @@ internal static class RepairApplier
                 remaining = runStart;
             }
 
-            progress?.Report("repair", image.BlockCount - remaining, image.BlockCount, moved);
+            try
+            {
+                progress?.Report("repair", image.BlockCount - remaining, image.BlockCount, moved);
+            }
+            catch (OperationCanceledException)
+            {
+                // The GUI progress sink throws once its job is cancelled; stopping here would corrupt the image.
+            }
         }
 
         // Clear whatever old payload bytes remain past the new end, so in-place and copy results are identical.

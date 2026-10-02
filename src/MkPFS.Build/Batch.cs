@@ -246,8 +246,9 @@ public static class Batch
 
                 finished?.Invoke(index, result);
             }
-            catch (Exception ex) when (ex is BuildException or IOException or UnauthorizedAccessException or InvalidDataException)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
+                // Python run_batch records any exception and moves on; cancellation still stops the batch.
                 results.Add(new BatchItemResult
                 {
                     Item = item, Status = BatchStatus.Error, OutputPath = outputPath, ElapsedSeconds = watch.Elapsed.TotalSeconds, ErrorMessage = ex.Message,

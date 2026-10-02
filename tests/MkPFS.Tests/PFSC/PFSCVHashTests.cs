@@ -47,6 +47,18 @@ public sealed class PFSCVHashTests
     }
 
     [Fact]
+    public void Failed_write_removes_its_temporary_sidecar()
+    {
+        using TempDir temp = new();
+        string path = temp.Dir("blocked.vhash");
+
+        Exception? error = Record.Exception(() => PFSCVHash.Write(path, Identity, Hashes(3)));
+
+        Assert.True(error is IOException or UnauthorizedAccessException);
+        Assert.False(File.Exists(path + ".tmp"));
+    }
+
+    [Fact]
     public void Probe_reports_missing_stale_and_invalid()
     {
         using TempDir temp = new();

@@ -77,7 +77,8 @@ public sealed class ExfatReader
 
     /// <summary>Directory tree under the volume root, in on-disk order.</summary>
     /// <returns>Root entries.</returns>
-    public List<ExfatEntry> RootEntries() => WalkDirectory(Geometry.RootDirCluster, noFatChain: false, length: 0, relDir: string.Empty);
+    public List<ExfatEntry> RootEntries() =>
+        WalkDirectory(Geometry.RootDirCluster, noFatChain: false, length: 0, relDir: string.Empty, visited: [Geometry.RootDirCluster]);
 
     /// <summary>Every file (not directory), depth first, sorted by lowercase path per level (Python <c>iter_files</c>).</summary>
     /// <returns>File entries.</returns>
@@ -283,6 +284,10 @@ public sealed class ExfatReader
         {
             limit--;
         }
+        // A chain cannot hold more distinct clusters than the volume stores; the boot sector's ClusterCount alone
+        // can claim ~4 billion, which turns a crafted FAT cycle into a near-endless loop.
+        long heapStart = Geometry.ClusterHeapOffsetSectors * (long)Geometry.BytesPerSector;
+        long maxClusters = Math.Min(Geometry.ClusterCount, Math.Max(0, (_stream.Length - heapStart) / clusterSize));
         uint cluster = first;
         long seen = 0;
         while (cluster >= 2 && cluster < FatEndOfChain)
@@ -294,7 +299,7 @@ public sealed class ExfatReader
                 yield break;
             }
 
-            if (seen > Geometry.ClusterCount + 2L)
+            if (seen > maxClusters + 2L)
             {
                 throw new InvalidDataException("cluster chain exceeds volume size (loop?)");
             }
@@ -325,7 +330,9 @@ public sealed class ExfatReader
         return entries;
     }
 
-    private List<ExfatEntry> WalkDirectory(uint first, bool noFatChain, ulong length, string relDir)
+    // visited holds the first clusters of directories already walked; a crafted entry that points back at one
+    // would otherwise recurse until the stack overflows (Python stops with RecursionError).
+    private List<ExfatEntry> WalkDirectory(uint first, bool noFatChain, ulong length, string relDir, HashSet<uint> visited)
     {
         List<ExfatEntry> result = [];
         List<byte[]> pending = DirectoryEntries(first, noFatChain, length);
@@ -368,6 +375,11 @@ public sealed class ExfatReader
             string name = decoded.Length > nameLength ? decoded[..nameLength] : decoded;
             bool isDir = (attributes & AttrDirectory) != 0;
             string relPath = relDir.Length > 0 ? $"{relDir}/{name}" : name;
+            if (isDir && childCluster >= 2 && !visited.Add(childCluster))
+            {
+                throw new InvalidDataException($"directory '{relPath}' reuses cluster {childCluster} of another directory (cycle?)");
+            }
+
             result.Add(new ExfatEntry
             {
                 Name = name,
@@ -376,7 +388,7 @@ public sealed class ExfatReader
                 FirstCluster = childCluster,
                 Length = dataLength,
                 NoFatChain = childNoFat,
-                Children = isDir ? WalkDirectory(childCluster, childNoFat, dataLength, relPath) : [],
+                Children = isDir ? WalkDirectory(childCluster, childNoFat, dataLength, relPath, visited) : [],
             });
         }
 

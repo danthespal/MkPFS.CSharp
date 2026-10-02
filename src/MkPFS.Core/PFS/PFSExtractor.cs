@@ -266,9 +266,10 @@ public static class PFSExtractor
                     using FileStream output = new(target, FileMode.Create, FileAccess.Write);
                     result.BytesWritten += image.CopyLogicalTo(inspection.Inodes[(int)number], output, progress.Add);
                 }
-                catch (InvalidDataException ex)
+                catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
                 {
-                    result.Errors.Add($"failed to decode file '{rel}' payload: {ex.Message}");
+                    TryDelete(target);
+                    result.Errors.Add($"failed to extract file '{rel}': {ex.Message}");
                     return result;
                 }
 
@@ -548,6 +549,7 @@ public static class PFSExtractor
             }
             catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
             {
+                TryDelete(target);
                 result.Errors.Add($"failed to extract '{file.RelPath}': {ex.Message}");
                 return result;
             }
@@ -569,6 +571,18 @@ public static class PFSExtractor
         target = Path.GetFullPath(Path.Combine(fullRoot, rel.Replace('/', Path.DirectorySeparatorChar)));
         string prefix = Path.EndsInDirectorySeparator(fullRoot) ? fullRoot : fullRoot + Path.DirectorySeparatorChar;
         return target.StartsWith(prefix, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+    }
+
+    private static void TryDelete(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // The extraction error is more useful than a cleanup failure.
+        }
     }
 
     /// <summary>Byte-based progress throttled to one update per 8 MiB.</summary>

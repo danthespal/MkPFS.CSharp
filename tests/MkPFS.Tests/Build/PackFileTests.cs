@@ -53,6 +53,24 @@ public sealed class PackFileTests
         Assert.Equal(1, inspection.CheckedFiles);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Output_equal_to_source_is_refused_and_source_is_kept(bool useSpool)
+    {
+        using TempDir dir = new();
+        string source = Source(dir, "game.ffpfsc");
+        byte[] before = File.ReadAllBytes(source);
+        string[] args = useSpool ? ["pack", "file", source, source, "--use-spool"] : ["pack", "file", source, source];
+
+        // "y" would have confirmed the overwrite prompt, which deleted the source before the build.
+        (int exit, string output, string err) = Run("y\n", args);
+
+        Assert.Equal(1, exit);
+        Assert.Contains("output image must not be the source itself", output + err, StringComparison.Ordinal);
+        Assert.Equal(before, File.ReadAllBytes(source));
+    }
+
     [Fact]
     public void Full_verify_and_encryption_with_a_key()
     {

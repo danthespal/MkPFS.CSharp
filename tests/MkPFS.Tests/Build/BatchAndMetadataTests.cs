@@ -87,6 +87,27 @@ public sealed class BatchTests
     }
 
     [Fact]
+    public void Unexpected_item_errors_are_recorded_and_the_batch_continues()
+    {
+        using TempDir dir = new();
+        string source = Source(dir);
+        List<BatchItem> items = Batch.Discover(source, MkPFS.Core.Diagnostics.NullLog.Instance);
+        BatchOptions options = new()
+        {
+            SourceDir = source,
+            OutputDir = Path.Combine(dir.Path, "out"),
+
+            // An invalid level makes the encoder throw ArgumentOutOfRangeException, which used to abort the batch.
+            Build = new MkPFS.Build.PFS.SingleFileBuildOptions { SourceFile = string.Empty, OutputPath = string.Empty, ZlibLevel = 99 },
+        };
+
+        BatchSummary summary = Batch.Run(options, items, MkPFS.Core.Diagnostics.NullLog.Instance, progress: null);
+
+        Assert.Equal(2, summary.Errors);
+        Assert.All(summary.Results, r => Assert.False(string.IsNullOrEmpty(r.ErrorMessage)));
+    }
+
+    [Fact]
     public void Empty_source_reports_no_items()
     {
         using TempDir dir = new();

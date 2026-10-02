@@ -164,7 +164,14 @@ public static class RawFolderImageBuilder
         {
             foreach (string spool in spools)
             {
-                File.Delete(spool);
+                try
+                {
+                    File.Delete(spool);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    // Preserve the build failure and attempt cleanup of every remaining spool.
+                }
             }
         }
     }

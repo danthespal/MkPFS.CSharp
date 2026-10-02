@@ -126,6 +126,41 @@ public sealed class PFSCRepairTests
     }
 
     [Fact]
+    public void Cancelling_during_in_place_repair_still_leaves_a_valid_image()
+    {
+        using TempDir dir = new();
+        (byte[] image, byte[] logical, _) = Sample();
+        string path = Write(dir, image);
+        using CancellationTokenSource cancel = new();
+
+        // Like the GUI: Cancel is pressed during the first repair step, and the sink then throws on every report.
+        Assert.ThrowsAny<OperationCanceledException>(() =>
+            PFSCRepair.Run(path, Options(RepairMode.InPlace) with { Progress = new CancellingSink(cancel, "repair") }, cancel.Token));
+
+        Assert.Equal(logical, DecodePayload(path));
+        using PFSCImage repaired = PFSCImage.Open(path);
+        Assert.Equal(BlockSize, repaired.StoredLength(1));
+        Assert.Equal(BlockSize, repaired.StoredLength(3));
+        PFSInspection inspection = PFSInspector.Inspect(path, new PFSInspectOptions { Checklist = ChecklistMode.Never });
+        Assert.Empty(inspection.Errors);
+    }
+
+    private sealed class CancellingSink(CancellationTokenSource cancel, string cancelAt) : MkPFS.Core.Diagnostics.IProgressSink
+    {
+        public void Step(string phase, long done, long total, long bytesProcessed)
+        {
+            if (phase == cancelAt)
+            {
+                cancel.Cancel();
+            }
+
+            cancel.Token.ThrowIfCancellationRequested();
+        }
+
+        public void Status(string message) => cancel.Token.ThrowIfCancellationRequested();
+    }
+
+    [Fact]
     public void Auto_mode_falls_back_to_in_place_without_free_space()
     {
         using TempDir dir = new();

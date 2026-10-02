@@ -399,6 +399,22 @@ internal static class PackReport
         return inspection.Errors.Count > 0 ? 1 : 0;
     }
 
+    /// <summary>
+    /// Refuse an output that is the source itself: the overwrite prompt deletes the existing output before the
+    /// build, which would destroy the source (not checked in Python).
+    /// </summary>
+    /// <param name="source">Full source path.</param>
+    /// <param name="output">Full output path.</param>
+    /// <exception cref="BuildException">Both paths name the same file or folder.</exception>
+    public static void EnsureOutputIsNotSource(string source, string output)
+    {
+        StringComparison comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        if (string.Equals(Path.TrimEndingDirectorySeparator(source), Path.TrimEndingDirectorySeparator(output), comparison))
+        {
+            throw new BuildException($"output image must not be the source itself: {output}");
+        }
+    }
+
     /// <summary>Python <c>get_destination_space_error_message</c>.</summary>
     public static string? DestinationSpaceError(long requiredBytes, string outputPath)
     {

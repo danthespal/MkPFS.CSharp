@@ -204,6 +204,8 @@ internal static class PackCommands
             ctx.Info("Single file streaming mode enabled, adjusting output file extension to .ffpfsc");
         }
 
+        PackReport.EnsureOutputIsNotSource(sourceFile, output);
+
         string blockArg = args.BlockSize.Trim().ToLowerInvariant();
         int blockSize = blockArg is "auto" or "" ? 65536
             : int.TryParse(args.BlockSize, System.Globalization.NumberStyles.AllowLeadingWhite | System.Globalization.NumberStyles.AllowTrailingWhite | System.Globalization.NumberStyles.AllowLeadingSign, System.Globalization.CultureInfo.InvariantCulture, out int parsed)
@@ -308,6 +310,8 @@ internal static class PackCommands
         {
             ctx.Info(adjustmentMessage);
         }
+
+        PackReport.EnsureOutputIsNotSource(displaySource, output);
 
         string blockArg = args.BlockSize.Trim().ToLowerInvariant();
         int blockSize;

@@ -163,8 +163,16 @@ public static class AmprIndex
 
         rows = [.. rows.OrderBy(r => KeyFor(r.Path), CodePointOrder)];
         byte[] index = Serialize(rows);
-        File.WriteAllBytes(tmp, index);
-        File.Move(tmp, outputPath, overwrite: true);
+        try
+        {
+            File.WriteAllBytes(tmp, index);
+            File.Move(tmp, outputPath, overwrite: true);
+        }
+        finally
+        {
+            TryDelete(tmp);
+        }
+
         return rows.Count;
     }
 
@@ -322,6 +330,18 @@ public static class AmprIndex
     }
 
     private static StringComparison PathComparison => OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+
+    private static void TryDelete(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Preserve the original index-generation failure when cleanup also fails.
+        }
+    }
 
     private static IComparer<string> CodePointOrder { get; } = Comparer<string>.Create(static (a, b) =>
     {

@@ -67,7 +67,12 @@ public static class TreeRenderer
     public static List<string> RenderFolder(string root)
     {
         List<string> lines = [];
-        void Render(DirectoryInfo dir, string prefix)
+        StringComparer comparer = OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+
+        // Real paths of the directories being rendered. Links are followed like Python, except one that leads back
+        // to an ancestor: Python then repeats the loop until the OS path limit; here the link is listed, not entered.
+        HashSet<string> ancestors = new(comparer);
+        void Render(DirectoryInfo dir, string realPath, string prefix)
         {
             List<FileSystemInfo> children;
             try
@@ -87,14 +92,39 @@ public static class TreeRenderer
             {
                 bool last = i == children.Count - 1;
                 lines.Add(prefix + (last ? "`-- " : "|-- ") + children[i].Name);
-                if (children[i] is DirectoryInfo child)
+                if (children[i] is DirectoryInfo child && RealPath(child, realPath) is { } childReal && ancestors.Add(childReal))
                 {
-                    Render(child, prefix + (last ? "    " : "|   "));
+                    Render(child, childReal, prefix + (last ? "    " : "|   "));
+                    ancestors.Remove(childReal);
                 }
             }
         }
 
-        Render(new DirectoryInfo(root), string.Empty);
+        DirectoryInfo top = new(root);
+        string topReal = RealPath(top, null) ?? Path.TrimEndingDirectorySeparator(top.FullName);
+        ancestors.Add(topReal);
+        Render(top, topReal, string.Empty);
         return lines;
+    }
+
+    // Final target of a directory link, or the parent's real path plus the name; null when the link cannot be
+    // resolved (Python's is_dir() is then false, so it is not entered).
+    private static string? RealPath(DirectoryInfo dir, string? parentReal)
+    {
+        try
+        {
+            if (dir.LinkTarget is not null)
+            {
+                return dir.ResolveLinkTarget(returnFinalTarget: true) is { } target
+                    ? Path.TrimEndingDirectorySeparator(Path.GetFullPath(target.FullName))
+                    : null;
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+
+        return parentReal is null ? Path.TrimEndingDirectorySeparator(dir.FullName) : Path.Combine(parentReal, dir.Name);
     }
 }

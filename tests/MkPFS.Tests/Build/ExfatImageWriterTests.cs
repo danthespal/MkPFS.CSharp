@@ -128,6 +128,29 @@ public sealed class ExfatImageWriterTests
         Assert.Equal(Path.Combine(outDir, "PPSA01234.exfat"), written);
     }
 
+    [Fact]
+    public void Failed_write_removes_its_temporary_image()
+    {
+        using TempDir dir = new();
+        string source = dir.Dir("src");
+        dir.File("src/a.txt", "x");
+        string output = Path.Combine(dir.Path, "blocked.exfat");
+
+        Exception? error = Record.Exception(() => ExfatImageWriter.Write(source, output, progress: new ThrowingProgress()));
+
+        Assert.IsType<InvalidOperationException>(error);
+        Assert.False(File.Exists(output + ".tmp"));
+    }
+
+    private sealed class ThrowingProgress : MkPFS.Core.Diagnostics.IProgressSink
+    {
+        public void Step(string phase, long done, long total, long bytesProcessed) => throw new InvalidOperationException("test failure");
+
+        public void Status(string message)
+        {
+        }
+    }
+
     [Theory]
     [InlineData("auto", null, null)]
     [InlineData(" AUTO ", null, null)]
@@ -145,6 +168,53 @@ public sealed class ExfatImageWriterTests
         Assert.Equal(error is null, ok);
         Assert.Equal(expected, value);
         Assert.Equal(error, message);
+    }
+
+    // Offset of the root directory cluster in an image written by ExfatImageWriter.
+    private static (int RootOffset, int ClusterSize, uint RootCluster) RootDirectory(byte[] image)
+    {
+        int heap = (int)BinaryPrimitives.ReadUInt32LittleEndian(image.AsSpan(88)) * 512;
+        uint root = BinaryPrimitives.ReadUInt32LittleEndian(image.AsSpan(96));
+        int clusterSize = 1 << (image[108] + image[109]);
+        return (heap + ((int)(root - 2) * clusterSize), clusterSize, root);
+    }
+
+    [Fact]
+    public void Reader_rejects_a_directory_that_points_back_at_its_parent()
+    {
+        using TempDir dir = new();
+        string source = dir.Dir("src");
+        dir.File("src/sub/a.txt", "hi");
+        byte[] image = File.ReadAllBytes(Pack(dir, source));
+        (int rootOffset, int clusterSize, uint rootCluster) = RootDirectory(image);
+        int file = Enumerable.Range(0, clusterSize / 32).Select(i => rootOffset + (i * 32))
+            .First(o => image[o] == 0x85 && (BinaryPrimitives.ReadUInt16LittleEndian(image.AsSpan(o + 4)) & 0x10) != 0);
+        BinaryPrimitives.WriteUInt32LittleEndian(image.AsSpan(file + 32 + 0x14), rootCluster);
+
+        // Before the fix this recursed until the process died with a stack overflow.
+        using MemoryStream stream = new(image, writable: false);
+        Assert.Throws<InvalidDataException>(() => new ExfatReader(stream).RootEntries());
+    }
+
+    [Fact]
+    public void Reader_stops_a_fat_cycle_at_the_real_volume_size()
+    {
+        using TempDir dir = new();
+        string source = dir.Dir("src");
+        dir.File("src/a.txt", "hi");
+        byte[] image = File.ReadAllBytes(Pack(dir, source));
+        (int rootOffset, int clusterSize, uint rootCluster) = RootDirectory(image);
+
+        // No end-of-directory marker, a root chain that loops on itself, and a boot sector claiming ~4G clusters.
+        int end = Enumerable.Range(0, clusterSize / 32).Select(i => rootOffset + (i * 32)).First(o => image[o] == 0);
+        image.AsSpan(end, rootOffset + clusterSize - end).Fill(0xFF);
+        int fat = (int)BinaryPrimitives.ReadUInt32LittleEndian(image.AsSpan(80)) * 512;
+        BinaryPrimitives.WriteUInt32LittleEndian(image.AsSpan(fat + ((int)rootCluster * 4)), rootCluster);
+        BinaryPrimitives.WriteUInt32LittleEndian(image.AsSpan(92), 0xFFFFFFF0);
+
+        using MemoryStream stream = new(image, writable: false);
+        InvalidDataException error = Assert.Throws<InvalidDataException>(() => new ExfatReader(stream).RootEntries());
+        Assert.Contains("loop", error.Message, StringComparison.Ordinal);
     }
 
     [Fact]

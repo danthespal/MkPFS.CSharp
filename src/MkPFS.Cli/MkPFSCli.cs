@@ -68,7 +68,24 @@ public static class MkPFSCli
     public static int Run(string[] args, CliContext ctx)
     {
         ParseResult parse = BuildRootCommand(ctx).Parse(args);
-        int exit = parse.Invoke(new InvocationConfiguration { Output = ctx.Out, Error = ctx.Err });
+        int exit;
+        try
+        {
+            exit = parse.Invoke(new InvocationConfiguration { Output = ctx.Out, Error = ctx.Err, EnableDefaultExceptionHandler = false });
+        }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
+        {
+            // Missing, locked, unreadable or corrupt inputs: one error line instead of a stack trace.
+            ctx.Error(ex.Message);
+            return 1;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // Same output and exit code as the System.CommandLine default handler; cancellation reaches the GUI job.
+            ctx.Err.WriteLine($"Unhandled exception: {ex}");
+            return 1;
+        }
+
         return parse.Errors.Count > 0 ? 2 : exit;
     }
 

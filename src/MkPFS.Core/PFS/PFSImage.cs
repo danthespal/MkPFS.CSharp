@@ -276,6 +276,11 @@ public sealed class PFSImage : IDisposable
     /// <returns>Logical chunks in order.</returns>
     public IEnumerable<ReadOnlyMemory<byte>> ReadLogicalChunks(PFSInode inode, int chunkSize = 4 * 1024 * 1024)
     {
+        if (chunkSize <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(chunkSize), "chunk size must be positive");
+        }
+
         if (inode.Blocks <= 0 || inode.LogicalSize <= 0)
         {
             yield break;

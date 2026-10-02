@@ -142,6 +142,20 @@ public sealed class OutputTests
         Assert.Equal(expected, MkPFSCli.Run(args, ctx));
     }
 
+    [Fact]
+    public void Corrupt_input_reports_one_error_line_without_a_stack_trace()
+    {
+        using TempDir dir = new();
+        string image = dir.File("bad.exfat", new string('x', 1000));
+        StringWriter stdout = new() { NewLine = "\n" };
+        StringWriter stderr = new() { NewLine = "\n" };
+
+        int exit = MkPFSCli.Run(["tree", image], new CliContext(stdout, stderr, useColor: false, utf8: false, progress: false));
+
+        Assert.Equal(1, exit);
+        Assert.Equal("ERROR missing exFAT file system signature\n", stderr.ToString());
+    }
+
     private sealed class RecordingSink : IProgressSink
     {
         public List<(string Phase, long Done, long Total, long Bytes)> Steps { get; } = [];
