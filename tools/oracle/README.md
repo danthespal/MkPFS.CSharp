@@ -7,7 +7,7 @@ Python MkPFS (`D:\TOOLS\PS5\MkPFS`, expected at `../MkPFS`) stays the oracle unt
 
 | File | Purpose |
 |---|---|
-| `oracle.py` | Runs the MkPFS CLI with a pinned clock (`MKPFS_ORACLE_EPOCH`, default 1700000000), counter `uuid4`, and `--compression-backend zlib` |
+| `oracle.py` | Runs the MkPFS CLI with a pinned clock (`MKPFS_ORACLE_EPOCH`, default 1700000000), counter `uuid4`, and `--compression-backend zlib` (also forced inside worker processes) |
 | `make_fixtures.py` | Generates deterministic source trees (seeded data, mtimes pinned to 1600000000) |
 | `build_goldens.py` | Builds 33 cases, captures inspect/tree/verify output, writes `manifest.json` and zlib vectors |
 | `bench.py` | Python baseline timings on a ~330 MiB tree |
@@ -53,7 +53,8 @@ Images are platform independent.
 
 - 33/33 cases match expectations; two full builds are byte-identical.
 - `pack file` output is identical for `--cpu-count 1` and `4`.
-- Baseline (328 MiB source): `pack exfat` 0.36 s, `pack file` 9.55 s (1 CPU) / 1.48 s (auto),
+- Baseline (328 MiB source): `pack exfat` 0.36 s, `pack file` 9.42 s (1 CPU) / 1.63 s (auto, zlib forced;
+  the earlier 1.48 s was ISA-L, see finding 8),
   `pack folder` 1.14 s, `pack folder --raw` 1.51 s, `verify` 1.37 s, `unpack --deep` 0.66 s.
 
 ## Findings to carry into the port
@@ -70,3 +71,9 @@ Images are platform independent.
 6. The default `auto` backend picks ISA-L, whose streams caused PS5 bad blocks. The port uses zlib only.
 7. Python images contain the build time; the C# CLI needs `--timestamp` / `SOURCE_DATE_EPOCH`
    to compare against goldens (epoch 1700000000).
+8. **Bug:** MkPFS process pools ignore `--compression-backend`. Workers re-import
+   `mkpfs.compression` and fall back to `auto` (ISA-L): the single-file block pool (`pack file`
+   on inputs ≥ 256 MiB, `pfs.py:1221`) and the `pack folder --raw` file pools (`pfs.py:3332`,
+   `3411`, no initializer). So `--compression-backend zlib` alone does not avoid ISA-L on real
+   game images; `--cpu-count 1` does. `oracle.py` wraps `mp.Pool` to force the backend, and
+   `build_goldens.py` re-compresses every stored block to prove the corpus is pure zlib.

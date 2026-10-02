@@ -37,10 +37,10 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: oracle-corpus
+          # Everything except the per-case source copies (identical to trees/).
           path: |
-            tests/fixtures/generated/goldens/manifest.json
-            tests/fixtures/generated/vectors
-            tests/fixtures/generated/determinism.json
+            tests/fixtures/generated
+            !tests/fixtures/generated/goldens/*/src
           retention-days: 7
 
   build:

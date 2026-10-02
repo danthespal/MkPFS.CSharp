@@ -54,6 +54,19 @@ def _semi(rng: random.Random, size: int) -> bytes:
     return bytes(out[:size])
 
 
+def _long_range(rng: random.Random, blocks: int) -> bytes:
+    """Return 64 KiB blocks whose second half repeats the first at distance 32700.
+
+    zlib never emits back-references beyond 32506 bytes, ISA-L does; this data lets tests tell
+    the encoders apart (see the PS5 bad-block investigation).
+    """
+    out: bytearray = bytearray()
+    for _ in range(blocks):
+        head: bytes = _semi(rng, 32700)  # random data makes ISA-L levels 1-2 skip matching
+        out += (head + head)[:BLOCK]
+    return bytes(out)
+
+
 def _param_json(title_id: str) -> bytes:
     data: dict[str, object] = {
         "titleId": title_id,
@@ -83,6 +96,7 @@ def tree_app_basic(root: Path) -> None:
     _write(root, "data/exact_block.bin", _text(rng, BLOCK))
     _write(root, "data/block_plus_one.bin", _text(rng, BLOCK + 1))
     _write(root, "data/zeros.bin", bytes(1024 * 1024))
+    _write(root, "data/long_range.bin", _long_range(rng, blocks=4))
     _write(root, "a/b/c/d/deep.txt", _text(rng, 5000))
     (root / "empty_dir").mkdir(parents=True, exist_ok=True)
 

@@ -4,6 +4,8 @@ Pins every nondeterministic input without touching MkPFS source code:
 - ``time.time()`` inside ``mkpfs.pfs`` returns ``MKPFS_ORACLE_EPOCH`` (header/inode timestamps).
 - ``uuid.uuid4()`` inside ``mkpfs.pfs`` returns a counter-based UUID (fallback inner names, spools).
 - Pack commands get ``--compression-backend zlib`` unless a backend is given explicitly.
+- Worker processes use that backend too. MkPFS itself does not pass it to its process pools
+  (they fall back to the ``auto`` default, ISA-L), so ``mp.Pool`` is wrapped to set it.
 
 Usage:
     uv run --project ../MkPFS python tools/oracle/oracle.py pack file in.exfat out.ffpfsc
@@ -11,10 +13,12 @@ Usage:
 
 from __future__ import annotations
 
+import multiprocessing as _real_mp
 import os
 import sys
 import time as _real_time
 import uuid as _real_uuid
+from collections.abc import Callable
 from types import SimpleNamespace
 
 DEFAULT_EPOCH: int = 1_700_000_000
@@ -45,6 +49,45 @@ def _counter_uuid_module() -> SimpleNamespace:
     return shim
 
 
+def _init_worker_backend(backend: str, initializer: Callable[..., None] | None, initargs: tuple[object, ...]) -> None:
+    """Run MkPFS' own pool initializer, then force the requested compression backend."""
+    if initializer is not None:
+        initializer(*initargs)
+    from mkpfs import compression  # imported in the worker process
+
+    compression.set_backend(backend)
+
+
+def _backend_pool_module(backend: str) -> SimpleNamespace:
+    """Return a ``multiprocessing`` stand-in whose ``Pool`` workers use ``backend``."""
+
+    def pool(
+        *args: object,
+        initializer: Callable[..., None] | None = None,
+        initargs: tuple[object, ...] = (),
+        **kwargs: object,
+    ) -> object:
+        return _real_mp.Pool(
+            *args, initializer=_init_worker_backend, initargs=(backend, initializer, initargs), **kwargs
+        )
+
+    shim: SimpleNamespace = SimpleNamespace(
+        **{k: getattr(_real_mp, k) for k in dir(_real_mp) if not k.startswith("__")}
+    )
+    shim.Pool = pool
+    return shim
+
+
+def selected_backend(argv: list[str]) -> str:
+    """Return the ``--compression-backend`` value in ``argv`` (``zlib`` when absent)."""
+    for i, arg in enumerate(argv):
+        if arg.startswith("--compression-backend="):
+            return arg.split("=", 1)[1]
+        if arg == "--compression-backend" and i + 1 < len(argv):
+            return argv[i + 1]
+    return "zlib"
+
+
 def inject_backend(argv: list[str]) -> list[str]:
     """Append ``--compression-backend zlib`` to pack folder/file and batch commands when missing."""
     if any(a.startswith("--compression-backend") for a in argv):
@@ -64,7 +107,9 @@ def main(argv: list[str]) -> int:
 
     pfs_module.time = _frozen_time_module(epoch)
     pfs_module.uuid = _counter_uuid_module()
-    return cli_main(inject_backend(argv))
+    full_argv: list[str] = inject_backend(argv)
+    pfs_module.mp = _backend_pool_module(selected_backend(full_argv))
+    return cli_main(full_argv)
 
 
 if __name__ == "__main__":

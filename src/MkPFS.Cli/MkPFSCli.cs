@@ -3,6 +3,7 @@ using System.Reflection;
 using MkPFS.Cli.Output;
 using MkPFS.Core.Compression;
 using MkPFS.Core.Diagnostics;
+using MkPFS.Core.PFSC;
 
 namespace MkPFS.Cli;
 
@@ -40,6 +41,7 @@ public static class MkPFSCli
             return 0;
         });
         root.Subcommands.Add(BuildSelfTestCommand());
+        root.Subcommands.Add(BuildPFSCBenchCommand());
         return root;
     }
 
@@ -47,6 +49,43 @@ public static class MkPFSCli
     /// <param name="args">Process arguments.</param>
     /// <returns>Exit code.</returns>
     public static int Run(string[] args) => BuildRootCommand().Parse(args).Invoke();
+
+    // Hidden diagnostics: PFSC encode throughput for one file (compare with tools/oracle/bench.py).
+    private static Command BuildPFSCBenchCommand()
+    {
+        Argument<FileInfo> input = new("file") { Description = "File to encode" };
+        Option<int> workers = new("--cpu-count") { Description = "Compression workers (0 = auto)", DefaultValueFactory = _ => 0 };
+        Option<int> level = new("--compression-level") { Description = "zlib level", DefaultValueFactory = _ => Zlib.DefaultLevel };
+        Command command = new("bench-pfsc", "Measure PFSC encode throughput for one file.") { Hidden = true };
+        command.Arguments.Add(input);
+        command.Options.Add(workers);
+        command.Options.Add(level);
+        command.SetAction(parse =>
+        {
+            FileInfo file = parse.GetValue(input)!;
+            PFSCEncodeOptions options = new()
+            {
+                Workers = PFSCEncoder.ResolveWorkerCount(parse.GetValue(workers)),
+                Level = parse.GetValue(level),
+            };
+            string temp = Path.Combine(Path.GetTempPath(), $"mkpfs-bench-{Environment.ProcessId}.pfsc");
+            System.Diagnostics.Stopwatch watch = System.Diagnostics.Stopwatch.StartNew();
+            PFSCEncodeResult result;
+            using (FileStream source = file.OpenRead())
+            using (FileStream output = new(temp, FileMode.Create, FileAccess.ReadWrite, FileShare.None, 1 << 20, FileOptions.DeleteOnClose))
+            {
+                result = PFSCEncoder.EncodeFile(source, source.Length, output, 0, options);
+            }
+
+            double seconds = watch.Elapsed.TotalSeconds;
+            double mib = file.Length / 1048576.0;
+            Console.Out.WriteLine(string.Create(
+                System.Globalization.CultureInfo.InvariantCulture,
+                $"{mib:F1} MiB, workers={options.Workers}, level={options.Level}: {seconds:F2} s ({mib / seconds:F1} MiB/s), stored {result.StoredSize} bytes, {result.CompressedBlocks}/{result.BlockCount} blocks compressed"));
+            return 0;
+        });
+        return command;
+    }
 
     // Hidden diagnostics: proves the native zlib loads (also in Native AOT builds).
     private static Command BuildSelfTestCommand()

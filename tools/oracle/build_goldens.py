@@ -171,6 +171,14 @@ def build_case(case: Case, trees: Path, goldens: Path) -> dict[str, object]:
         if case.kind in ("file", "folder"):
             exit_codes["tree_deep"] = run_oracle(["tree", image, "--deep", *key_flags], work, "tree_deep.log")
 
+    # Every stored compressed block must be exactly what Python zlib produces, except in the
+    # ISA-L case (MkPFS worker pools used to ignore --compression-backend; see oracle.py).
+    zlib_check: dict[str, int] = {"blocks": 0, "mismatches": 0}
+    if built and case.kind != "exfat":
+        zlib_check = check_zlib_blocks(work / image, compression_level(case.flags))
+    expect_pure: bool = "isal" not in case.name
+    zlib_ok: bool = (zlib_check["mismatches"] == 0) if expect_pure else (zlib_check["mismatches"] > 0)
+
     hashes: dict[str, str] = {}
     for path in sorted(work.iterdir()):
         if path.is_file():
@@ -182,10 +190,45 @@ def build_case(case: Case, trees: Path, goldens: Path) -> dict[str, object]:
         "exit_codes": exit_codes,
         "built": built,
         "expect_ok": case.expect_ok,
-        "status_ok": built == case.expect_ok,
+        "zlib_check": zlib_check,
+        "status_ok": built == case.expect_ok and zlib_ok,
         "note": case.note,
         "sha256": hashes,
     }
+
+
+def compression_level(flags: list[str]) -> int:
+    """Return the ``--compression-level`` in ``flags`` (MkPFS default 7)."""
+    for i, flag in enumerate(flags):
+        if flag == "--compression-level" and i + 1 < len(flags):
+            return int(flags[i + 1])
+    return 7
+
+
+PFSC_SIGNATURE: bytes = b"PFSC" + struct.pack("<II", 0, 6)
+
+
+def check_zlib_blocks(image: Path, level: int) -> dict[str, int]:
+    """Re-compress every compressed PFSC block in ``image`` and count blocks Python zlib would not produce.
+
+    PFSC payloads start on 64 KiB boundaries; encrypted images are skipped (no visible magic).
+    """
+    data: bytes = image.read_bytes()
+    blocks: int = 0
+    mismatches: int = 0
+    for start in range(0, len(data) - 0x30, 0x10000):
+        if data[start : start + 12] != PFSC_SIGNATURE:
+            continue
+        count: int = struct.unpack_from("<q", data, start + 0x28)[0] // 0x10000
+        offsets: tuple[int, ...] = struct.unpack_from(f"<{count + 1}Q", data, start + 0x400)
+        for i in range(count):
+            stored: bytes = data[start + offsets[i] : start + offsets[i + 1]]
+            if len(stored) >= 0x10000:
+                continue
+            blocks += 1
+            if zlib.compress(zlib.decompress(stored), level) != stored:
+                mismatches += 1
+    return {"blocks": blocks, "mismatches": mismatches}
 
 
 def write_zlib_vectors(source: Path, out_path: Path, max_blocks: int = 512) -> int:
@@ -225,7 +268,9 @@ def build_all(out: Path) -> dict[str, object]:
     for case in cases():
         entry: dict[str, object] = build_case(case, trees, goldens)
         manifest["cases"][case.name] = entry  # type: ignore[index]
-        print(f"{'OK  ' if entry['status_ok'] else 'FAIL'} {case.name} {entry['exit_codes']}")
+        print(
+            f"{'OK  ' if entry['status_ok'] else 'FAIL'} {case.name} {entry['exit_codes']} zlib={entry['zlib_check']}"
+        )
     count: int = write_zlib_vectors(goldens / "exfat_app_basic" / "out.exfat", out / "vectors" / "zlib_vectors.bin")
     manifest["zlib_vectors"] = count
     (goldens / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8")
