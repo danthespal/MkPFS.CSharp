@@ -4,7 +4,7 @@
 PFS images (`.ffpfs`, `.ffpfsc`, `.exfat`), plus PFSC block repair ported from PS5 Game Compressor.
 
 Status: read side (`inspect`, `tree`, `unpack`, `verify`), `repair` and every `pack` mode (with the AMPR
-emulation index) done; next are the remaining verification options and `batch`.
+emulation index) done; `batch` is next.
 
 ## Usage
 
@@ -49,6 +49,9 @@ Verify structure and payloads against the source:
 ```bash
 mkpfs verify PPSA12345.ffpfsc --source-file PPSA12345.exfat
 ```
+
+`verify` also warns when compressed blocks use back-references the PS5 may decode wrongly (ISA-L
+output) and points to `mkpfs repair`.
 
 Extract the files inside the wrapped exFAT:
 

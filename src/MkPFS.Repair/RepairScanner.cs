@@ -26,7 +26,7 @@ public sealed class RepairScanResult
     /// <summary>Blocks stored compressed.</summary>
     public long CompressedBlocks { get; internal set; }
 
-    /// <summary>Per block: compressed stream the PS5 may decode wrongly (see <see cref="RepairScanner.IsRisky"/>).</summary>
+    /// <summary>Per block: compressed stream the PS5 may decode wrongly (see <see cref="DeflateInspector.IsRiskyForPS5"/>).</summary>
     public bool[] Risky { get; }
 
     /// <summary>Number of risky blocks.</summary>
@@ -57,18 +57,6 @@ public sealed class RepairScanResult
 public static class RepairScanner
 {
     private const int SlabBlocks = 256;
-
-    /// <summary>
-    /// A compressed stream is risky when it uses back-references zlib never emits (ISA-L output) or when the
-    /// stream walker cannot parse it although zlib decoded it.
-    /// </summary>
-    /// <param name="stored">zlib stream.</param>
-    /// <returns><see langword="true"/> when the block should be rewritten.</returns>
-    public static bool IsRisky(ReadOnlySpan<byte> stored)
-    {
-        DeflateStreamReport report = DeflateInspector.InspectZlib(stored, PFSCImage.BlockSize);
-        return !report.Valid || report.HasFarDistance;
-    }
 
     /// <summary>Scan an opened image.</summary>
     /// <param name="image">Image.</param>
@@ -130,7 +118,7 @@ public static class RepairScanner
                             return decoded;
                         }
 
-                        risky[index] = IsRisky(stored);
+                        risky[index] = DeflateInspector.IsRiskyForPS5(stored);
                         raw = decoded;
                     }
 

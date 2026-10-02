@@ -45,6 +45,7 @@ Both default to `tests/fixtures/generated/` (git-ignored, about 270 MB).
 | `pack file` | cpu 1 vs 4 (must match), user flags from the bad-block report, no-compress, encrypted, many files, ISA-L (repair input only) |
 | `pack folder` | exFAT-wrapped default for 3 trees |
 | `pack folder --raw` | PS5, PS4, inode 64, case-sensitive, no-compress, signed, signed 64, encrypted, encrypted + key, filters, level 1, FPT collision (CI/CS), many files, AMPR, non-ASCII (expected failure) |
+| Post-pack checks | default structure verify (`pack file`, `--raw`), `--verify` (`pack file`, `--raw`, exFAT-wrapped `pack folder`) |
 
 Logs (`*.log`) are UTF-8 with `
 ` line endings: Python runs with `PYTHONIOENCODING=utf-8` and

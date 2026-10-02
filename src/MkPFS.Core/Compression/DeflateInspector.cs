@@ -83,6 +83,18 @@ public static class DeflateInspector
         FixedDistances.Build(distances);
     }
 
+    /// <summary>
+    /// A stored PFSC block is risky when it uses back-references zlib never emits (ISA-L output, which the PS5
+    /// decoded wrongly) or when this walker cannot parse it.
+    /// </summary>
+    /// <param name="stored">zlib stream of one 64 KiB block.</param>
+    /// <returns><see langword="true"/> when the block should be rewritten (<c>mkpfs repair</c>).</returns>
+    public static bool IsRiskyForPS5(ReadOnlySpan<byte> stored)
+    {
+        DeflateStreamReport report = InspectZlib(stored, 65536);
+        return !report.Valid || report.HasFarDistance;
+    }
+
     /// <summary>Inspect a complete zlib stream.</summary>
     /// <param name="stream">zlib bytes (2-byte header, deflate data, Adler-32 trailer).</param>
     /// <param name="maxOutput">Reject streams that decode to more than this many bytes.</param>

@@ -300,6 +300,7 @@ internal static class ReadCommands
                 ExpectedCrc32 = crc,
                 ExpectedManifestSha256 = manifest,
                 Progress = ctx.CreateProgress(),
+                CheckPFSCStreams = true,
             });
             if (inspection.UrootInode >= 0 && inspection.Header is not null)
             {
@@ -307,10 +308,27 @@ internal static class ReadCommands
             }
 
             inspection.Warnings.ForEach(ctx.Warning);
+            PrintStreamCheck(ctx, path, inspection);
             inspection.Errors.ForEach(ctx.Error);
             return inspection.Errors.Count > 0 ? 1 : 0;
         });
         return command;
+    }
+
+    /// <summary>Prefix of the stream-check warning (not in Python; parity tests recognise it).</summary>
+    internal const string StreamCheckPrefix = "PFSC stream check: ";
+
+    // Not in Python: name files whose compressed blocks use back-references the PS5 misdecoded (ISA-L output).
+    // Kept out of the Warnings count so the report matches Python for images built with zlib.
+    private static void PrintStreamCheck(CliContext ctx, string path, PFSInspection inspection)
+    {
+        // repair handles the single-file wrapper (unsigned, unencrypted); other images need a repack.
+        bool repairable = inspection.FileInodes.Count == 1 && inspection.Header is { IsSigned: false, IsEncrypted: false };
+        string fix = repairable ? $"run 'mkpfs repair \"{path}\"' to rewrite them" : "repack the image to rewrite them with zlib";
+        foreach ((string file, long blocks) in inspection.RiskyBlocks)
+        {
+            ctx.Warning($"{StreamCheckPrefix}{CliContext.Thousands(blocks)} compressed block(s) in {file} use back-references the PS5 may decode wrongly; {fix}");
+        }
     }
 
     /// <summary>The <c>verify</c> report (Python <c>run_image_check</c> with <c>emit_report</c>).</summary>

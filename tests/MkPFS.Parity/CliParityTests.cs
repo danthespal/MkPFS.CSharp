@@ -70,6 +70,13 @@ public sealed partial class CliParityTests
         int exit = MkPFSCli.Run(resolved, new CliContext(stdout, stderr, useColor: false, utf8: false, progress: true));
         string actual = Normalize($"$ mkpfs {string.Join(' ', argv)}\nexit={exit}\n--- stdout\n{stdout}\n--- stderr\n{stderr}", caseDir);
 
+        // verify adds a stream-check warning Python does not have: required for the ISA-L image, absent for zlib ones.
+        string streamCheck = "WARN " + Cli.Commands.ReadCommands.StreamCheckPrefix;
+        List<string> lines = [.. actual.Split('\n')];
+        bool hasStreamCheck = lines.RemoveAll(line => line.StartsWith(streamCheck, StringComparison.Ordinal)) > 0;
+        Assert.Equal(logName == "verify.log" && caseName.Contains("isal", StringComparison.Ordinal), hasStreamCheck);
+        actual = string.Join('\n', lines);
+
         // The oracle corpus is recorded on Windows; compare paths below the case folder separator-neutral.
         Assert.Equal(NeutralSeparators(expected), NeutralSeparators(actual));
     }

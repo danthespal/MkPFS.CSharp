@@ -56,6 +56,7 @@ class Case:
     expect_ok: bool = True
     ekpfs_hex: str | None = None
     note: str = ""
+    post_flags: list[str] = field(default_factory=lambda: ["--no-verify-structure"])  # post-pack verification
 
 
 def cases() -> list[Case]:
@@ -102,6 +103,13 @@ def cases() -> list[Case]:
     for name, tree, flags, key in raw:
         out.append(Case(name, tree, "raw", ["--raw", *flags], ekpfs_hex=key))
     out.append(Case("raw_non_ascii", "non_ascii", "raw", ["--raw"], expect_ok=False))
+
+    # Post-pack verification output (default structure check, and full check with --verify).
+    out.append(Case("file_app_postcheck", "app_basic", "file", ["--compress"], post_flags=[]))
+    out.append(Case("file_app_fullcheck", "app_basic", "file", ["--compress", "--verify"], post_flags=[]))
+    out.append(Case("raw_app_postcheck", "app_basic", "raw", ["--raw"], post_flags=[]))
+    out.append(Case("raw_app_fullcheck", "app_basic", "raw", ["--raw", "--verify"], post_flags=[]))
+    out.append(Case("folder_app_fullcheck", "app_basic", "folder", ["--verify"], post_flags=[]))
     return out
 
 
@@ -152,11 +160,11 @@ def build_case(case: Case, trees: Path, goldens: Path) -> dict[str, object]:
     elif case.kind == "file":
         image = "out.ffpfsc"
         steps.append(("pre", ["pack", "exfat", "src", "in.exfat", "--overwrite", "--no-progress"]))
-        steps.append(("build", ["pack", "file", "in.exfat", image, "--no-verify-structure", *case.flags]))
+        steps.append(("build", ["pack", "file", "in.exfat", image, *case.post_flags, *case.flags]))
         verify_src = ["--source-file", "in.exfat"]
     else:
         image = "out.ffpfsc" if case.kind == "folder" else "out.ffpfs"
-        steps.append(("build", ["pack", "folder", "src", image, "--no-verify-structure",
+        steps.append(("build", ["pack", "folder", "src", image, *case.post_flags,
                                 "--no-adjust-output-file-extension", *case.flags]))  # fmt: skip
         verify_src = ["--source-dir", "src"] if case.kind == "raw" else []
 

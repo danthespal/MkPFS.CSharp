@@ -19,5 +19,6 @@
   </PropertyGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="MkPFS.Tests" />
+    <InternalsVisibleTo Include="MkPFS.Parity" />
   </ItemGroup>
 </Project>

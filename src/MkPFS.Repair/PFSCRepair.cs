@@ -144,7 +144,7 @@ public sealed class PFSCRepairResult
 /// <summary>
 /// Offline PFSC repair for single-file <c>.ffpfsc</c> images (port of PS5 Game Compressor <c>pfs_repair.c</c>).
 /// GC finds bad blocks by comparing against the image mounted on a PS5; offline, blocks come from the stream
-/// lint (<see cref="RepairScanner.IsRisky"/>) or from a GC <c>bad_blocks.tsv</c>. Marked blocks are stored raw
+/// lint (<see cref="MkPFS.Core.Compression.DeflateInspector.IsRiskyForPS5"/>) or from a GC <c>bad_blocks.tsv</c>. Marked blocks are stored raw
 /// (or recompressed with zlib), which the PS5 always decodes correctly.
 /// </summary>
 public static class PFSCRepair

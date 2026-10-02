@@ -350,6 +350,26 @@ public sealed class RepairCliTests
     }
 
     [Fact]
+    public void Verify_warns_about_risky_blocks_and_points_to_repair()
+    {
+        using TempDir dir = new();
+        string risky = Path.Combine(dir.Path, "risky.ffpfsc");
+        string clean = Path.Combine(dir.Path, "clean.ffpfsc");
+        (byte[] far, _) = FarDistance(Noise(5)[..32768]);
+        File.WriteAllBytes(risky, BuildImage([ZlibBlock(Text(1)), far, far], 3L * BlockSize));
+        File.WriteAllBytes(clean, BuildImage([ZlibBlock(Text(1))], BlockSize));
+
+        (int riskyExit, string riskyOut) = RunCli("verify", risky);
+        (int cleanExit, string cleanOut) = RunCli("verify", clean);
+
+        Assert.Equal(0, riskyExit);
+        Assert.Contains($"WARN PFSC stream check: 2 compressed block(s) in in.exfat use back-references the PS5 may decode wrongly; run 'mkpfs repair \"{risky}\"' to rewrite them", riskyOut, StringComparison.Ordinal);
+        Assert.Contains("Warnings:              0", riskyOut, StringComparison.Ordinal);
+        Assert.Equal(0, cleanExit);
+        Assert.DoesNotContain("PFSC stream check", cleanOut, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Unsupported_image_exits_1()
     {
         using TempDir dir = new();

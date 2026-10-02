@@ -2,8 +2,10 @@ using System.Buffers.Binary;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using MkPFS.Core.Compression;
 using MkPFS.Core.Crypto;
 using MkPFS.Core.Diagnostics;
+using MkPFS.Core.PFSC;
 using MkPFS.Core.Util;
 
 namespace MkPFS.Core.PFS;
@@ -41,6 +43,12 @@ public sealed record PFSInspectOptions
 
     /// <summary>Also compare file contents with <see cref="Source"/> (paths are always compared).</summary>
     public bool CompareSourceContents { get; init; } = true;
+
+    /// <summary>
+    /// With <see cref="VerifyPayloads"/>, count compressed blocks the PS5 may misdecode (ISA-L back-references,
+    /// see <see cref="DeflateInspector.IsRiskyForPS5"/>) into <see cref="PFSInspection.RiskyBlocks"/>.
+    /// </summary>
+    public bool CheckPFSCStreams { get; init; }
 
     /// <summary>Expected cumulative CRC32 of all logical payloads.</summary>
     public uint? ExpectedCrc32 { get; init; }
@@ -96,6 +104,9 @@ public sealed class PFSInspection
 
     /// <summary>Files hash-checked.</summary>
     public int CheckedFiles { get; set; }
+
+    /// <summary>Per file path: compressed blocks the PS5 may misdecode (only with <see cref="PFSInspectOptions.CheckPFSCStreams"/>).</summary>
+    public SortedDictionary<string, long> RiskyBlocks { get; } = new(StringComparer.Ordinal);
 
     /// <summary>Cumulative CRC32 of logical payloads (sorted path order).</summary>
     public uint DataCrc32 { get; set; }
@@ -258,6 +269,11 @@ public static class PFSInspector
                 result.Errors.Add($"failed to verify file payload hashes: {ex.Message}");
             }
 
+            if (options.CheckPFSCStreams)
+            {
+                CheckPFSCStreams(image, result);
+            }
+
             if (options.ExpectedCrc32 is uint crc && result.DataCrc32 != crc)
             {
                 result.Errors.Add($"CRC32 mismatch: actual 0x{result.DataCrc32:X8}, expected 0x{crc:X8}");
@@ -289,6 +305,52 @@ public static class PFSInspector
             result.CompressedFiles += inode.IsCompressed ? 1 : 0;
             result.LogicalFileBytes += Math.Max(0, inode.LogicalSize);
             result.StoredFileBytes += Math.Max(0, inode.StoredSize);
+        }
+    }
+
+    // Count risky PFSC blocks per compressed file. Undecodable payloads are already errors from the hash pass.
+    private static void CheckPFSCStreams(PFSImage image, PFSInspection result)
+    {
+        const int batch = 256;
+        foreach ((string path, long number) in result.FileInodes)
+        {
+            PFSInode inode = result.Inodes[(int)number];
+            if (!inode.IsCompressed || inode.Blocks <= 0)
+            {
+                continue;
+            }
+
+            try
+            {
+                using Stream source = inode.IsSigned ? new MemoryStream(image.ReadStoredPayload(inode), writable: false) : new PFSImageStream(image);
+                PFSCReader reader = PFSCReader.Open(source, inode.IsSigned ? 0 : image.BlockOffset(inode.Db[0]), inode.StoredSize);
+                long risky = 0;
+                List<byte[]> stored = new(batch);
+                for (long start = 0; start < reader.BlockCount; start += batch)
+                {
+                    stored.Clear();
+                    for (long i = start; i < Math.Min(reader.BlockCount, start + batch); i++)
+                    {
+                        if (reader.IsBlockCompressed(i))
+                        {
+                            byte[] block = new byte[reader.StoredLength(i)];
+                            reader.ReadStoredBlock(i, block);
+                            stored.Add(block);
+                        }
+                    }
+
+                    risky += stored.AsParallel().Count(block => DeflateInspector.IsRiskyForPS5(block));
+                }
+
+                if (risky > 0)
+                {
+                    result.RiskyBlocks[path] = risky;
+                }
+            }
+            catch (Exception ex) when (ex is IOException or InvalidDataException)
+            {
+                // Reported by the payload hash pass.
+            }
         }
     }
 

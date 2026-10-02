@@ -39,7 +39,7 @@ public sealed class MutationFuzzTests
                 byte[] mutated = Mutate(original, random);
                 File.WriteAllBytes(path, mutated);
                 string context = $"{caseName} iteration {i}";
-                Survives(context, () => PFSInspector.Inspect(path));
+                Survives(context, () => PFSInspector.Inspect(path, new PFSInspectOptions { CheckPFSCStreams = true }));
                 Survives(context, () => PFSExtractor.OpenInnerExfat(path, null, false)?.Image.Dispose());
                 Survives(context, () =>
                 {
