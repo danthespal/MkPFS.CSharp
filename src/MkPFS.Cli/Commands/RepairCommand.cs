@@ -28,49 +28,59 @@ internal static class RepairCommand
         {
             image, scan, badBlocks, recompress, mode, reportDir, noSlack, cpuCount, noProgress,
         };
-        command.SetAction(parse =>
-        {
-            string path = Path.GetFullPath(PathRules.ExpandUser(parse.GetValue(image)!));
-            if (!File.Exists(path))
-            {
-                ctx.Error($"Image not found: {path}");
-                return 1;
-            }
-
-            PFSCRepairOptions options = new()
-            {
-                ScanOnly = parse.GetValue(scan),
-                BadBlocksPath = parse.GetValue(badBlocks) is { } list ? Path.GetFullPath(PathRules.ExpandUser(list)) : null,
-                Recompress = parse.GetValue(recompress),
-                Mode = parse.GetValue(mode) switch { "in-place" => RepairMode.InPlace, "copy" => RepairMode.Copy, _ => RepairMode.Auto },
-                ReportDirectory = parse.GetValue(reportDir) is { } dir ? Path.GetFullPath(PathRules.ExpandUser(dir)) : null,
-                CleanSlack = !parse.GetValue(noSlack),
-                Workers = PFSCEncoder.ResolveWorkerCount(parse.GetValue(cpuCount)),
-                Progress = ctx.CreateProgress(!parse.GetValue(noProgress)),
-            };
-
-            ctx.VersionHeader();
-            ctx.Info($"Image:   {path}");
-            PFSCRepairResult result;
-            try
-            {
-                result = PFSCRepair.Run(path, options);
-            }
-            catch (Exception ex) when (ex is InvalidDataException or IOException or UnauthorizedAccessException)
-            {
-                ctx.Error($"Repair failed: {ex.Message}");
-                return 1;
-            }
-
-            Print(ctx, result);
-            return result.Status switch
-            {
-                RepairStatus.Failed => 1,
-                RepairStatus.RepairNeeded => ExitRepairNeeded,
-                _ => 0,
-            };
-        });
+        command.SetAction(parse => Execute(
+            ctx,
+            parse.GetValue(image)!,
+            Options(ctx, parse.GetValue(scan), parse.GetValue(badBlocks), parse.GetValue(recompress), parse.GetValue(mode)!,
+                parse.GetValue(reportDir), !parse.GetValue(noSlack), parse.GetValue(cpuCount), !parse.GetValue(noProgress))));
         return command;
+    }
+
+    /// <summary>Repair options from command-line values (also used by the GUI Repair page).</summary>
+    internal static PFSCRepairOptions Options(CliContext ctx, bool scanOnly, string? badBlocks, bool recompress, string mode, string? reportDir, bool cleanSlack, int cpuCount, bool progress) => new()
+    {
+        ScanOnly = scanOnly,
+        BadBlocksPath = badBlocks is { } list ? Path.GetFullPath(PathRules.ExpandUser(list)) : null,
+        Recompress = recompress,
+        Mode = mode switch { "in-place" => RepairMode.InPlace, "copy" => RepairMode.Copy, _ => RepairMode.Auto },
+        ReportDirectory = reportDir is { } dir ? Path.GetFullPath(PathRules.ExpandUser(dir)) : null,
+        CleanSlack = cleanSlack,
+        Workers = PFSCEncoder.ResolveWorkerCount(cpuCount),
+        Progress = ctx.CreateProgress(progress),
+    };
+
+    /// <summary>Run the repair and print its report; the GUI passes <paramref name="onResult"/> to draw the block map.</summary>
+    /// <returns>Exit code: 0, 1 on failure, or <see cref="ExitRepairNeeded"/> for a scan that found blocks to repair.</returns>
+    internal static int Execute(CliContext ctx, string imagePath, PFSCRepairOptions options, CancellationToken cancellationToken = default, Action<PFSCRepairResult>? onResult = null)
+    {
+        string path = Path.GetFullPath(PathRules.ExpandUser(imagePath));
+        if (!File.Exists(path))
+        {
+            ctx.Error($"Image not found: {path}");
+            return 1;
+        }
+
+        ctx.VersionHeader();
+        ctx.Info($"Image:   {path}");
+        PFSCRepairResult result;
+        try
+        {
+            result = PFSCRepair.Run(path, options, cancellationToken);
+        }
+        catch (Exception ex) when (ex is InvalidDataException or IOException or UnauthorizedAccessException)
+        {
+            ctx.Error($"Repair failed: {ex.Message}");
+            return 1;
+        }
+
+        onResult?.Invoke(result);
+        Print(ctx, result);
+        return result.Status switch
+        {
+            RepairStatus.Failed => 1,
+            RepairStatus.RepairNeeded => ExitRepairNeeded,
+            _ => 0,
+        };
     }
 
     private static void Print(CliContext ctx, PFSCRepairResult result)

@@ -1,0 +1,28 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MkPFS.Gui.ViewModels"
+             xmlns:v="using:MkPFS.Gui.Views"
+             xmlns:c="using:MkPFS.Gui.Controls"
+             xmlns:l="using:MkPFS.Gui.Localization"
+             x:Class="MkPFS.Gui.Views.Panels.InspectForm"
+             x:DataType="vm:InspectPanelViewModel">
+  <StackPanel Classes="form">
+    <TextBlock Text="{l:Tr meta_import}" Classes="section" Foreground="{Binding Accent}" />
+    <v:MetadataPreview DataContext="{Binding Metadata}" />
+    <Rectangle Classes="separator" />
+    <TextBlock Text="{l:Tr paths}" Classes="section" Foreground="{Binding Accent}" />
+    <c:PathField Label="{l:Tr i_image_label}" Placeholder="{l:Tr i_image_ph}" Mode="Open" Filters="PFS image:*.ffpfs *.ffpfsc|All files:*.*" Text="{Binding Image}" />
+    <Rectangle Classes="separator" />
+    <TextBlock Text="{l:Tr options}" Classes="section" Foreground="{Binding Accent}" />
+    <Grid ColumnDefinitions="*,12,*">
+      <StackPanel Grid.Column="0" Spacing="3">
+        <TextBlock Text="{l:Tr i_format}" Classes="fieldlabel" />
+        <ComboBox ItemsSource="{Binding Formats}" SelectedItem="{Binding Format}" HorizontalAlignment="Stretch" />
+      </StackPanel>
+      <StackPanel Grid.Column="2" Spacing="3">
+        <TextBlock Text="{l:Tr i_ekpfs}" Classes="fieldlabel" />
+        <TextBox Text="{Binding Ekpfs}" PlaceholderText="{l:Tr i_ekpfs_ph}" Classes="mono" />
+      </StackPanel>
+    </Grid>
+  </StackPanel>
+</UserControl>

@@ -1,0 +1,19 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:MkPFS.Gui.Controls"
+             xmlns:l="using:MkPFS.Gui.Localization"
+             x:Class="MkPFS.Gui.Controls.PathField">
+  <!-- Python PathRow: label, path entry, Browse button. -->
+  <StackPanel Spacing="3">
+    <TextBlock Text="{Binding Label, RelativeSource={RelativeSource AncestorType=c:PathField}}" Foreground="{StaticResource TextSecondary}" FontSize="12" />
+    <Grid ColumnDefinitions="*,Auto,Auto">
+      <TextBox Name="PathBox" Grid.Column="0" Margin="0,0,8,0"
+               Text="{Binding Text, RelativeSource={RelativeSource AncestorType=c:PathField}, Mode=TwoWay}"
+               PlaceholderText="{Binding Placeholder, RelativeSource={RelativeSource AncestorType=c:PathField}}" />
+      <Button Name="BrowseButton" Grid.Column="1" Content="{l:Tr browse}" MinWidth="86" HorizontalContentAlignment="Center" Click="OnBrowse" />
+      <!-- Any mode (Python PathRow "any"): separate File and Folder buttons. -->
+      <Button Name="FileButton" Grid.Column="1" Content="{l:Tr browse_file}" MinWidth="68" HorizontalContentAlignment="Center" Click="OnBrowse" IsVisible="False" />
+      <Button Name="FolderButton" Grid.Column="2" Content="{l:Tr browse_folder}" MinWidth="76" Margin="6,0,0,0" HorizontalContentAlignment="Center" Click="OnBrowseFolder" IsVisible="False" />
+    </Grid>
+  </StackPanel>
+</UserControl>

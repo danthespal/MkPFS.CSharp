@@ -20,5 +20,6 @@
   <ItemGroup>
     <InternalsVisibleTo Include="MkPFS.Tests" />
     <InternalsVisibleTo Include="MkPFS.Parity" />
+    <InternalsVisibleTo Include="mkpfs-gui" />
   </ItemGroup>
 </Project>

@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ported from Python mkpfs/gui/i18n.py; adds Repair, section and job keys. -->
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="app_subtitle" xml:space="preserve"><value>PlayStation File System</value></data>
+  <data name="browse" xml:space="preserve"><value>Browse</value></data>
+  <data name="browse_file" xml:space="preserve"><value>File</value></data>
+  <data name="browse_folder" xml:space="preserve"><value>Folder</value></data>
+  <data name="bt_compress" xml:space="preserve"><value>PFSC Compression</value></data>
+  <data name="bt_dry" xml:space="preserve"><value>Dry Run</value></data>
+  <data name="bt_err_out" xml:space="preserve"><value>✗ Output folder is required.</value></data>
+  <data name="bt_err_src" xml:space="preserve"><value>✗ Source folder is required.</value></data>
+  <data name="bt_out_label" xml:space="preserve"><value>Output Folder</value></data>
+  <data name="bt_out_ph" xml:space="preserve"><value>Select output folder…</value></data>
+  <data name="bt_overwrite" xml:space="preserve"><value>Overwrite Existing</value></data>
+  <data name="bt_preview_count" xml:space="preserve"><value>{0} item(s): {1} folder(s), {2} file(s)</value></data>
+  <data name="bt_preview_empty" xml:space="preserve"><value>Select a source folder to preview the batch queue.</value></data>
+  <data name="bt_preview_error" xml:space="preserve"><value>Unable to scan batch folder: {0}</value></data>
+  <data name="bt_preview_invalid" xml:space="preserve"><value>Select an existing folder to preview the batch queue.</value></data>
+  <data name="bt_preview_none" xml:space="preserve"><value>No packable items found.</value></data>
+  <data name="bt_preview_scanning" xml:space="preserve"><value>Scanning batch items...</value></data>
+  <data name="bt_queue" xml:space="preserve"><value>Batch Queue</value></data>
+  <data name="bt_src_label" xml:space="preserve"><value>Source Folder</value></data>
+  <data name="bt_src_ph" xml:space="preserve"><value>Select source folder…</value></data>
+  <data name="bt_subtitle" xml:space="preserve"><value>Convert multiple games at once into PFS images</value></data>
+  <data name="bt_title" xml:space="preserve"><value>Batch Convert</value></data>
+  <data name="bt_version" xml:space="preserve"><value>Version</value></data>
+  <data name="cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="cancelled" xml:space="preserve"><value>✗ Cancelled.</value></data>
+  <data name="encryption" xml:space="preserve"><value>Encryption</value></data>
+  <data name="err_process" xml:space="preserve"><value>✗ Process exited with code {0}.</value></data>
+  <data name="err_unexpected" xml:space="preserve"><value>[ERROR] Unexpected: {0}</value></data>
+  <data name="exf_cluster_size" xml:space="preserve"><value>Cluster Size</value></data>
+  <data name="exf_err_src" xml:space="preserve"><value>✗ Source folder is required.</value></data>
+  <data name="exf_out_label" xml:space="preserve"><value>Output Image</value></data>
+  <data name="exf_out_ph" xml:space="preserve"><value>Select output path…</value></data>
+  <data name="exf_overwrite" xml:space="preserve"><value>Overwrite Existing Output</value></data>
+  <data name="exf_src_label" xml:space="preserve"><value>Source Folder</value></data>
+  <data name="exf_src_ph" xml:space="preserve"><value>Select source folder…</value></data>
+  <data name="exf_subtitle" xml:space="preserve"><value>Build an EXFAT image from a source folder</value></data>
+  <data name="exf_title" xml:space="preserve"><value>Pack exFAT</value></data>
+  <data name="export_log" xml:space="preserve"><value>Export Log</value></data>
+  <data name="i_ekpfs" xml:space="preserve"><value>EKPFS Key (optional)</value></data>
+  <data name="i_ekpfs_ph" xml:space="preserve"><value>64 hex chars…</value></data>
+  <data name="i_err" xml:space="preserve"><value>✗ Image path is required.</value></data>
+  <data name="i_format" xml:space="preserve"><value>Output Format</value></data>
+  <data name="i_image_label" xml:space="preserve"><value>PFS Image</value></data>
+  <data name="i_image_ph" xml:space="preserve"><value>Select .ffpfs image…</value></data>
+  <data name="i_subtitle" xml:space="preserve"><value>View image metadata, version, block size, and warnings</value></data>
+  <data name="i_title" xml:space="preserve"><value>Inspect</value></data>
+  <data name="lang_label" xml:space="preserve"><value>Language</value></data>
+  <data name="meta_import" xml:space="preserve"><value>Import Preview</value></data>
+  <data name="nav_batch" xml:space="preserve"><value>Batch</value></data>
+  <data name="nav_inspect" xml:space="preserve"><value>Inspect</value></data>
+  <data name="nav_pack_exfat" xml:space="preserve"><value>Pack exFAT</value></data>
+  <data name="nav_pack_file" xml:space="preserve"><value>Pack File</value></data>
+  <data name="nav_pack_folder" xml:space="preserve"><value>Pack Folder</value></data>
+  <data name="nav_repair" xml:space="preserve"><value>Repair</value></data>
+  <data name="nav_tree" xml:space="preserve"><value>Tree</value></data>
+  <data name="nav_unpack" xml:space="preserve"><value>Unpack</value></data>
+  <data name="nav_verify" xml:space="preserve"><value>Verify</value></data>
+  <data name="ok" xml:space="preserve"><value>✓ Completed successfully.</value></data>
+  <data name="operations" xml:space="preserve"><value>OPERATIONS</value></data>
+  <data name="options" xml:space="preserve"><value>Options</value></data>
+  <data name="output_log" xml:space="preserve"><value>Output Log</value></data>
+  <data name="paths" xml:space="preserve"><value>Paths</value></data>
+  <data name="pf_compress" xml:space="preserve"><value>PFSC Compression</value></data>
+  <data name="pf_dry" xml:space="preserve"><value>Dry Run</value></data>
+  <data name="pf_err_out" xml:space="preserve"><value>✗ Output image path is required.</value></data>
+  <data name="pf_err_src" xml:space="preserve"><value>✗ Source folder is required.</value></data>
+  <data name="pf_out_label" xml:space="preserve"><value>Output Image</value></data>
+  <data name="pf_out_ph" xml:space="preserve"><value>Select output path…</value></data>
+  <data name="pf_signed" xml:space="preserve"><value>Signed Image</value></data>
+  <data name="pf_src_label" xml:space="preserve"><value>Source Folder</value></data>
+  <data name="pf_src_ph" xml:space="preserve"><value>Select source folder…</value></data>
+  <data name="pf_subtitle" xml:space="preserve"><value>Build a PFS image from a source directory</value></data>
+  <data name="pf_temp" xml:space="preserve"><value>Temp Folder (optional)</value></data>
+  <data name="pf_temp_ph" xml:space="preserve"><value>Custom temp folder…</value></data>
+  <data name="pf_title" xml:space="preserve"><value>Pack Folder</value></data>
+  <data name="pf_verify" xml:space="preserve"><value>Verify After Pack</value></data>
+  <data name="pf_version" xml:space="preserve"><value>Version</value></data>
+  <data name="pkf_compress" xml:space="preserve"><value>PFSC Compression</value></data>
+  <data name="pkf_cover_empty" xml:space="preserve"><value>Cover</value></data>
+  <data name="pkf_err" xml:space="preserve"><value>✗ Source file and output path are required.</value></data>
+  <data name="pkf_import" xml:space="preserve"><value>File Import</value></data>
+  <data name="pkf_meta_apr_emu" xml:space="preserve"><value>APR-EMU</value></data>
+  <data name="pkf_meta_apr_no" xml:space="preserve"><value>No</value></data>
+  <data name="pkf_meta_apr_yes" xml:space="preserve"><value>Yes</value></data>
+  <data name="pkf_meta_content_id" xml:space="preserve"><value>Content ID</value></data>
+  <data name="pkf_meta_region" xml:space="preserve"><value>Region</value></data>
+  <data name="pkf_meta_size" xml:space="preserve"><value>Size</value></data>
+  <data name="pkf_meta_title_id" xml:space="preserve"><value>Title ID</value></data>
+  <data name="pkf_meta_version" xml:space="preserve"><value>Version</value></data>
+  <data name="pkf_out_label" xml:space="preserve"><value>Output Image</value></data>
+  <data name="pkf_out_ph" xml:space="preserve"><value>Select output path…</value></data>
+  <data name="pkf_src_label" xml:space="preserve"><value>Source File</value></data>
+  <data name="pkf_src_ph" xml:space="preserve"><value>Select source file…</value></data>
+  <data name="pkf_subtitle" xml:space="preserve"><value>Wrap a single file into a PFSC compressed image</value></data>
+  <data name="pkf_temp" xml:space="preserve"><value>Temp Folder (optional)</value></data>
+  <data name="pkf_temp_ph" xml:space="preserve"><value>Custom temp folder…</value></data>
+  <data name="pkf_title" xml:space="preserve"><value>Pack File</value></data>
+  <data name="pkf_version" xml:space="preserve"><value>Version</value></data>
+  <data name="r_bad_blocks" xml:space="preserve"><value>Bad Blocks List (optional — Game Compressor TSV)</value></data>
+  <data name="r_bad_blocks_ph" xml:space="preserve"><value>bad_blocks.tsv…</value></data>
+  <data name="r_block" xml:space="preserve"><value>Block {0}</value></data>
+  <data name="r_blocks" xml:space="preserve"><value>Blocks {0}–{1}</value></data>
+  <data name="r_detail_distance" xml:space="preserve"><value>Max distance</value></data>
+  <data name="r_detail_limit" xml:space="preserve"><value>limit {0}</value></data>
+  <data name="r_detail_none" xml:space="preserve"><value>Click a cell to see its blocks.</value></data>
+  <data name="r_detail_offset" xml:space="preserve"><value>Offset</value></data>
+  <data name="r_detail_stored" xml:space="preserve"><value>Stored</value></data>
+  <data name="r_err" xml:space="preserve"><value>✗ Image path is required.</value></data>
+  <data name="r_image_label" xml:space="preserve"><value>Image (.ffpfsc)</value></data>
+  <data name="r_image_ph" xml:space="preserve"><value>Select .ffpfsc image…</value></data>
+  <data name="r_legend_bad" xml:space="preserve"><value>does not decode</value></data>
+  <data name="r_legend_raw" xml:space="preserve"><value>raw</value></data>
+  <data name="r_legend_risky" xml:space="preserve"><value>risky on PS5</value></data>
+  <data name="r_legend_zlib" xml:space="preserve"><value>zlib</value></data>
+  <data name="r_map" xml:space="preserve"><value>Block Map</value></data>
+  <data name="r_map_empty" xml:space="preserve"><value>Scan an image to see its blocks.</value></data>
+  <data name="r_map_scale" xml:space="preserve"><value>{0} blocks per cell</value></data>
+  <data name="r_map_summary" xml:space="preserve"><value>{0} blocks · {1} compressed · {2} risky</value></data>
+  <data name="r_mode" xml:space="preserve"><value>Repair Mode</value></data>
+  <data name="r_recompress" xml:space="preserve"><value>Recompress Repaired Blocks (zlib)</value></data>
+  <data name="r_report" xml:space="preserve"><value>Report Folder (optional)</value></data>
+  <data name="r_report_ph" xml:space="preserve"><value>Folder for summary.json and bad_blocks.tsv…</value></data>
+  <data name="r_scan" xml:space="preserve"><value>Scan</value></data>
+  <data name="r_slack" xml:space="preserve"><value>Clean Outer Slack</value></data>
+  <data name="r_subtitle" xml:space="preserve"><value>Rewrite PFSC blocks the PS5 may decode wrongly</value></data>
+  <data name="r_title" xml:space="preserve"><value>Repair</value></data>
+  <data name="run" xml:space="preserve"><value>Run</value></data>
+  <data name="running" xml:space="preserve"><value>Running…</value></data>
+  <data name="section_build" xml:space="preserve"><value>BUILD</value></data>
+  <data name="section_check" xml:space="preserve"><value>CHECK</value></data>
+  <data name="section_read" xml:space="preserve"><value>READ</value></data>
+  <data name="t_ekpfs" xml:space="preserve"><value>EKPFS Key (optional)</value></data>
+  <data name="t_ekpfs_ph" xml:space="preserve"><value>64 hex chars…</value></data>
+  <data name="t_err" xml:space="preserve"><value>✗ Image path is required.</value></data>
+  <data name="t_image_label" xml:space="preserve"><value>Image or Folder</value></data>
+  <data name="t_image_ph" xml:space="preserve"><value>Select an image or source folder…</value></data>
+  <data name="t_newcrypt" xml:space="preserve"><value>Use newCrypt EKPFS derivation</value></data>
+  <data name="t_subtitle" xml:space="preserve"><value>Browse the directory tree embedded in a PFS image</value></data>
+  <data name="t_title" xml:space="preserve"><value>Tree</value></data>
+  <data name="u_auto_subdir" xml:space="preserve"><value>→ Output subfolder: {0}</value></data>
+  <data name="u_ekpfs" xml:space="preserve"><value>EKPFS Key (optional)</value></data>
+  <data name="u_ekpfs_ph" xml:space="preserve"><value>64 hex chars…</value></data>
+  <data name="u_err" xml:space="preserve"><value>✗ Image and output folder are both required.</value></data>
+  <data name="u_image_label" xml:space="preserve"><value>PFS Image</value></data>
+  <data name="u_image_ph" xml:space="preserve"><value>Select .ffpfs image…</value></data>
+  <data name="u_newcrypt" xml:space="preserve"><value>Use newCrypt EKPFS derivation</value></data>
+  <data name="u_out_label" xml:space="preserve"><value>Output Folder</value></data>
+  <data name="u_out_ph" xml:space="preserve"><value>Destination folder…</value></data>
+  <data name="u_overwrite" xml:space="preserve"><value>Overwrite existing output folder</value></data>
+  <data name="u_subtitle" xml:space="preserve"><value>Extract all files from a PFS image to a destination folder</value></data>
+  <data name="u_title" xml:space="preserve"><value>Unpack</value></data>
+  <data name="v_crc32" xml:space="preserve"><value>Expected CRC32 (hex)</value></data>
+  <data name="v_crc32_ph" xml:space="preserve"><value>e.g. 7F528D1F</value></data>
+  <data name="v_ekpfs" xml:space="preserve"><value>EKPFS Key (64 hex, optional)</value></data>
+  <data name="v_ekpfs_ph" xml:space="preserve"><value>64 hex chars…</value></data>
+  <data name="v_err" xml:space="preserve"><value>✗ Image path is required.</value></data>
+  <data name="v_hashes" xml:space="preserve"><value>Expected Hashes (optional)</value></data>
+  <data name="v_image_label" xml:space="preserve"><value>PFS Image</value></data>
+  <data name="v_image_ph" xml:space="preserve"><value>Select .ffpfs image…</value></data>
+  <data name="v_newcrypt" xml:space="preserve"><value>Use newCrypt EKPFS derivation</value></data>
+  <data name="v_sha256" xml:space="preserve"><value>Expected SHA256 (64 hex)</value></data>
+  <data name="v_sha256_ph" xml:space="preserve"><value>64 hex chars…</value></data>
+  <data name="v_source_label" xml:space="preserve"><value>Source Folder (optional — payload comparison)</value></data>
+  <data name="v_source_ph" xml:space="preserve"><value>Optional source folder…</value></data>
+  <data name="v_subtitle" xml:space="preserve"><value>Validate image structure, inodes, and payload checksums</value></data>
+  <data name="v_title" xml:space="preserve"><value>Verify</value></data>
+  <data name="version_footer" xml:space="preserve"><value>v{0}</value></data>
+</root>

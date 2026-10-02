@@ -17,6 +17,7 @@ public sealed class RepairScanResult
     {
         BlockCount = blockCount;
         Risky = new bool[blockCount];
+        MaxDistances = new int[blockCount];
         Hashes = new byte[blockCount * PFSCVHash.HashSize];
     }
 
@@ -28,6 +29,9 @@ public sealed class RepairScanResult
 
     /// <summary>Per block: compressed stream the PS5 may decode wrongly (see <see cref="DeflateInspector.IsRiskyForPS5"/>).</summary>
     public bool[] Risky { get; }
+
+    /// <summary>Per block: largest back-reference distance of a compressed block (0 for raw blocks).</summary>
+    public int[] MaxDistances { get; }
 
     /// <summary>Number of risky blocks.</summary>
     public long RiskyCount { get; internal set; }
@@ -84,6 +88,7 @@ public static class RepairScanner
             byte[] slab = new byte[SlabBlocks * PFSCImage.BlockSize];
             byte[] expected = new byte[SlabBlocks * PFSCVHash.HashSize];
             bool[] risky = result.Risky;
+            int[] maxDistances = result.MaxDistances;
             string?[] errors = new string?[SlabBlocks];
             ParallelOptions parallel = new() { MaxDegreeOfParallelism = Math.Max(1, workers), CancellationToken = cancellationToken };
             long processedBytes = 0;
@@ -118,7 +123,10 @@ public static class RepairScanner
                             return decoded;
                         }
 
-                        risky[index] = DeflateInspector.IsRiskyForPS5(stored);
+                        // Same rule as DeflateInspector.IsRiskyForPS5; the report also feeds the GUI block map.
+                        DeflateStreamReport report = DeflateInspector.InspectZlib(stored, PFSCImage.BlockSize);
+                        risky[index] = !report.Valid || report.HasFarDistance;
+                        maxDistances[index] = report.MaxDistance;
                         raw = decoded;
                     }
 

@@ -1,0 +1,37 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MkPFS.Gui.ViewModels"
+             xmlns:l="using:MkPFS.Gui.Localization"
+             x:Class="MkPFS.Gui.Views.MetadataPreview"
+             x:DataType="vm:MetadataPreviewViewModel">
+  <!-- Python MetadataPreview: cover box plus title, IDs, size, version, region, APR-EMU. -->
+  <Grid ColumnDefinitions="Auto,*">
+    <Border Grid.Column="0" Classes="cover" Width="116" Height="132" Margin="0,0,14,0" VerticalAlignment="Top">
+      <Panel>
+        <TextBlock Text="{l:Tr pkf_cover_empty}" IsVisible="{Binding !HasCover}" Classes="muted" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        <Image Source="{Binding Cover}" Stretch="Uniform" Margin="8" />
+      </Panel>
+    </Border>
+    <Grid Grid.Column="1" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+      <TextBlock Grid.ColumnSpan="2" Name="GameTitle" Text="{Binding Title}" Foreground="{StaticResource TextPrimary}" FontSize="15" FontWeight="Bold" TextWrapping="Wrap" Margin="0,0,0,6" />
+      <StackPanel Grid.Row="1" Grid.Column="0" Classes="field">
+        <TextBlock Classes="label"><Run Text="{l:Tr pkf_meta_title_id}" />:</TextBlock><TextBlock Text="{Binding TitleId}" />
+      </StackPanel>
+      <StackPanel Grid.Row="1" Grid.Column="1" Classes="field">
+        <TextBlock Classes="label"><Run Text="{l:Tr pkf_meta_size}" />:</TextBlock><TextBlock Text="{Binding Size}" />
+      </StackPanel>
+      <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Classes="field">
+        <TextBlock Classes="label"><Run Text="{l:Tr pkf_meta_content_id}" />:</TextBlock><TextBlock Text="{Binding ContentId}" TextWrapping="Wrap" />
+      </StackPanel>
+      <StackPanel Grid.Row="3" Grid.Column="0" Classes="field">
+        <TextBlock Classes="label"><Run Text="{l:Tr pkf_meta_version}" />:</TextBlock><TextBlock Text="{Binding Version}" />
+      </StackPanel>
+      <StackPanel Grid.Row="3" Grid.Column="1" Classes="field">
+        <TextBlock Classes="label"><Run Text="{l:Tr pkf_meta_region}" />:</TextBlock><TextBlock Text="{Binding Region}" />
+      </StackPanel>
+      <StackPanel Grid.Row="4" Grid.Column="0" Classes="field">
+        <TextBlock Classes="label"><Run Text="{l:Tr pkf_meta_apr_emu}" />:</TextBlock><TextBlock Text="{Binding AprEmu}" />
+      </StackPanel>
+    </Grid>
+  </Grid>
+</UserControl>

@@ -1,0 +1,38 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MkPFS.Gui.ViewModels"
+             xmlns:l="using:MkPFS.Gui.Localization"
+             x:Class="MkPFS.Gui.Views.BatchQueue"
+             x:DataType="vm:BatchQueueViewModel">
+  <!-- Python BatchQueuePreview: one row per packable item, scrolling inside a fixed-height box. -->
+  <Border Classes="inset" Height="280">
+    <Panel>
+      <TextBlock Name="EmptyText" Text="{Binding Summary}" IsVisible="{Binding IsEmpty}" Classes="muted" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" />
+      <ListBox Name="Rows" Classes="queue" ItemsSource="{Binding Rows}" IsVisible="{Binding !IsEmpty}">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:BatchQueueRow">
+            <Border Classes="row">
+              <Grid ColumnDefinitions="Auto,*">
+                <Border Classes="cover" Width="70" Height="84" Margin="0,0,10,0" VerticalAlignment="Top">
+                  <Panel>
+                    <TextBlock Text="{l:Tr pkf_cover_empty}" IsVisible="{Binding !HasCover}" Classes="muted" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <Image Source="{Binding Cover}" Stretch="Uniform" Margin="5" />
+                  </Panel>
+                </Border>
+                <StackPanel Grid.Column="1" Spacing="3">
+                  <TextBlock Text="{Binding Title}" FontWeight="Bold" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding Details}" Foreground="{Binding Accent}" FontSize="12" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding ContentId}" Foreground="{StaticResource TextSecondary}" FontSize="12" TextWrapping="Wrap" />
+                  <StackPanel Orientation="Horizontal" Spacing="16" Margin="0,4,0,0">
+                    <TextBlock Text="{Binding Kind}" Classes="muted" FontSize="11" />
+                    <TextBlock Text="{Binding AprEmu}" IsVisible="{Binding AprEmu, Converter={x:Static ObjectConverters.IsNotNull}}" Foreground="#FF5CAA" FontSize="11" FontWeight="Bold" />
+                  </StackPanel>
+                </StackPanel>
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </Panel>
+  </Border>
+</UserControl>

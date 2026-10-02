@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\MkPFS.Core\MkPFS.Core.csproj" />
+    <ProjectReference Include="..\MkPFS.Build\MkPFS.Build.csproj" />
+    <ProjectReference Include="..\MkPFS.Repair\MkPFS.Repair.csproj" />
+    <ProjectReference Include="..\MkPFS.Cli\MkPFS.Cli.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="12.1.3" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.3" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.3" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+  </ItemGroup>
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>mkpfs-gui</AssemblyName>
+    <RootNamespace>MkPFS.Gui</RootNamespace>
+    <PublishAot>true</PublishAot>
+    <BuiltInComInteropSupport>false</BuiltInComInteropSupport>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+    <!-- One string table per language in the main assembly: Localizer picks the table itself, so the
+         GUI needs no satellite assemblies or culture data (InvariantGlobalization stays on). -->
+    <EmbeddedResource Update="Localization\*.resx" WithCulture="false" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="MkPFS.Gui.Tests" />
+  </ItemGroup>
+</Project>

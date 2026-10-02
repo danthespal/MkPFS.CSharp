@@ -1,0 +1,34 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MkPFS.Gui.ViewModels"
+             xmlns:v="using:MkPFS.Gui.Views"
+             xmlns:c="using:MkPFS.Gui.Controls"
+             xmlns:l="using:MkPFS.Gui.Localization"
+             x:Class="MkPFS.Gui.Views.Panels.VerifyForm"
+             x:DataType="vm:VerifyPanelViewModel">
+  <StackPanel Classes="form">
+    <TextBlock Text="{l:Tr meta_import}" Classes="section" Foreground="{Binding Accent}" />
+    <v:MetadataPreview DataContext="{Binding Metadata}" />
+    <Rectangle Classes="separator" />
+    <TextBlock Text="{l:Tr paths}" Classes="section" Foreground="{Binding Accent}" />
+    <c:PathField Label="{l:Tr v_image_label}" Placeholder="{l:Tr v_image_ph}" Mode="Open" Filters="PFS image:*.ffpfs *.ffpfsc|All files:*.*" Text="{Binding Image}" />
+    <c:PathField Label="{l:Tr v_source_label}" Placeholder="{l:Tr v_source_ph}" Mode="Folder" Text="{Binding SourceDir}" />
+    <Rectangle Classes="separator" />
+    <TextBlock Text="{l:Tr v_hashes}" Classes="section" Foreground="{Binding Accent}" />
+    <Grid ColumnDefinitions="*,12,*">
+      <StackPanel Grid.Column="0" Spacing="3">
+        <TextBlock Text="{l:Tr v_crc32}" Classes="fieldlabel" />
+        <TextBox Text="{Binding Crc32}" PlaceholderText="{l:Tr v_crc32_ph}" Classes="mono" />
+      </StackPanel>
+      <StackPanel Grid.Column="2" Spacing="3">
+        <TextBlock Text="{l:Tr v_sha256}" Classes="fieldlabel" />
+        <TextBox Text="{Binding Sha256}" PlaceholderText="{l:Tr v_sha256_ph}" Classes="mono" />
+      </StackPanel>
+    </Grid>
+    <Rectangle Classes="separator" />
+    <TextBlock Text="{l:Tr encryption}" Classes="section" Foreground="{Binding Accent}" />
+    <TextBlock Text="{l:Tr v_ekpfs}" Classes="fieldlabel" />
+    <TextBox Text="{Binding Ekpfs}" PlaceholderText="{l:Tr v_ekpfs_ph}" Classes="mono" />
+    <CheckBox Content="{l:Tr v_newcrypt}" IsChecked="{Binding NewCrypt}" />
+  </StackPanel>
+</UserControl>

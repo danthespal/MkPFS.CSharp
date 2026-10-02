@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ported from Python mkpfs/gui/i18n.py; adds Repair, section and job keys. -->
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="app_subtitle" xml:space="preserve"><value>Sistema de Archivos PlayStation</value></data>
+  <data name="browse" xml:space="preserve"><value>Buscar</value></data>
+  <data name="browse_file" xml:space="preserve"><value>Archivo</value></data>
+  <data name="browse_folder" xml:space="preserve"><value>Carpeta</value></data>
+  <data name="bt_compress" xml:space="preserve"><value>Compresión PFSC</value></data>
+  <data name="bt_dry" xml:space="preserve"><value>Simulación</value></data>
+  <data name="bt_err_out" xml:space="preserve"><value>✗ La carpeta de salida es obligatoria.</value></data>
+  <data name="bt_err_src" xml:space="preserve"><value>✗ La carpeta fuente es obligatoria.</value></data>
+  <data name="bt_out_label" xml:space="preserve"><value>Carpeta de Salida</value></data>
+  <data name="bt_out_ph" xml:space="preserve"><value>Seleccionar carpeta de salida…</value></data>
+  <data name="bt_overwrite" xml:space="preserve"><value>Sobrescribir Existente</value></data>
+  <data name="bt_preview_count" xml:space="preserve"><value>{0} elemento(s): {1} carpeta(s), {2} archivo(s)</value></data>
+  <data name="bt_preview_empty" xml:space="preserve"><value>Selecciona una carpeta fuente para previsualizar la cola del lote.</value></data>
+  <data name="bt_preview_error" xml:space="preserve"><value>No fue posible escanear la carpeta del lote: {0}</value></data>
+  <data name="bt_preview_invalid" xml:space="preserve"><value>Selecciona una carpeta existente para previsualizar la cola del lote.</value></data>
+  <data name="bt_preview_none" xml:space="preserve"><value>No se encontraron elementos empaquetables.</value></data>
+  <data name="bt_preview_scanning" xml:space="preserve"><value>Escaneando elementos del lote...</value></data>
+  <data name="bt_queue" xml:space="preserve"><value>Cola del Lote</value></data>
+  <data name="bt_src_label" xml:space="preserve"><value>Carpeta Fuente</value></data>
+  <data name="bt_src_ph" xml:space="preserve"><value>Seleccionar carpeta fuente…</value></data>
+  <data name="bt_subtitle" xml:space="preserve"><value>Convertir varios juegos a la vez en imágenes PFS</value></data>
+  <data name="bt_title" xml:space="preserve"><value>Convertir en Lote</value></data>
+  <data name="bt_version" xml:space="preserve"><value>Versión</value></data>
+  <data name="cancel" xml:space="preserve"><value>Cancelar</value></data>
+  <data name="cancelled" xml:space="preserve"><value>✗ Cancelado.</value></data>
+  <data name="encryption" xml:space="preserve"><value>Cifrado</value></data>
+  <data name="err_process" xml:space="preserve"><value>✗ El proceso terminó con código {0}.</value></data>
+  <data name="err_unexpected" xml:space="preserve"><value>[ERROR] Inesperado: {0}</value></data>
+  <data name="exf_cluster_size" xml:space="preserve"><value>Tamaño del Cluster</value></data>
+  <data name="exf_err_src" xml:space="preserve"><value>✗ La carpeta fuente es obligatoria.</value></data>
+  <data name="exf_out_label" xml:space="preserve"><value>Imagen de Salida</value></data>
+  <data name="exf_out_ph" xml:space="preserve"><value>Seleccionar ruta de salida…</value></data>
+  <data name="exf_overwrite" xml:space="preserve"><value>Sobrescribir Salida Existente</value></data>
+  <data name="exf_src_label" xml:space="preserve"><value>Carpeta Fuente</value></data>
+  <data name="exf_src_ph" xml:space="preserve"><value>Seleccionar carpeta fuente…</value></data>
+  <data name="exf_subtitle" xml:space="preserve"><value>Construir una imagen EXFAT desde un directorio fuente</value></data>
+  <data name="exf_title" xml:space="preserve"><value>Empaquetar EXFAT</value></data>
+  <data name="export_log" xml:space="preserve"><value>Exportar Registro</value></data>
+  <data name="i_ekpfs" xml:space="preserve"><value>Clave EKPFS (opcional)</value></data>
+  <data name="i_ekpfs_ph" xml:space="preserve"><value>64 caracteres hex…</value></data>
+  <data name="i_err" xml:space="preserve"><value>✗ La ruta de imagen es obligatoria.</value></data>
+  <data name="i_format" xml:space="preserve"><value>Formato de Salida</value></data>
+  <data name="i_image_label" xml:space="preserve"><value>Imagen PFS</value></data>
+  <data name="i_image_ph" xml:space="preserve"><value>Seleccionar imagen .ffpfs…</value></data>
+  <data name="i_subtitle" xml:space="preserve"><value>Ver metadatos, versión, tamaño de bloque y advertencias</value></data>
+  <data name="i_title" xml:space="preserve"><value>Inspeccionar</value></data>
+  <data name="lang_label" xml:space="preserve"><value>Idioma</value></data>
+  <data name="meta_import" xml:space="preserve"><value>Vista Previa de Importación</value></data>
+  <data name="nav_batch" xml:space="preserve"><value>Lote</value></data>
+  <data name="nav_inspect" xml:space="preserve"><value>Inspeccionar</value></data>
+  <data name="nav_pack_exfat" xml:space="preserve"><value>Empaquetar EXFAT</value></data>
+  <data name="nav_pack_file" xml:space="preserve"><value>Empaquetar Archivo</value></data>
+  <data name="nav_pack_folder" xml:space="preserve"><value>Empaquetar Carpeta</value></data>
+  <data name="nav_repair" xml:space="preserve"><value>Reparar</value></data>
+  <data name="nav_tree" xml:space="preserve"><value>Árbol</value></data>
+  <data name="nav_unpack" xml:space="preserve"><value>Desempaquetar</value></data>
+  <data name="nav_verify" xml:space="preserve"><value>Verificar</value></data>
+  <data name="ok" xml:space="preserve"><value>✓ Completado con éxito.</value></data>
+  <data name="operations" xml:space="preserve"><value>OPERACIONES</value></data>
+  <data name="options" xml:space="preserve"><value>Opciones</value></data>
+  <data name="output_log" xml:space="preserve"><value>Registro de Salida</value></data>
+  <data name="paths" xml:space="preserve"><value>Rutas</value></data>
+  <data name="pf_compress" xml:space="preserve"><value>Compresión PFSC</value></data>
+  <data name="pf_dry" xml:space="preserve"><value>Simulación (Dry Run)</value></data>
+  <data name="pf_err_out" xml:space="preserve"><value>✗ La ruta de salida es obligatoria.</value></data>
+  <data name="pf_err_src" xml:space="preserve"><value>✗ La carpeta fuente es obligatoria.</value></data>
+  <data name="pf_out_label" xml:space="preserve"><value>Imagen de Salida</value></data>
+  <data name="pf_out_ph" xml:space="preserve"><value>Seleccionar ruta de salida…</value></data>
+  <data name="pf_signed" xml:space="preserve"><value>Imagen Firmada</value></data>
+  <data name="pf_src_label" xml:space="preserve"><value>Carpeta Fuente</value></data>
+  <data name="pf_src_ph" xml:space="preserve"><value>Seleccionar carpeta fuente…</value></data>
+  <data name="pf_subtitle" xml:space="preserve"><value>Construir una imagen PFS desde un directorio fuente</value></data>
+  <data name="pf_temp" xml:space="preserve"><value>Carpeta Temporal (opcional)</value></data>
+  <data name="pf_temp_ph" xml:space="preserve"><value>Carpeta temp personalizada…</value></data>
+  <data name="pf_title" xml:space="preserve"><value>Empaquetar Carpeta</value></data>
+  <data name="pf_verify" xml:space="preserve"><value>Verificar Tras Empaquetar</value></data>
+  <data name="pf_version" xml:space="preserve"><value>Versión</value></data>
+  <data name="pkf_compress" xml:space="preserve"><value>Compresión PFSC</value></data>
+  <data name="pkf_cover_empty" xml:space="preserve"><value>Carátula</value></data>
+  <data name="pkf_err" xml:space="preserve"><value>✗ El archivo fuente y la ruta de salida son obligatorios.</value></data>
+  <data name="pkf_import" xml:space="preserve"><value>Importación de Archivo</value></data>
+  <data name="pkf_meta_apr_emu" xml:space="preserve"><value>APR-EMU</value></data>
+  <data name="pkf_meta_apr_no" xml:space="preserve"><value>No</value></data>
+  <data name="pkf_meta_apr_yes" xml:space="preserve"><value>Sí</value></data>
+  <data name="pkf_meta_content_id" xml:space="preserve"><value>Content ID</value></data>
+  <data name="pkf_meta_region" xml:space="preserve"><value>Región</value></data>
+  <data name="pkf_meta_size" xml:space="preserve"><value>Tamaño</value></data>
+  <data name="pkf_meta_title_id" xml:space="preserve"><value>Title ID</value></data>
+  <data name="pkf_meta_version" xml:space="preserve"><value>Versión</value></data>
+  <data name="pkf_out_label" xml:space="preserve"><value>Imagen de Salida</value></data>
+  <data name="pkf_out_ph" xml:space="preserve"><value>Seleccionar ruta de salida…</value></data>
+  <data name="pkf_src_label" xml:space="preserve"><value>Archivo Fuente</value></data>
+  <data name="pkf_src_ph" xml:space="preserve"><value>Seleccionar archivo fuente…</value></data>
+  <data name="pkf_subtitle" xml:space="preserve"><value>Envolver un solo archivo en una imagen PFSC comprimida</value></data>
+  <data name="pkf_temp" xml:space="preserve"><value>Carpeta Temporal (opcional)</value></data>
+  <data name="pkf_temp_ph" xml:space="preserve"><value>Carpeta temp personalizada…</value></data>
+  <data name="pkf_title" xml:space="preserve"><value>Empaquetar Archivo</value></data>
+  <data name="pkf_version" xml:space="preserve"><value>Versión</value></data>
+  <data name="r_bad_blocks" xml:space="preserve"><value>Lista de Bloques Dañados (opcional — TSV de Game Compressor)</value></data>
+  <data name="r_bad_blocks_ph" xml:space="preserve"><value>bad_blocks.tsv…</value></data>
+  <data name="r_block" xml:space="preserve"><value>Bloque {0}</value></data>
+  <data name="r_blocks" xml:space="preserve"><value>Bloques {0}–{1}</value></data>
+  <data name="r_detail_distance" xml:space="preserve"><value>Distancia máx.</value></data>
+  <data name="r_detail_limit" xml:space="preserve"><value>límite {0}</value></data>
+  <data name="r_detail_none" xml:space="preserve"><value>Haga clic en una celda para ver sus bloques.</value></data>
+  <data name="r_detail_offset" xml:space="preserve"><value>Desplazamiento</value></data>
+  <data name="r_detail_stored" xml:space="preserve"><value>Almacenado</value></data>
+  <data name="r_err" xml:space="preserve"><value>✗ La ruta de la imagen es obligatoria.</value></data>
+  <data name="r_image_label" xml:space="preserve"><value>Imagen (.ffpfsc)</value></data>
+  <data name="r_image_ph" xml:space="preserve"><value>Seleccione la imagen .ffpfsc…</value></data>
+  <data name="r_legend_bad" xml:space="preserve"><value>no se decodifica</value></data>
+  <data name="r_legend_raw" xml:space="preserve"><value>sin comprimir</value></data>
+  <data name="r_legend_risky" xml:space="preserve"><value>riesgoso en PS5</value></data>
+  <data name="r_legend_zlib" xml:space="preserve"><value>zlib</value></data>
+  <data name="r_map" xml:space="preserve"><value>Mapa de Bloques</value></data>
+  <data name="r_map_empty" xml:space="preserve"><value>Analice una imagen para ver sus bloques.</value></data>
+  <data name="r_map_scale" xml:space="preserve"><value>{0} bloques por celda</value></data>
+  <data name="r_map_summary" xml:space="preserve"><value>{0} bloques · {1} comprimidos · {2} riesgosos</value></data>
+  <data name="r_mode" xml:space="preserve"><value>Modo de Reparación</value></data>
+  <data name="r_recompress" xml:space="preserve"><value>Recomprimir Bloques Reparados (zlib)</value></data>
+  <data name="r_report" xml:space="preserve"><value>Carpeta de Informe (opcional)</value></data>
+  <data name="r_report_ph" xml:space="preserve"><value>Carpeta para summary.json y bad_blocks.tsv…</value></data>
+  <data name="r_scan" xml:space="preserve"><value>Analizar</value></data>
+  <data name="r_slack" xml:space="preserve"><value>Limpiar Holgura Externa</value></data>
+  <data name="r_subtitle" xml:space="preserve"><value>Reescribir bloques PFSC que la PS5 puede decodificar mal</value></data>
+  <data name="r_title" xml:space="preserve"><value>Reparar</value></data>
+  <data name="run" xml:space="preserve"><value>Ejecutar</value></data>
+  <data name="running" xml:space="preserve"><value>Ejecutando…</value></data>
+  <data name="section_build" xml:space="preserve"><value>CONSTRUIR</value></data>
+  <data name="section_check" xml:space="preserve"><value>COMPROBAR</value></data>
+  <data name="section_read" xml:space="preserve"><value>LEER</value></data>
+  <data name="t_ekpfs" xml:space="preserve"><value>Clave EKPFS (opcional)</value></data>
+  <data name="t_ekpfs_ph" xml:space="preserve"><value>64 caracteres hex…</value></data>
+  <data name="t_err" xml:space="preserve"><value>✗ La ruta de imagen es obligatoria.</value></data>
+  <data name="t_image_label" xml:space="preserve"><value>Imagen o Carpeta</value></data>
+  <data name="t_image_ph" xml:space="preserve"><value>Seleccionar imagen o carpeta fuente…</value></data>
+  <data name="t_newcrypt" xml:space="preserve"><value>Usar derivación newCrypt EKPFS</value></data>
+  <data name="t_subtitle" xml:space="preserve"><value>Explorar el árbol de directorios embebido en una imagen PFS</value></data>
+  <data name="t_title" xml:space="preserve"><value>Árbol</value></data>
+  <data name="u_auto_subdir" xml:space="preserve"><value>→ Subcarpeta de salida: {0}</value></data>
+  <data name="u_ekpfs" xml:space="preserve"><value>Clave EKPFS (opcional)</value></data>
+  <data name="u_ekpfs_ph" xml:space="preserve"><value>64 caracteres hex…</value></data>
+  <data name="u_err" xml:space="preserve"><value>✗ La imagen y la carpeta de destino son obligatorias.</value></data>
+  <data name="u_image_label" xml:space="preserve"><value>Imagen PFS</value></data>
+  <data name="u_image_ph" xml:space="preserve"><value>Seleccionar imagen .ffpfs…</value></data>
+  <data name="u_newcrypt" xml:space="preserve"><value>Usar derivación newCrypt EKPFS</value></data>
+  <data name="u_out_label" xml:space="preserve"><value>Carpeta de Destino</value></data>
+  <data name="u_out_ph" xml:space="preserve"><value>Carpeta de destino…</value></data>
+  <data name="u_overwrite" xml:space="preserve"><value>Sobrescribir carpeta de salida existente</value></data>
+  <data name="u_subtitle" xml:space="preserve"><value>Extraer todos los archivos de una imagen PFS a una carpeta</value></data>
+  <data name="u_title" xml:space="preserve"><value>Desempaquetar</value></data>
+  <data name="v_crc32" xml:space="preserve"><value>CRC32 Esperado (hex)</value></data>
+  <data name="v_crc32_ph" xml:space="preserve"><value>ej: 7F528D1F</value></data>
+  <data name="v_ekpfs" xml:space="preserve"><value>Clave EKPFS (64 hex, opcional)</value></data>
+  <data name="v_ekpfs_ph" xml:space="preserve"><value>64 caracteres hex…</value></data>
+  <data name="v_err" xml:space="preserve"><value>✗ La ruta de imagen es obligatoria.</value></data>
+  <data name="v_hashes" xml:space="preserve"><value>Hashes Esperados (opcional)</value></data>
+  <data name="v_image_label" xml:space="preserve"><value>Imagen PFS</value></data>
+  <data name="v_image_ph" xml:space="preserve"><value>Seleccionar imagen .ffpfs…</value></data>
+  <data name="v_newcrypt" xml:space="preserve"><value>Usar derivación newCrypt EKPFS</value></data>
+  <data name="v_sha256" xml:space="preserve"><value>SHA256 Esperado (64 hex)</value></data>
+  <data name="v_sha256_ph" xml:space="preserve"><value>64 caracteres hex…</value></data>
+  <data name="v_source_label" xml:space="preserve"><value>Carpeta Fuente (opcional — comparación de payload)</value></data>
+  <data name="v_source_ph" xml:space="preserve"><value>Carpeta fuente opcional…</value></data>
+  <data name="v_subtitle" xml:space="preserve"><value>Validar estructura de imagen, inodes y checksums de payload</value></data>
+  <data name="v_title" xml:space="preserve"><value>Verificar</value></data>
+  <data name="version_footer" xml:space="preserve"><value>v{0}</value></data>
+</root>

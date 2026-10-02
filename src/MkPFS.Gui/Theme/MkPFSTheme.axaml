@@ -1,0 +1,176 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- Python gui/theme.py: deep-space backgrounds, one neon accent per panel. -->
+  <Styles.Resources>
+    <SolidColorBrush x:Key="BgDeep" Color="#0B0E17" />
+    <SolidColorBrush x:Key="BgPanel" Color="#121626" />
+    <SolidColorBrush x:Key="BgCard" Color="#181E2D" />
+    <SolidColorBrush x:Key="BgInput" Color="#1A2035" />
+    <SolidColorBrush x:Key="BorderBright" Color="#2B3553" />
+    <SolidColorBrush x:Key="TextPrimary" Color="#E8EDF5" />
+    <SolidColorBrush x:Key="TextSecondary" Color="#8892B0" />
+    <SolidColorBrush x:Key="TextMuted" Color="#4A5580" />
+    <SolidColorBrush x:Key="Brand" Color="#00C8FF" />
+    <SolidColorBrush x:Key="Success" Color="#39FF8A" />
+    <SolidColorBrush x:Key="Warning" Color="#FFB800" />
+    <SolidColorBrush x:Key="Error" Color="#FF3B5C" />
+    <FontFamily x:Key="MonoFont">Cascadia Mono, Consolas, Menlo, DejaVu Sans Mono, monospace</FontFamily>
+    <CornerRadius x:Key="CardCorner">14</CornerRadius>
+    <!-- Fluent accent (check boxes, focus) in the brand blue. -->
+    <Color x:Key="SystemAccentColor">#00C8FF</Color>
+    <Color x:Key="SystemAccentColorDark1">#00A8D6</Color>
+    <Color x:Key="SystemAccentColorLight1">#33D3FF</Color>
+  </Styles.Resources>
+
+  <Style Selector="Window">
+    <Setter Property="Background" Value="{StaticResource BgDeep}" />
+    <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+  </Style>
+
+  <!-- Section captions in the sidebar and above the log. -->
+  <Style Selector="TextBlock.caption">
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+  </Style>
+
+  <!-- Forms: section titles in the panel accent, hairline separators (Python SectionLabel, separators). -->
+  <Style Selector="StackPanel.form">
+    <Setter Property="Spacing" Value="8" />
+  </Style>
+  <Style Selector="TextBlock.section">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Margin" Value="0,4,0,2" />
+  </Style>
+  <Style Selector="Rectangle.separator">
+    <Setter Property="Height" Value="1" />
+    <Setter Property="Fill" Value="{StaticResource BorderBright}" />
+    <Setter Property="Margin" Value="0,6" />
+  </Style>
+  <Style Selector="TextBlock.fieldlabel">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
+  </Style>
+  <Style Selector="TextBox.mono">
+    <Setter Property="FontFamily" Value="{StaticResource MonoFont}" />
+  </Style>
+  <Style Selector="Border.swatch">
+    <Setter Property="Width" Value="10" />
+    <Setter Property="Height" Value="10" />
+    <Setter Property="CornerRadius" Value="2" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.muted">
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+  </Style>
+  <Style Selector="StackPanel.field">
+    <Setter Property="Orientation" Value="Horizontal" />
+    <Setter Property="Spacing" Value="8" />
+    <Setter Property="Margin" Value="0,2,14,2" />
+  </Style>
+  <Style Selector="StackPanel.field > TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+  </Style>
+  <Style Selector="StackPanel.field > TextBlock.label">
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+  </Style>
+  <Style Selector="Border.cover">
+    <Setter Property="Background" Value="{StaticResource BgInput}" />
+    <Setter Property="BorderBrush" Value="{StaticResource BorderBright}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="8" />
+  </Style>
+  <Style Selector="Border.inset">
+    <Setter Property="Background" Value="{StaticResource BgInput}" />
+    <Setter Property="BorderBrush" Value="{StaticResource BorderBright}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="8" />
+  </Style>
+  <Style Selector="Border.row">
+    <Setter Property="Background" Value="{StaticResource BgCard}" />
+    <Setter Property="BorderBrush" Value="{StaticResource BorderBright}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="10" />
+  </Style>
+  <Style Selector="ListBox.queue">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Padding" Value="6" />
+  </Style>
+  <Style Selector="ListBox.queue ListBoxItem">
+    <Setter Property="Padding" Value="0,0,0,6" />
+  </Style>
+  <Style Selector="TextBox">
+    <Setter Property="Background" Value="{StaticResource BgInput}" />
+    <Setter Property="BorderBrush" Value="{StaticResource BorderBright}" />
+    <Setter Property="CornerRadius" Value="8" />
+  </Style>
+
+  <Style Selector="Border.card">
+    <Setter Property="Background" Value="{StaticResource BgPanel}" />
+    <Setter Property="BorderBrush" Value="{StaticResource BorderBright}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{StaticResource CardCorner}" />
+    <Setter Property="Padding" Value="16" />
+  </Style>
+
+  <!-- Sidebar entries: flat radio buttons with an accent bar when selected (Python NavButton). -->
+  <Style Selector="RadioButton.nav">
+    <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="PART_Root" Background="Transparent" CornerRadius="8" Padding="12,8" Margin="8,1">
+          <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" />
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="RadioButton.nav:pointerover /template/ Border#PART_Root">
+    <Setter Property="Background" Value="{StaticResource BgCard}" />
+  </Style>
+  <Style Selector="RadioButton.nav:checked /template/ Border#PART_Root">
+    <Setter Property="Background" Value="{StaticResource BgInput}" />
+  </Style>
+  <Style Selector="RadioButton.nav:checked">
+    <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+  </Style>
+
+  <!-- Run: filled with the panel accent; Fluent's hover and pressed brushes would turn it gray. -->
+  <Style Selector="Button.run">
+    <Setter Property="Foreground" Value="{StaticResource BgDeep}" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.run:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{TemplateBinding Background}" />
+    <Setter Property="Foreground" Value="{StaticResource BgDeep}" />
+    <Setter Property="Opacity" Value="0.85" />
+  </Style>
+  <Style Selector="Button.run:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{TemplateBinding Background}" />
+    <Setter Property="Foreground" Value="{StaticResource BgDeep}" />
+    <Setter Property="Opacity" Value="0.7" />
+  </Style>
+  <Style Selector="Button.run:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{TemplateBinding Background}" />
+    <Setter Property="Foreground" Value="{StaticResource BgDeep}" />
+    <Setter Property="Opacity" Value="0.5" />
+  </Style>
+
+  <Style Selector="ListBox.log">
+    <Setter Property="Background" Value="{StaticResource BgInput}" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Padding" Value="6" />
+  </Style>
+  <Style Selector="ListBox.log ListBoxItem">
+    <Setter Property="Padding" Value="6,1" />
+    <Setter Property="MinHeight" Value="0" />
+  </Style>
+  <Style Selector="ListBox.log TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource MonoFont}" />
+    <Setter Property="FontSize" Value="12" />
+  </Style>
+</Styles>

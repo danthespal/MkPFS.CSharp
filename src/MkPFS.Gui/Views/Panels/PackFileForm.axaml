@@ -1,0 +1,21 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MkPFS.Gui.ViewModels"
+             xmlns:v="using:MkPFS.Gui.Views"
+             xmlns:c="using:MkPFS.Gui.Controls"
+             xmlns:l="using:MkPFS.Gui.Localization"
+             x:Class="MkPFS.Gui.Views.Panels.PackFileForm"
+             x:DataType="vm:PackFilePanelViewModel">
+  <StackPanel Classes="form">
+    <TextBlock Text="{l:Tr meta_import}" Classes="section" Foreground="{Binding Accent}" />
+    <v:MetadataPreview DataContext="{Binding Metadata}" />
+    <Rectangle Classes="separator" />
+    <TextBlock Text="{l:Tr paths}" Classes="section" Foreground="{Binding Accent}" />
+    <c:PathField Label="{l:Tr pkf_src_label}" Placeholder="{l:Tr pkf_src_ph}" Mode="Open" Filters="{x:Static vm:PackFilePanelViewModel.SourceFilters}" Text="{Binding Source}" />
+    <c:PathField Label="{l:Tr pkf_out_label}" Placeholder="{l:Tr pkf_out_ph}" Mode="Save" Filters="PFS image:*.ffpfsc|All files:*.*" Text="{Binding Output}" />
+    <Rectangle Classes="separator" />
+    <TextBlock Text="{l:Tr options}" Classes="section" Foreground="{Binding Accent}" />
+    <CheckBox Content="{l:Tr pkf_compress}" IsChecked="{Binding Compress}" />
+    <c:PathField Label="{l:Tr pkf_temp}" Placeholder="{l:Tr pkf_temp_ph}" Mode="Folder" Text="{Binding TempFolder}" />
+  </StackPanel>
+</UserControl>

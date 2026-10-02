@@ -1,0 +1,67 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MkPFS.Gui.ViewModels"
+             xmlns:v="using:MkPFS.Gui.Views"
+             xmlns:c="using:MkPFS.Gui.Controls"
+             xmlns:l="using:MkPFS.Gui.Localization"
+             x:Class="MkPFS.Gui.Views.Panels.RepairForm"
+             x:DataType="vm:RepairPanelViewModel">
+  <StackPanel Classes="form">
+    <TextBlock Text="{l:Tr meta_import}" Classes="section" Foreground="{Binding Accent}" />
+    <v:MetadataPreview DataContext="{Binding Metadata}" />
+    <Rectangle Classes="separator" />
+    <TextBlock Text="{l:Tr paths}" Classes="section" Foreground="{Binding Accent}" />
+    <c:PathField Label="{l:Tr r_image_label}" Placeholder="{l:Tr r_image_ph}" Mode="Open" Filters="PFSC image:*.ffpfsc|All files:*.*" Text="{Binding Image}" />
+    <c:PathField Label="{l:Tr r_bad_blocks}" Placeholder="{l:Tr r_bad_blocks_ph}" Mode="Open" Filters="Bad blocks:*.tsv|All files:*.*" Text="{Binding BadBlocks}" />
+    <c:PathField Label="{l:Tr r_report}" Placeholder="{l:Tr r_report_ph}" Mode="Folder" Text="{Binding ReportDir}" />
+    <Rectangle Classes="separator" />
+    <TextBlock Text="{l:Tr options}" Classes="section" Foreground="{Binding Accent}" />
+    <Grid ColumnDefinitions="*,12,*">
+      <StackPanel Grid.Column="0" Spacing="3">
+        <TextBlock Text="{l:Tr r_mode}" Classes="fieldlabel" />
+        <ComboBox ItemsSource="{Binding Modes}" SelectedItem="{Binding Mode}" HorizontalAlignment="Stretch" />
+      </StackPanel>
+      <StackPanel Grid.Column="2" VerticalAlignment="Bottom">
+        <CheckBox Content="{l:Tr r_recompress}" IsChecked="{Binding Recompress}" />
+        <CheckBox Content="{l:Tr r_slack}" IsChecked="{Binding CleanSlack}" />
+      </StackPanel>
+    </Grid>
+    <Rectangle Classes="separator" />
+
+    <!-- Concept C block map: one square per block (or per run of blocks), worst state wins. -->
+    <DockPanel>
+      <Button Name="ScanButton" DockPanel.Dock="Right" Content="{l:Tr r_scan}" Command="{Binding ScanCommand}" MinWidth="96" HorizontalContentAlignment="Center" />
+      <StackPanel>
+        <TextBlock Text="{l:Tr r_map}" Classes="section" Foreground="{Binding Accent}" />
+        <TextBlock Name="MapSummary" Text="{Binding MapSummary}" Classes="fieldlabel" />
+      </StackPanel>
+    </DockPanel>
+    <Border Classes="inset" Padding="10" MinHeight="80">
+      <Panel>
+        <TextBlock Text="{l:Tr r_map_empty}" IsVisible="{Binding !HasMap}" Classes="muted" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        <c:BlockMap Name="Map" Map="{Binding Map}" IsVisible="{Binding HasMap}" Cursor="Hand" />
+      </Panel>
+    </Border>
+    <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding HasMap}">
+      <StackPanel Orientation="Horizontal" Spacing="16">
+        <StackPanel Orientation="Horizontal" Spacing="6"><Border Classes="swatch" Background="#00C8FF" /><TextBlock Text="{l:Tr r_legend_zlib}" Classes="fieldlabel" /></StackPanel>
+        <StackPanel Orientation="Horizontal" Spacing="6"><Border Classes="swatch" Background="#2B3553" /><TextBlock Text="{l:Tr r_legend_raw}" Classes="fieldlabel" /></StackPanel>
+        <StackPanel Orientation="Horizontal" Spacing="6"><Border Classes="swatch" Background="#FF3B5C" /><TextBlock Text="{l:Tr r_legend_risky}" Classes="fieldlabel" /></StackPanel>
+        <StackPanel Orientation="Horizontal" Spacing="6"><Border Classes="swatch" Background="#FFB800" /><TextBlock Text="{l:Tr r_legend_bad}" Classes="fieldlabel" /></StackPanel>
+      </StackPanel>
+      <TextBlock Grid.Column="1" Text="{Binding ScaleText}" Classes="fieldlabel" />
+    </Grid>
+    <Border Classes="row" IsVisible="{Binding HasMap}">
+      <StackPanel Spacing="2">
+        <TextBlock Name="DetailsTitle" Text="{Binding DetailsTitle}" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" />
+        <ItemsControl ItemsSource="{Binding Details}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="x:String">
+              <TextBlock Text="{Binding}" FontFamily="{StaticResource MonoFont}" FontSize="12" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </Border>
+  </StackPanel>
+</UserControl>

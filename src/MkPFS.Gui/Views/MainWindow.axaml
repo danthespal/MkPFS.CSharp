@@ -1,0 +1,61 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:MkPFS.Gui.ViewModels"
+        xmlns:v="using:MkPFS.Gui.Views"
+        xmlns:l="using:MkPFS.Gui.Localization"
+        xmlns:cli="using:MkPFS.Cli"
+        x:Class="MkPFS.Gui.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="{x:Static cli:MkPFSCli.Name}" Icon="/Assets/icon.png"
+        Width="1120" Height="780" MinWidth="900" MinHeight="620">
+  <Grid ColumnDefinitions="210,*">
+    <!-- Sidebar: brand, grouped operations, language picker, version (Python _build_sidebar). -->
+    <Border Grid.Column="0" Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderBright}" BorderThickness="0,0,1,0">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Margin="16,18,16,0">
+          <TextBlock Text="{x:Static cli:MkPFSCli.Name}" FontSize="22" FontWeight="Bold" Foreground="{StaticResource Brand}" />
+          <TextBlock Text="{l:Tr app_subtitle}" FontSize="11" Foreground="{StaticResource TextMuted}" />
+          <Rectangle Height="1" Fill="{StaticResource Brand}" Margin="-6,14,-6,6" />
+        </StackPanel>
+        <TextBlock DockPanel.Dock="Bottom" Text="{Binding VersionFooter}" Classes="caption" FontWeight="Normal" HorizontalAlignment="Center" Margin="0,8,0,12" />
+        <StackPanel DockPanel.Dock="Bottom" Margin="12,0">
+          <Rectangle Height="1" Fill="{StaticResource BorderBright}" Margin="-2,0,-2,8" />
+          <TextBlock Text="{l:Tr lang_label}" Classes="caption" Margin="0,0,0,4" />
+          <ComboBox Name="LanguagePicker" HorizontalAlignment="Stretch" ItemsSource="{Binding Languages}" SelectedItem="{Binding Language}" />
+        </StackPanel>
+        <ScrollViewer>
+          <ItemsControl ItemsSource="{Binding Sections}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:NavSection">
+                <StackPanel Margin="0,8,0,0">
+                  <TextBlock Text="{Binding Title^}" Classes="caption" Margin="16,0,0,4" />
+                  <ItemsControl ItemsSource="{Binding Items}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:NavItem">
+                        <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding IsSelected}" AutomationProperties.Name="{Binding Key}">
+                          <Grid ColumnDefinitions="Auto,Auto,*">
+                            <Rectangle Width="3" Margin="-12,0,9,0" Fill="{Binding Accent}" IsVisible="{Binding IsSelected}" RadiusX="1.5" RadiusY="1.5" />
+                            <PathIcon Grid.Column="1" Data="{Binding Icon}" Width="16" Height="16" Foreground="{Binding Accent}" Margin="0,0,10,0" />
+                            <TextBlock Grid.Column="2" Text="{Binding Label}" VerticalAlignment="Center" />
+                          </Grid>
+                        </RadioButton>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </DockPanel>
+    </Border>
+
+    <ContentControl Grid.Column="1" Name="PageHost" Content="{Binding Current}">
+      <ContentControl.DataTemplates>
+        <DataTemplate DataType="vm:PanelViewModel">
+          <v:PanelView />
+        </DataTemplate>
+      </ContentControl.DataTemplates>
+    </ContentControl>
+  </Grid>
+</Window>

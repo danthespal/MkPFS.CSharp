@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Avalonia.Headless.XUnit 12 is built against xunit.v3 3.x and fails test discovery under 4.x. -->
+    <PackageReference Include="xunit.v3" Version="3.2.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Avalonia.Headless.XUnit" Version="12.1.3" />
+    <PackageReference Include="Avalonia.Skia" Version="12.1.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\MkPFS.Gui\MkPFS.Gui.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Shared builder of .ffpfsc images with chosen PFSC blocks (risky, raw, zlib). -->
+    <Compile Include="..\MkPFS.Tests\Repair\RepairImageFactory.cs" Link="Shared\RepairImageFactory.cs" />
+  </ItemGroup>
+
+</Project>

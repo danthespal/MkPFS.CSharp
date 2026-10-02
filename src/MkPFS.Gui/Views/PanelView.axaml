@@ -1,0 +1,60 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MkPFS.Gui.ViewModels"
+             xmlns:jobs="using:MkPFS.Gui.Jobs"
+             xmlns:v="using:MkPFS.Gui.Views"
+             xmlns:l="using:MkPFS.Gui.Localization"
+             xmlns:panels="using:MkPFS.Gui.Views.Panels"
+             x:Class="MkPFS.Gui.Views.PanelView"
+             x:DataType="vm:PanelViewModel">
+  <!-- Python BasePanel: fixed header; the options card, progress, output log, and Run scroll below it. -->
+  <DockPanel Margin="0,20,0,0">
+    <StackPanel DockPanel.Dock="Top" Margin="24,0,24,14">
+      <TextBlock Name="TitleText" Text="{Binding Title}" FontSize="24" FontWeight="Bold" Foreground="{Binding Accent}" />
+      <TextBlock Text="{Binding Subtitle}" Foreground="{StaticResource TextSecondary}" />
+    </StackPanel>
+
+    <ScrollViewer>
+      <StackPanel Margin="24,0,24,16">
+        <Border Classes="card">
+          <!-- The form is the page view model itself; these templates sit here so they win over the
+               page template on MainWindow, which also matches it. -->
+          <ContentControl Name="FormHost" Content="{Binding Form}" Foreground="{StaticResource TextSecondary}">
+            <ContentControl.DataTemplates>
+              <DataTemplate DataType="vm:BatchPanelViewModel"><panels:BatchForm /></DataTemplate>
+              <DataTemplate DataType="vm:PackFolderPanelViewModel"><panels:PackFolderForm /></DataTemplate>
+              <DataTemplate DataType="vm:PackExfatPanelViewModel"><panels:PackExfatForm /></DataTemplate>
+              <DataTemplate DataType="vm:PackFilePanelViewModel"><panels:PackFileForm /></DataTemplate>
+              <DataTemplate DataType="vm:VerifyPanelViewModel"><panels:VerifyForm /></DataTemplate>
+              <DataTemplate DataType="vm:RepairPanelViewModel"><panels:RepairForm /></DataTemplate>
+              <DataTemplate DataType="vm:InspectPanelViewModel"><panels:InspectForm /></DataTemplate>
+              <DataTemplate DataType="vm:TreePanelViewModel"><panels:TreeForm /></DataTemplate>
+              <DataTemplate DataType="vm:UnpackPanelViewModel"><panels:UnpackForm /></DataTemplate>
+            </ContentControl.DataTemplates>
+          </ContentControl>
+        </Border>
+
+        <ProgressBar Name="Progress" Minimum="0" Maximum="1" Value="{Binding Job.Progress}" IsIndeterminate="{Binding Job.IsIndeterminate}"
+                     Foreground="{Binding Accent}" Background="{StaticResource BgInput}" MinHeight="6" Margin="0,14,0,0" />
+        <TextBlock Name="PhaseText" Text="{Binding Job.PhaseText}" Foreground="{StaticResource TextSecondary}" FontSize="12" Margin="0,4,0,8" />
+
+        <DockPanel Margin="0,0,0,6">
+          <Button DockPanel.Dock="Right" Content="{l:Tr export_log}" Click="OnExportLog" Padding="10,3" FontSize="12" />
+          <TextBlock Text="{l:Tr output_log}" Classes="caption" Foreground="{Binding Accent}" VerticalAlignment="Center" />
+        </DockPanel>
+        <ListBox Name="Log" Classes="log" ItemsSource="{Binding Job.Lines}" Height="240">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="jobs:LogLine">
+              <TextBlock Text="{Binding Text}" Foreground="{Binding Tone, Converter={x:Static v:LogToneBrush.Instance}}" TextWrapping="Wrap" />
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,12,0,0">
+          <Button Name="CancelButton" Content="{l:Tr cancel}" Command="{Binding CancelCommand}" IsVisible="{Binding Job.IsRunning}" MinWidth="96" />
+          <Button Name="RunButton" Content="{Binding RunLabel}" Command="{Binding RunCommand}" Classes="run" Background="{Binding Accent}" MinWidth="120" />
+        </StackPanel>
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

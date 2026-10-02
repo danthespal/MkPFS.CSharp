@@ -1,0 +1,26 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MkPFS.Gui.ViewModels"
+             xmlns:v="using:MkPFS.Gui.Views"
+             xmlns:c="using:MkPFS.Gui.Controls"
+             xmlns:l="using:MkPFS.Gui.Localization"
+             x:Class="MkPFS.Gui.Views.Panels.PackFolderForm"
+             x:DataType="vm:PackFolderPanelViewModel">
+  <StackPanel Classes="form">
+    <TextBlock Text="{l:Tr meta_import}" Classes="section" Foreground="{Binding Accent}" />
+    <v:MetadataPreview DataContext="{Binding Metadata}" />
+    <Rectangle Classes="separator" />
+    <TextBlock Text="{l:Tr paths}" Classes="section" Foreground="{Binding Accent}" />
+    <c:PathField Name="SourceField" Label="{l:Tr pf_src_label}" Placeholder="{l:Tr pf_src_ph}" Mode="Folder" Text="{Binding Source}" />
+    <c:PathField Name="OutputField" Label="{l:Tr pf_out_label}" Placeholder="{l:Tr pf_out_ph}" Mode="Save" Filters="PFS image:*.ffpfs *.ffpfsc|All files:*.*" Text="{Binding Output}" />
+    <Rectangle Classes="separator" />
+    <TextBlock Text="{l:Tr options}" Classes="section" Foreground="{Binding Accent}" />
+    <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto">
+      <CheckBox Grid.Row="0" Grid.Column="0" Content="{l:Tr pf_compress}" IsChecked="{Binding Compress}" />
+      <CheckBox Grid.Row="1" Grid.Column="0" Content="{l:Tr pf_signed}" IsChecked="{Binding Signed}" />
+      <CheckBox Grid.Row="0" Grid.Column="1" Content="{l:Tr pf_dry}" IsChecked="{Binding DryRun}" />
+      <CheckBox Grid.Row="1" Grid.Column="1" Content="{l:Tr pf_verify}" IsChecked="{Binding VerifyAfter}" />
+    </Grid>
+    <c:PathField Label="{l:Tr pf_temp}" Placeholder="{l:Tr pf_temp_ph}" Mode="Folder" Text="{Binding TempFolder}" />
+  </StackPanel>
+</UserControl>

@@ -6,6 +6,8 @@ namespace MkPFS.Cli.Output;
 /// <summary>Writers and output settings shared by all commands (lets tests capture output).</summary>
 public sealed class CliContext
 {
+    private readonly IProgressSink? _progressSink;
+
     /// <summary>Create a context.</summary>
     /// <param name="stdout">Standard output.</param>
     /// <param name="stderr">Standard error.</param>
@@ -13,8 +15,10 @@ public sealed class CliContext
     /// <param name="utf8">UTF-8 icon glyphs.</param>
     /// <param name="progress">Show progress bars on stderr.</param>
     /// <param name="stdin">Standard input for prompts; end of input when <see langword="null"/>.</param>
-    public CliContext(TextWriter stdout, TextWriter stderr, bool useColor, bool utf8, bool progress, TextReader? stdin = null)
+    /// <param name="progressSink">Receives progress instead of the terminal bar (the GUI view model).</param>
+    public CliContext(TextWriter stdout, TextWriter stderr, bool useColor, bool utf8, bool progress, TextReader? stdin = null, IProgressSink? progressSink = null)
     {
+        _progressSink = progressSink;
         In = stdin ?? TextReader.Null;
         Out = stdout;
         Err = stderr;
@@ -69,7 +73,7 @@ public sealed class CliContext
     /// <summary>Progress sink on stderr, or <see langword="null"/> when disabled.</summary>
     /// <param name="enabled">Extra switch (for example <c>--no-progress</c>).</param>
     /// <returns>Sink or <see langword="null"/>.</returns>
-    public IProgressSink? CreateProgress(bool enabled = true) => ProgressEnabled && enabled ? new TerminalProgress(Err) : null;
+    public IProgressSink? CreateProgress(bool enabled = true) => ProgressEnabled && enabled ? _progressSink ?? new TerminalProgress(Err) : null;
 
     /// <summary>Python <c>f"{value:,}"</c>.</summary>
     /// <param name="value">Number.</param>

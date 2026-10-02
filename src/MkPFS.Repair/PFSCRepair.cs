@@ -139,6 +139,72 @@ public sealed class PFSCRepairResult
 
     /// <summary>Outer slack cleanup result, when it ran.</summary>
     public OuterSlackResult? Slack { get; internal set; }
+
+    /// <summary>Per-block state found by the scan (before any repair), or <see langword="null"/> when the scan did not run.</summary>
+    public PFSCBlockMap? Map { get; internal set; }
+}
+
+/// <summary>Per-block state of a scanned image, for display (GUI block map).</summary>
+public sealed class PFSCBlockMap
+{
+    /// <summary>Create a map from per-block arrays.</summary>
+    /// <param name="offsets">Stored offsets, one more than the block count.</param>
+    /// <param name="maxDistances">Largest back-reference distance per block.</param>
+    /// <param name="risky">Blocks the PS5 may decode wrongly.</param>
+    /// <param name="undecodable">Blocks that did not decode.</param>
+    public PFSCBlockMap(long[] offsets, int[] maxDistances, bool[] risky, bool[] undecodable)
+    {
+        if (offsets.LongLength != maxDistances.LongLength + 1 || risky.LongLength != maxDistances.LongLength || undecodable.LongLength != maxDistances.LongLength)
+        {
+            throw new ArgumentException("offsets must have one more entry than the per-block arrays");
+        }
+
+        Offsets = offsets;
+        MaxDistances = maxDistances;
+        Risky = risky;
+        Undecodable = undecodable;
+    }
+
+    internal PFSCBlockMap(long[] offsets, RepairScanResult scan)
+        : this(offsets, scan.MaxDistances, scan.Risky, UndecodableBlocks(scan))
+    {
+    }
+
+    /// <summary>Number of blocks.</summary>
+    public long BlockCount => MaxDistances.LongLength;
+
+    /// <summary>Stored offsets relative to the payload start, one more than <see cref="BlockCount"/>.</summary>
+    public long[] Offsets { get; }
+
+    /// <summary>Largest back-reference distance per compressed block (0 for raw blocks).</summary>
+    public int[] MaxDistances { get; }
+
+    /// <summary>Blocks the PS5 may decode wrongly.</summary>
+    public bool[] Risky { get; }
+
+    /// <summary>Blocks that did not decode.</summary>
+    public bool[] Undecodable { get; }
+
+    /// <summary>Stored length of block <paramref name="index"/>; a full block size means stored raw.</summary>
+    /// <param name="index">Block index.</param>
+    /// <returns>Bytes.</returns>
+    public int StoredLength(long index) => (int)(Offsets[index + 1] - Offsets[index]);
+
+    /// <summary>Block <paramref name="index"/> is stored raw (uncompressed).</summary>
+    /// <param name="index">Block index.</param>
+    /// <returns><see langword="true"/> for raw blocks.</returns>
+    public bool IsRaw(long index) => StoredLength(index) == PFSCImage.BlockSize;
+
+    private static bool[] UndecodableBlocks(RepairScanResult scan)
+    {
+        bool[] undecodable = new bool[scan.BlockCount];
+        foreach (BlockError error in scan.DecodeErrors)
+        {
+            undecodable[error.Block] = true;
+        }
+
+        return undecodable;
+    }
 }
 
 /// <summary>
@@ -177,6 +243,7 @@ public static class PFSCRepair
             result.NewStoredSize = image.StoredSize;
 
             scan = RepairScanner.Scan(image, PFSCVHash.SidecarPath(path), workers, options.Progress, cancellationToken);
+            result.Map = new PFSCBlockMap([.. image.Offsets], scan);
             result.CompressedBlocks = scan.CompressedBlocks;
             result.RiskyBlocks = scan.RiskyCount;
             result.HashMode = scan.HashMode;
