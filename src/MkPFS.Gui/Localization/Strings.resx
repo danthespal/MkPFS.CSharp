@@ -30,6 +30,24 @@
   <data name="bt_version" xml:space="preserve"><value>Version</value></data>
   <data name="cancel" xml:space="preserve"><value>Cancel</value></data>
   <data name="cancelled" xml:space="preserve"><value>✗ Cancelled.</value></data>
+  <data name="ct_block" xml:space="preserve"><value>Block Size (PS5 games use 64 KiB)</value></data>
+  <data name="ct_block_auto" xml:space="preserve"><value>Auto (64 KiB)</value></data>
+  <data name="ct_block_fit" xml:space="preserve"><value>Auto-fit (least padding)</value></data>
+  <data name="ct_cpu" xml:space="preserve"><value>CPU Cores (0 = auto: {0})</value></data>
+  <data name="ct_err_min_size" xml:space="preserve"><value>✗ Store Files Smaller Than must be a whole number of bytes.</value></data>
+  <data name="ct_level" xml:space="preserve"><value>Compression Level (0–9)</value></data>
+  <data name="ct_max_ratio" xml:space="preserve"><value>Max Compressed Size (% of original)</value></data>
+  <data name="ct_min_size" xml:space="preserve"><value>Store Files Smaller Than (bytes)</value></data>
+  <data name="ct_min_size_ph" xml:space="preserve"><value>Block size</value></data>
+  <data name="ct_preset" xml:space="preserve"><value>Preset</value></data>
+  <data name="ct_preset_balanced" xml:space="preserve"><value>Balanced (level 7, default)</value></data>
+  <data name="ct_preset_custom" xml:space="preserve"><value>Custom</value></data>
+  <data name="ct_preset_fast" xml:space="preserve"><value>Fast (level 1)</value></data>
+  <data name="ct_preset_low_ram" xml:space="preserve"><value>Low RAM (level 7, 1 CPU core)</value></data>
+  <data name="ct_preset_max" xml:space="preserve"><value>Max (level 9)</value></data>
+  <data name="ct_skip_exec" xml:space="preserve"><value>Skip Compression of Executables</value></data>
+  <data name="ct_threshold" xml:space="preserve"><value>Min Gain per Block (%)</value></data>
+  <data name="ct_title" xml:space="preserve"><value>Compression Tuning</value></data>
   <data name="encryption" xml:space="preserve"><value>Encryption</value></data>
   <data name="err_process" xml:space="preserve"><value>✗ Process exited with code {0}.</value></data>
   <data name="err_unexpected" xml:space="preserve"><value>[ERROR] Unexpected: {0}</value></data>

@@ -30,6 +30,24 @@
   <data name="bt_version" xml:space="preserve"><value>Versión</value></data>
   <data name="cancel" xml:space="preserve"><value>Cancelar</value></data>
   <data name="cancelled" xml:space="preserve"><value>✗ Cancelado.</value></data>
+  <data name="ct_block" xml:space="preserve"><value>Tamaño de Bloque (los juegos de PS5 usan 64 KiB)</value></data>
+  <data name="ct_block_auto" xml:space="preserve"><value>Automático (64 KiB)</value></data>
+  <data name="ct_block_fit" xml:space="preserve"><value>Ajuste automático (menos relleno)</value></data>
+  <data name="ct_cpu" xml:space="preserve"><value>Núcleos de CPU (0 = auto: {0})</value></data>
+  <data name="ct_err_min_size" xml:space="preserve"><value>✗ Almacenar Archivos Menores Que debe ser un número entero de bytes.</value></data>
+  <data name="ct_level" xml:space="preserve"><value>Nivel de Compresión (0–9)</value></data>
+  <data name="ct_max_ratio" xml:space="preserve"><value>Tamaño Comprimido Máx. (% del original)</value></data>
+  <data name="ct_min_size" xml:space="preserve"><value>Almacenar Archivos Menores Que (bytes)</value></data>
+  <data name="ct_min_size_ph" xml:space="preserve"><value>Tamaño de bloque</value></data>
+  <data name="ct_preset" xml:space="preserve"><value>Preajuste</value></data>
+  <data name="ct_preset_balanced" xml:space="preserve"><value>Equilibrado (nivel 7, predeterminado)</value></data>
+  <data name="ct_preset_custom" xml:space="preserve"><value>Personalizado</value></data>
+  <data name="ct_preset_fast" xml:space="preserve"><value>Rápido (nivel 1)</value></data>
+  <data name="ct_preset_low_ram" xml:space="preserve"><value>Poca RAM (nivel 7, 1 núcleo)</value></data>
+  <data name="ct_preset_max" xml:space="preserve"><value>Máximo (nivel 9)</value></data>
+  <data name="ct_skip_exec" xml:space="preserve"><value>No Comprimir Ejecutables</value></data>
+  <data name="ct_threshold" xml:space="preserve"><value>Ganancia Mín. por Bloque (%)</value></data>
+  <data name="ct_title" xml:space="preserve"><value>Ajuste de Compresión</value></data>
   <data name="encryption" xml:space="preserve"><value>Cifrado</value></data>
   <data name="err_process" xml:space="preserve"><value>✗ El proceso terminó con código {0}.</value></data>
   <data name="err_unexpected" xml:space="preserve"><value>[ERROR] Inesperado: {0}</value></data>

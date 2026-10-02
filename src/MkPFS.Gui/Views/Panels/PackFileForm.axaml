@@ -17,5 +17,8 @@
     <TextBlock Text="{l:Tr options}" Classes="section" Foreground="{Binding Accent}" />
     <CheckBox Content="{l:Tr pkf_compress}" IsChecked="{Binding Compress}" />
     <c:PathField Label="{l:Tr pkf_temp}" Placeholder="{l:Tr pkf_temp_ph}" Mode="Folder" Text="{Binding TempFolder}" />
+    <Rectangle Classes="separator" />
+    <TextBlock Text="{l:Tr ct_title}" Classes="section" Foreground="{Binding Accent}" />
+    <v:CompressionSettings DataContext="{Binding Compression}" />
   </StackPanel>
 </UserControl>

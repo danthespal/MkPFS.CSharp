@@ -22,5 +22,8 @@
       <CheckBox Grid.Row="1" Grid.Column="1" Content="{l:Tr pf_verify}" IsChecked="{Binding VerifyAfter}" />
     </Grid>
     <c:PathField Label="{l:Tr pf_temp}" Placeholder="{l:Tr pf_temp_ph}" Mode="Folder" Text="{Binding TempFolder}" />
+    <Rectangle Classes="separator" />
+    <TextBlock Text="{l:Tr ct_title}" Classes="section" Foreground="{Binding Accent}" />
+    <v:CompressionSettings DataContext="{Binding Compression}" />
   </StackPanel>
 </UserControl>

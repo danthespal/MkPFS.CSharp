@@ -24,5 +24,8 @@
       <CheckBox Grid.Row="0" Grid.Column="1" Content="{l:Tr bt_dry}" IsChecked="{Binding DryRun}" />
       <CheckBox Grid.Row="1" Grid.Column="1" Content="{l:Tr pf_verify}" IsChecked="{Binding VerifyAfter}" />
     </Grid>
+    <Rectangle Classes="separator" />
+    <TextBlock Text="{l:Tr ct_title}" Classes="section" Foreground="{Binding Accent}" />
+    <v:CompressionSettings DataContext="{Binding Compression}" />
   </StackPanel>
 </UserControl>

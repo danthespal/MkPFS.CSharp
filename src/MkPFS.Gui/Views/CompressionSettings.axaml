@@ -1,0 +1,50 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MkPFS.Gui.ViewModels"
+             xmlns:l="using:MkPFS.Gui.Localization"
+             x:Class="MkPFS.Gui.Views.CompressionSettings"
+             x:DataType="vm:CompressionSettingsViewModel">
+  <!-- Presets set the level and worker count; editing either switches the preset to the match or Custom. -->
+  <Grid ColumnDefinitions="*,12,*,12,*" RowDefinitions="Auto,10,Auto,10,Auto">
+    <StackPanel Grid.Row="0" Grid.Column="0" Spacing="3">
+      <TextBlock Text="{l:Tr ct_preset}" Classes="fieldlabel" />
+      <ComboBox Name="PresetPicker" ItemsSource="{Binding Presets}" SelectedItem="{Binding Preset}" HorizontalAlignment="Stretch">
+        <ComboBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:Choice"><TextBlock Text="{Binding Label}" /></DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
+    </StackPanel>
+    <StackPanel Grid.Row="0" Grid.Column="2" Spacing="3">
+      <TextBlock Text="{l:Tr ct_level}" Classes="fieldlabel" />
+      <NumericUpDown Name="LevelBox" Value="{Binding Level}" Minimum="0" Maximum="9" Increment="1" FormatString="0" />
+    </StackPanel>
+    <StackPanel Grid.Row="0" Grid.Column="4" Spacing="3">
+      <TextBlock Text="{Binding CpuLabel}" Classes="fieldlabel" />
+      <NumericUpDown Name="CpuBox" Value="{Binding CpuCount}" Minimum="0" Maximum="{Binding MaxCpu}" Increment="1" FormatString="0" />
+    </StackPanel>
+
+    <StackPanel Grid.Row="2" Grid.Column="0" Spacing="3">
+      <TextBlock Text="{l:Tr ct_block}" Classes="fieldlabel" TextTrimming="CharacterEllipsis" />
+      <ComboBox Name="BlockPicker" ItemsSource="{Binding BlockSizes}" SelectedItem="{Binding BlockSize}" HorizontalAlignment="Stretch">
+        <ComboBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:Choice"><TextBlock Text="{Binding Label}" /></DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
+    </StackPanel>
+    <StackPanel Grid.Row="2" Grid.Column="2" Spacing="3">
+      <TextBlock Text="{l:Tr ct_threshold}" Classes="fieldlabel" />
+      <NumericUpDown Value="{Binding ThresholdGain}" Minimum="0" Maximum="100" Increment="1" FormatString="0" />
+    </StackPanel>
+    <StackPanel Grid.Row="2" Grid.Column="4" Spacing="3">
+      <TextBlock Text="{l:Tr ct_max_ratio}" Classes="fieldlabel" TextTrimming="CharacterEllipsis" />
+      <NumericUpDown Value="{Binding MaxRatio}" Minimum="0" Maximum="100" Increment="1" FormatString="0" />
+    </StackPanel>
+
+    <StackPanel Grid.Row="4" Grid.Column="0" Spacing="3">
+      <TextBlock Text="{l:Tr ct_min_size}" Classes="fieldlabel" TextTrimming="CharacterEllipsis" />
+      <TextBox Text="{Binding MinCompressSize}" PlaceholderText="{l:Tr ct_min_size_ph}" />
+    </StackPanel>
+    <CheckBox Grid.Row="4" Grid.Column="2" Grid.ColumnSpan="3" Content="{l:Tr ct_skip_exec}" IsChecked="{Binding SkipExecutables}"
+              IsVisible="{Binding OfferSkipExecutables}" VerticalAlignment="Bottom" />
+  </Grid>
+</UserControl>

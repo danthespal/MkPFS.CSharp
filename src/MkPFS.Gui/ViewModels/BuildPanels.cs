@@ -13,6 +13,9 @@ public sealed partial class PackFolderPanelViewModel(Color accent, JobRunner? jo
     /// <summary>Cover and details of the source.</summary>
     public MetadataPreviewViewModel Metadata { get; } = new();
 
+    /// <summary>Compression tuning.</summary>
+    public CompressionSettingsViewModel Compression { get; } = new(allowAutoFit: true, offerSkipExecutables: true);
+
     /// <summary>Source folder.</summary>
     [ObservableProperty]
     public partial string Source { get; set; } = string.Empty;
@@ -61,7 +64,7 @@ public sealed partial class PackFolderPanelViewModel(Color accent, JobRunner? jo
         AddFlag(args, VerifyAfter, "--verify");
         AddFlag(args, DryRun, "--dry-run");
         AddOption(args, "--temp-folder", TempFolder);
-        return args;
+        return Compression.AppendTo(args, Compress, out error) ? args : null;
     }
 
     // Python _on_src_changed: preview the source and suggest <parent>/<sanitized name>.ffpfsc.
@@ -134,6 +137,9 @@ public sealed partial class PackFilePanelViewModel(Color accent, JobRunner? job 
     /// <summary>Cover and details of the source.</summary>
     public MetadataPreviewViewModel Metadata { get; } = new();
 
+    /// <summary>Compression tuning.</summary>
+    public CompressionSettingsViewModel Compression { get; } = new(allowAutoFit: true, offerSkipExecutables: false);
+
     /// <summary>Source file.</summary>
     [ObservableProperty]
     public partial string Source { get; set; } = string.Empty;
@@ -167,7 +173,7 @@ public sealed partial class PackFilePanelViewModel(Color accent, JobRunner? job 
         List<string> args = ["pack", "file", source, output];
         AddFlag(args, !Compress, "--no-compress");
         AddOption(args, "--temp-folder", TempFolder);
-        return args;
+        return Compression.AppendTo(args, Compress, out error) ? args : null;
     }
 
     partial void OnSourceChanged(string value)
@@ -182,6 +188,9 @@ public sealed partial class PackFilePanelViewModel(Color accent, JobRunner? job 
 /// <param name="job">Job runner, or <see langword="null"/> for the UI-thread runner.</param>
 public sealed partial class BatchPanelViewModel(Color accent, JobRunner? job = null) : PanelViewModel("bt_title", "bt_subtitle", accent, job)
 {
+    /// <summary>Compression tuning (batch takes no "auto-fit" block size).</summary>
+    public CompressionSettingsViewModel Compression { get; } = new(allowAutoFit: false, offerSkipExecutables: true);
+
     /// <summary>Items the batch would convert.</summary>
     public BatchQueueViewModel Queue { get; } = new(new Avalonia.Media.Immutable.ImmutableSolidColorBrush(accent));
 
@@ -228,7 +237,7 @@ public sealed partial class BatchPanelViewModel(Color accent, JobRunner? job = n
         AddFlag(args, Overwrite, "--overwrite");
         AddFlag(args, DryRun, "--dry-run");
         AddFlag(args, VerifyAfter, "--verify");
-        return args;
+        return Compression.AppendTo(args, Compress, out error) ? args : null;
     }
 
     // Python: preview the queue; the output folder defaults to the source folder.
