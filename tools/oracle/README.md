@@ -88,3 +88,10 @@ Images are platform independent.
     "missing in image" / "extra in image" error is printed twice. Port: reported once.
 11. `extract_pfs_image` and the exFAT extractors do not check that entry names stay inside the
     output folder. Port: refuses paths that escape it ("unsafe path in image").
+12. **Bug:** `exfat_writer` hashes names with Python `str.upper()` and stores the code-point count
+    as `NameLength`. exFAT requires the volume up-case table and UTF-16 units, so names with
+    characters such as `ß` (upper "SS") or ligatures, or characters outside the BMP, get a
+    NameHash or length that exFAT drivers reject. Port: up-case table and UTF-16 length (same
+    bytes for ASCII and common accented names, including every fixture).
+13. `exfat_writer` writes whatever a source file holds at read time, so a file that changes size
+    after the scan yields a corrupt volume. Port: fails with "source file changed size".

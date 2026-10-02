@@ -74,10 +74,10 @@ public sealed partial class CliParityTests
         Assert.Equal(NeutralSeparators(expected), NeutralSeparators(actual));
     }
 
-    private static string NeutralSeparators(string text) =>
+    internal static string NeutralSeparators(string text) =>
         CasePath().Replace(text, match => match.Value.Replace(@"\\", "/", StringComparison.Ordinal).Replace('\\', '/'));
 
-    private static string TreeOf(string caseName)
+    internal static string TreeOf(string caseName)
     {
         using JsonDocument manifest = Fixtures.Manifest();
         return manifest.RootElement.GetProperty("cases").GetProperty(caseName).GetProperty("tree").GetString()!;
@@ -85,7 +85,7 @@ public sealed partial class CliParityTests
 
     // Same normalization as tools/oracle/build_goldens.py: case folder -> <CASE>, progress lines dropped,
     // Python splitlines() semantics; plus the version in the banner (Python 1.0.0 vs this port).
-    private static string Normalize(string text, string caseDir)
+    internal static string Normalize(string text, string caseDir)
     {
         string root = Path.GetFullPath(caseDir);
         text = text.Replace(root.Replace("\\", "\\\\", StringComparison.Ordinal), "<CASE>", StringComparison.Ordinal)

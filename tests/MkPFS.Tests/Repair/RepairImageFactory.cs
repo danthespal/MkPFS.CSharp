@@ -85,7 +85,7 @@ internal static class RepairImageFactory
     }
 
     /// <summary>Build an image from stored blocks (65536 bytes = raw, shorter = zlib stream).</summary>
-    public static byte[] Build(IReadOnlyList<byte[]> storedBlocks, long nestedSize, string nestedName = "in.exfat")
+    public static byte[] BuildImage(IReadOnlyList<byte[]> storedBlocks, long nestedSize, string nestedName = "in.exfat")
     {
         long count = storedBlocks.Count;
         long headerSize = PFSCHeader.HeaderSize(count);

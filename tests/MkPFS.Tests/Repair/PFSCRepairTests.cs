@@ -19,7 +19,7 @@ public sealed class PFSCRepairTests
         byte[] text4 = Text(4);
         text4.AsSpan(40000).Clear();
         long nestedSize = (4L * BlockSize) + 40000;
-        byte[] image = Build([ZlibBlock(text0), risky1, noise2, risky3, ZlibBlock(text4)], nestedSize);
+        byte[] image = BuildImage([ZlibBlock(text0), risky1, noise2, risky3, ZlibBlock(text4)], nestedSize);
         return (image, [.. text0, .. decoded1, .. noise2, .. decoded3, .. text4], nestedSize);
     }
 
@@ -222,7 +222,7 @@ public sealed class PFSCRepairTests
     public void Clean_image_is_a_noop_and_slack_is_cleared()
     {
         using TempDir dir = new();
-        byte[] image = Build([ZlibBlock(Text(1)), Noise(2)], 2L * BlockSize);
+        byte[] image = BuildImage([ZlibBlock(Text(1)), Noise(2)], 2L * BlockSize);
         image[(4 * BlockSize) + 7] = 0xAA; // collision block
         image[(2 * BlockSize) + 60000] = 0xBB; // superroot tail
         image[^1] = 0xCC; // image tail after the payload
@@ -243,7 +243,7 @@ public sealed class PFSCRepairTests
     public void Slack_cleanup_skips_images_outside_the_fixed_wrapper()
     {
         using TempDir dir = new();
-        byte[] image = Build([ZlibBlock(Text(1))], BlockSize);
+        byte[] image = BuildImage([ZlibBlock(Text(1))], BlockSize);
         BinaryPrimitives.WriteUInt16LittleEndian(image.AsSpan(BlockSize + (2 * 0xA8)), 0x41C0); // odd uroot mode
         image[4 * BlockSize] = 1;
         string path = Write(dir, image);
@@ -335,7 +335,7 @@ public sealed class RepairCliTests
         using TempDir dir = new();
         string path = Path.Combine(dir.Path, "game.ffpfsc");
         (byte[] risky, _) = FarDistance(Noise(5)[..32768]);
-        File.WriteAllBytes(path, Build([ZlibBlock(Text(1)), risky], 2L * BlockSize));
+        File.WriteAllBytes(path, BuildImage([ZlibBlock(Text(1)), risky], 2L * BlockSize));
 
         (int scanExit, string scanOut) = RunCli("repair", path, "--scan");
         (int repairExit, string repairOut) = RunCli("repair", path, "--mode", "copy");

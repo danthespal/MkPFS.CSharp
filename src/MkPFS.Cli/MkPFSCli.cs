@@ -41,6 +41,7 @@ public static class MkPFSCli
             ctx.Out.WriteLine("Run 'mkpfs --help' for the available commands.");
             return 0;
         });
+        root.Subcommands.Add(Commands.PackCommands.Pack(ctx));
         root.Subcommands.Add(Commands.ReadCommands.Verify(ctx));
         root.Subcommands.Add(Commands.ReadCommands.Inspect(ctx));
         root.Subcommands.Add(Commands.ReadCommands.Tree(ctx));
