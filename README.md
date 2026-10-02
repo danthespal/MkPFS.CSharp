@@ -44,6 +44,26 @@ Get the archive for your system from the
 
 ## Usage
 
+All paths may be absolute or relative to the current directory. Replace values in angle brackets
+with your own paths; square brackets indicate an optional argument. Run `mkpfs <command> --help`
+for the parser's built-in help.
+
+### Commands at a glance
+
+| Command | Arguments | Default result | Purpose |
+|---|---|---|---|
+| `pack folder <source_dir> <image_file>` | game/homebrew folder, output path | exFAT wrapped in a compressed `.ffpfsc` | Package a game folder. |
+| `pack file <source_file> <image_file>` | input file, output path | compressed `.ffpfsc` | Package one file in a PFS container. |
+| `pack exfat <source_dir> [output]` | game/homebrew folder, optional output path | `<titleId>.exfat` beside the source | Build an uncompressed exFAT image. |
+| `batch <source_dir> <output_dir>` | directory of folders/images, destination directory | one `.ffpfsc` per discovered item | Package many inputs; existing outputs are skipped. |
+| `verify <image_file>` | image path | — | Validate an image, optionally against its source. |
+| `inspect <image_file>` | image path | text report | Show image metadata and integrity information. |
+| `tree <image_file>` | folder or image path | outer tree | List files and directories. |
+| `unpack <image_file> <output_dir>` | image path, destination directory | — | Extract an image. |
+| `repair <image_file>` | single-file `.ffpfsc` path | repairs risky blocks | Repair PFSC blocks that a PS5 may decode incorrectly. |
+
+### Common examples
+
 Pack a game folder into a `.ffpfsc` (wrapped in exFAT and compressed in one pass):
 
 ```bash
@@ -105,15 +125,131 @@ Repair blocks the PS5 may decode wrongly in a single-file `.ffpfsc`:
 mkpfs repair PPSA12345.ffpfsc
 ```
 
-- `--scan` only reports (exit code 3 when blocks need repair).
-- Repaired blocks are stored raw (or re-encoded with zlib with `--recompress`); every block is then
-  decoded again and compared with its content before the repair.
-- `--bad-blocks bad_blocks.tsv` repairs the blocks PS5 Game Compressor measured on the console.
-- `--mode auto` writes a copy and swaps it in when free space is at least 1.2× the image; otherwise
-  it rewrites in place, which corrupts the image if interrupted.
+### `pack folder` and `pack file`
 
-Run `mkpfs <command> --help` for every option. Encrypted images take `--ekpfs-key <64 hex>` (and
-`--new-crypt` for the alternate key derivation).
+Both commands require a source path and an output image path. By default, the output extension is
+changed to `.ffpfsc` when necessary. The default build is PS5, 32-bit inodes, case-insensitive,
+zlib level 7, 64 KiB blocks, and compression enabled. Direct-PFS folder builds and single-file
+builds also run a quick structure verification by default. The default exFAT-wrapped folder flow
+runs a post-pack check only when `--verify` is supplied.
+
+For the default exFAT-wrapped `pack folder` flow, compression remains enabled and the PFS block
+size remains 64 KiB. Use `--raw` to make options that control direct PFS layout or compression
+(`--no-compress`, `--block-size`, `--inode-bits`, `--max-compressed-ratio`,
+`--min-compress-size`, and `--skip-executable-compression`) take effect.
+
+| Option | Default | Meaning |
+|---|---|---|
+| `--adjust-output-file-extension` | on | Change the requested output extension to match the selected pack mode. |
+| `--no-adjust-output-file-extension` | off | Keep the output filename exactly as supplied. Cannot be combined with `--adjust-output-file-extension`. |
+| `--compress` / `--no-compress` | compression on | Enable or disable PFSC block compression. The two flags are mutually exclusive. |
+| `--threshold-gain <0-100>` | `0` | Keep a compressed block only when it saves at least this percentage. |
+| `--block-size <bytes\|auto\|auto-fit>` | `auto` (`65536`) | PFS block size; it must be a power of two from 4096 through 2097152. `auto-fit` is supported by folder packing and the spool path to reduce file-data padding. |
+| `--temp-folder <dir>` | system temporary directory | Where staged pack artifacts are written. |
+| `--version <PS4\|PS5>` | `PS5` | PFS profile version. |
+| `--inode-bits <32\|64>` | `32` | PFS inode-width mode. |
+| `--case-sensitive` / `--case-insensitive` | case-insensitive | Select the PFS name-comparison mode. The two flags are mutually exclusive. |
+| `--cpu-count <n>` | `0` (automatic) | PFSC compression workers. Automatic mode uses up to 16 workers and leaves one logical CPU free; a nonzero value is clamped to at least one. |
+| `--compression-level <0-9>` | `7` | zlib compression level. |
+| `--compression-backend <auto\|zlib-ng\|zlib\|isal>` | `auto` | Compatibility option. This port always uses zlib 1.3.1; unsupported values produce a warning. |
+| `--max-compressed-ratio <0-100>` | `100` | Do not use PFSC when its stored size exceeds this percentage of the raw file size. |
+| `--min-compress-size <bytes>` | resolved block size | Store smaller files raw without attempting PFSC compression. |
+| `--skip-executable-compression` | off | Do not compress important executable files. |
+| `--signed` | off | Build a signed PFS using a zero EKPFS/seed. It is not supported by the default exFAT-wrapped folder mode. |
+| `--encrypted` | off | Encrypt filesystem blocks with AES-XTS. |
+| `--ekpfs-key <64-hex>` | all-zero key | EKPFS key for an encrypted image; it requires `--encrypted`. |
+| `--verbose` | off | Print per-file decisions. |
+| `--dry-run` | off | Scan and report the planned layout without writing an image. |
+| `--verify` | off | Run full post-pack verification instead of the default structure-only check. |
+| `--verify-structure` / `--no-verify-structure` | structure check on | Explicitly enable or disable the default quick post-pack check. The two flags are mutually exclusive. |
+| `--skip-verification` | off | Skip all post-pack verification. It cannot be combined with `--verify`. |
+
+`pack folder` also accepts the following options:
+
+| Option | Default | Meaning |
+|---|---|---|
+| `--raw` | off | Package the source directly as a PFS `.ffpfs`, rather than making the default exFAT-wrapped `.ffpfsc`. Use this mode for `--signed`, `--inode-bits 64`, and other direct-PFS settings. |
+| `--require-game-files` | off | Refuse to pack unless `sce_sys/param.json` and `eboot.bin` are present. |
+| `--no-ampr-index` | off | Do not create `ampr_emu.index` when `fakelib/libSceAmpr.sprx` is present. |
+| `--ampr-skip-regen-if-exists` | off | When AMPR generation applies, retain a valid existing index. |
+| `--ampr-force-regen` | off | Regenerate an existing AMPR index. |
+
+`pack file` also accepts:
+
+| Option | Default | Meaning |
+|---|---|---|
+| `--use-spool` | off | Force the legacy staged/spool builder instead of direct-to-image streaming. |
+| `--rename-inner-image` / `--no-rename-inner-image` | rename on | Normalize the filename stored inside the image (the first flag explicitly selects the default), or preserve the source filename. |
+
+### `pack exfat`
+
+`mkpfs pack exfat <source_dir> [output]` creates an uncompressed exFAT image. If `output` is omitted,
+the program derives `<titleId>.exfat` beside the source directory; an output directory is also
+accepted and receives that derived filename.
+
+| Option | Default | Meaning |
+|---|---|---|
+| `--cluster-size <bytes\|auto>` | `auto` (`65536`) | exFAT cluster size. The automatic 64 KiB value is optimized for SMP/LVD. |
+| `--overwrite` | off | Replace an existing output image. |
+| `--verbose` | off | Print detailed packing output. |
+| `--no-progress` | off | Hide the progress bar written to standard error. |
+
+### `batch`
+
+`mkpfs batch <source_dir> <output_dir>` discovers packable folders and image files in `source_dir`
+and writes `.ffpfsc` images into `output_dir`. It skips existing outputs by default. Its compression,
+PFS-profile, naming, and encryption options have the same meanings and defaults as the corresponding
+`pack` options: `--compress`/`--no-compress`, `--threshold-gain`, `--block-size` (`auto` = 65536;
+`auto-fit` is not accepted), `--version`, `--inode-bits`, `--case-sensitive`/`--case-insensitive`,
+`--cpu-count`, `--compression-level`, `--compression-backend`, `--max-compressed-ratio`,
+`--min-compress-size`, `--skip-executable-compression`, `--encrypted`, `--ekpfs-key`, and `--verbose`.
+
+| Option | Default | Meaning |
+|---|---|---|
+| `--overwrite` | off | Replace images that already exist in the output directory. |
+| `--dry-run` | off | Report the conversions without writing images. |
+| `--verify` | off | Run full verification for each successful image. |
+| `--compress` / `--no-compress` | compression on | Enable or disable compression; these flags are mutually exclusive. |
+
+### Reading and extracting images
+
+Encrypted read commands accept `--ekpfs-key <64-hex>` (default: all-zero key) and `--new-crypt`
+(default: off) to select the alternate EKPFS derivation. `verify`, `tree`, and `unpack` also take
+`--format <auto|pfs|exfat>`; the default `auto` detects the format from the input.
+
+| Command | Options | Default | Meaning |
+|---|---|---|---|
+| `inspect <image_file>` | `--format <text\|json>` | `text` | Select a human-readable or JSON metadata report. |
+| `tree <image_file>` | `--deep` | off | For a PFS that wraps one exFAT image, list the files inside that exFAT. |
+| `unpack <image_file> <output_dir>` | `--overwrite` | off | Replace an existing output path. |
+|  | `--deep` | off | Extract files from an inner exFAT image instead of only the outer PFS contents. |
+|  | `--only <inner-path>` | none; repeatable | With `--deep`, extract only the named inner exFAT file or directory. |
+|  | `--no-progress` | off | Hide extraction progress on standard error. |
+| `verify <image_file>` | `--source-dir <dir>` | none | Compare hierarchy and payloads against a source folder. Cannot be combined with `--source-file`. |
+|  | `--source-file <file>` | none | Compare a single-file image to the source file; not supported for exFAT input. |
+|  | `--expect-crc32 <hex>` | none | Require this cumulative payload CRC32. |
+|  | `--expect-manifest-sha256 <64-hex>` | none | Require this manifest SHA256 digest. |
+|  | `--require-game-files` | off | Warn when `sce_sys/param.json`, `eboot.bin`, or `pfs-version.dat` is missing. |
+
+### `repair`
+
+`repair` operates on an unsigned, unencrypted, single-file `.ffpfsc`. By default it scans for risky
+compressed blocks, stores replacements raw, verifies their decoded content, and cleans unused bytes
+in the outer PFS wrapper.
+
+| Option | Default | Meaning |
+|---|---|---|
+| `--scan` | off | Report only; do not modify the image. Returns exit code 3 if blocks need repair. |
+| `--bad-blocks <file>` | none | Repair the block numbers in a PS5 Game Compressor `bad_blocks.tsv` instead of the scan's risky-block selection. |
+| `--recompress` | off | Re-encode repaired blocks with zlib level 7 instead of storing them raw. |
+| `--mode <auto\|in-place\|copy>` | `auto` | `auto` copy-replaces when free space is at least 1.2× the image, otherwise rewrites in place. `in-place` can leave an interrupted image corrupt; `copy` always uses a replacement copy. |
+| `--report-dir <dir>` | none | Write `summary.json` and `bad_blocks.tsv` to this directory. |
+| `--no-slack-cleanup` | off | Leave unused bytes in the outer PFS wrapper unchanged. |
+| `--cpu-count <n>` | `0` (all cores) | Worker count for scanning and repair. |
+| `--no-progress` | off | Hide progress output. |
+
+Exit code `0` means success, `1` means an operation failed, `2` means invalid command-line usage,
+and `repair --scan` uses `3` when it finds blocks that need repair.
 
 ### GUI
 
