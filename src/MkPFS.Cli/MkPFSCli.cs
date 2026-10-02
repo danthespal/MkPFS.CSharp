@@ -10,8 +10,11 @@ namespace MkPFS.Cli;
 /// <summary>Command-line wiring for <c>mkpfs</c>. Subcommands arrive phase by phase (see docs/PLAN.md).</summary>
 public static class MkPFSCli
 {
+    /// <summary>Product name; distinct from the Python MkPFS so users can tell the two projects apart.</summary>
+    public const string Name = "MkPFS.C#";
+
     /// <summary>Project URL shown in the header.</summary>
-    public const string ProjectUrl = "https://github.com/PSBrew/MkPFS";
+    public const string ProjectUrl = "https://github.com/danthespal/MkPFS.CSharp";
 
     /// <summary>Informational version of this build (without the source revision suffix).</summary>
     public static string Version
@@ -27,7 +30,7 @@ public static class MkPFSCli
     }
 
     /// <summary>Header line, same shape as Python <c>get_help_title</c>.</summary>
-    public static string Title => $"MkPFS {Version} - {ProjectUrl}";
+    public static string Title => $"{Name} {Version} - {ProjectUrl}";
 
     /// <summary>Build the root command.</summary>
     /// <param name="ctx">Output context.</param>

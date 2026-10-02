@@ -17,7 +17,8 @@ public sealed partial class CliParityTests
     [GeneratedRegex(@"^\s*\[[#-]+\]\s+\d+%")]
     private static partial Regex ProgressLine();
 
-    [GeneratedRegex(@"MkPFS \S+ - https://github\.com/PSBrew/MkPFS")]
+    // Python prints its own name and URL; this port prints MkPFS.C# and its repository on purpose.
+    [GeneratedRegex(@"(?:MkPFS \S+ - https://github\.com/PSBrew/MkPFS|MkPFS\.C# \S+ - https://github\.com/danthespal/MkPFS\.CSharp)")]
     private static partial Regex TitleLine();
 
     // A path below the case folder, raw or JSON-escaped: <CASE>\out.ffpfs, <CASE>\\out.ffpfs, <CASE>/out.ffpfs.
