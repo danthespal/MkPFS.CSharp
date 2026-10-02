@@ -8,7 +8,7 @@
     <AnalysisLevel>latest</AnalysisLevel>
     <Deterministic>true</Deterministic>
     <InvariantGlobalization>true</InvariantGlobalization>
-    <Version>2.0.0</Version>
+    <Version>2.0.1</Version>
     <Authors>arsenic9408</Authors>
     <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
   </PropertyGroup>

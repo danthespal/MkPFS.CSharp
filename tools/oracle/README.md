@@ -103,3 +103,11 @@ Images are platform independent.
 15. **Bug:** `batch --verify` verifies folder items against the source folder, but the image holds one
     exFAT file, so every folder item fails with "missing in image". Port: verifies the image payloads and
     compares the inner exFAT with the folder.
+16. **Bug:** `game_metadata._extract_game_title` takes the first `localizedParameters` locale in file
+    order. Retail `param.json` files list locales alphabetically, so the title shows in Arabic (`ar-AE`)
+    although `defaultLanguage` is `en-US`. Port: uses `defaultLanguage`, then `en-US`, then the first
+    locale. The fixture trees only carry `en-US`, so the metadata goldens still match.
+17. **Bug:** `verify --source-dir` compares the folder with the outer image. For an exFAT-wrapped image
+    (`pack folder` without `--raw`) the outer image holds one `.exfat`, so every game file reads
+    "missing in image". Port: compares the folder with the files inside the exFAT, unless the folder
+    holds that `.exfat` itself. The goldens only use `--source-dir` with raw images and bare exFATs.

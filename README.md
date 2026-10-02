@@ -28,16 +28,19 @@ offline PFSC block repair ported from PS5 Game Compressor.
 Get the archive for your system from the
 [releases page](https://github.com/danthespal/MkPFS.CSharp/releases) and unpack it anywhere:
 
-| System | Archive |
-|---|---|
-| Windows x64 | `mkpfs-<version>-win-x64.zip` |
-| Linux x64 | `mkpfs-<version>-linux-x64.tar.gz` |
-| macOS Apple silicon | `mkpfs-<version>-osx-arm64.tar.gz` |
+| System | Command line | Desktop app |
+|---|---|---|
+| Windows x64 | `mkpfs-<version>-win-x64.zip` | `mkpfs-gui-<version>-win-x64.zip` |
+| Linux x64 | `mkpfs-<version>-linux-x64.tar.gz` | `mkpfs-gui-<version>-linux-x64.tar.gz` |
+| macOS Apple silicon | `mkpfs-<version>-osx-arm64.tar.gz` | `mkpfs-gui-<version>-osx-arm64.tar.gz` |
 
-- Each archive holds `mkpfs` and the bundled `mkpfs_zlib` library; keep them in the same folder.
+- Keep each program in its folder with the libraries next to it (`mkpfs_zlib`, plus Skia and
+  HarfBuzz for the desktop app).
+- macOS: the desktop app is `MkPFS.C#.app`. It is not notarized, so open it the first time with
+  right-click > Open.
+- Linux: the desktop app needs X11 and fontconfig, which desktop distributions include.
 - `SHA256SUMS.txt` on the release page lists the archive checksums.
-- Check the install with `mkpfs selftest`.
-- Release archives hold the command line only for now; build the GUI from source (see below).
+- Check the command line with `mkpfs selftest`.
 
 ## Usage
 
@@ -114,7 +117,8 @@ Run `mkpfs <command> --help` for every option. Encrypted images take `--ekpfs-ke
 
 ### GUI
 
-`mkpfs-gui` runs the same commands from a window and shows their output and progress.
+`mkpfs-gui` runs the same commands from a window and shows their output and progress. From a
+source checkout:
 
 ```bash
 dotnet run --project src/MkPFS.Gui -c Release
@@ -122,6 +126,8 @@ dotnet run --project src/MkPFS.Gui -c Release
 
 - Pick a game folder or image to see its cover, title, IDs, version, region, and APR Emu marker.
 - The Batch page lists every item it will pack before you run it.
+- Pack File, Pack Folder, and Batch have compression presets (Fast, Balanced, Max, Low RAM) and
+  settings for the zlib level, CPU cores, block size, and when to keep blocks uncompressed.
 - The Repair page scans an image and draws a block map (zlib, raw, risky); click a cell for its
   offset, stored size, and largest back-reference distance.
 
@@ -134,6 +140,7 @@ dotnet run --project src/MkPFS.Gui -c Release
 - `repair` is new.
 - Bugs found in the Python version while porting are listed in
   [tools/oracle/README.md](tools/oracle/README.md); some are fixed here.
+- Switching from Python MkPFS: see [MIGRATION.md](MIGRATION.md).
 
 ## Build from source
 
@@ -196,7 +203,8 @@ uv run --project ../MkPFS python tools/oracle/build_goldens.py --check
 ### Releases
 
 Push a version tag to publish a release. The workflow reruns CI, then uploads the archives,
-`SHA256SUMS.txt`, and release notes, and marks the release as latest.
+`SHA256SUMS.txt`, and release notes, and marks the release as latest. With a `VT_API_KEY` repository
+secret (a VirusTotal API key), it also scans every archive and links the reports in the notes.
 
 ```bash
 git tag v2.0.0
