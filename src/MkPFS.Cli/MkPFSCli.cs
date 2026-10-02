@@ -45,6 +45,7 @@ public static class MkPFSCli
         root.Subcommands.Add(Commands.ReadCommands.Inspect(ctx));
         root.Subcommands.Add(Commands.ReadCommands.Tree(ctx));
         root.Subcommands.Add(Commands.ReadCommands.Unpack(ctx));
+        root.Subcommands.Add(Commands.RepairCommand.Create(ctx));
         root.Subcommands.Add(BuildSelfTestCommand());
         root.Subcommands.Add(BuildPFSCBenchCommand());
         return root;

@@ -2,6 +2,7 @@ using MkPFS.Core.Compression;
 using MkPFS.Core.Exfat;
 using MkPFS.Core.PFS;
 using MkPFS.Core.PFSC;
+using MkPFS.Repair;
 
 namespace MkPFS.Parity;
 
@@ -40,6 +41,11 @@ public sealed class MutationFuzzTests
                 string context = $"{caseName} iteration {i}";
                 Survives(context, () => PFSInspector.Inspect(path));
                 Survives(context, () => PFSExtractor.OpenInnerExfat(path, null, false)?.Image.Dispose());
+                Survives(context, () =>
+                {
+                    using PFSCImage image = PFSCImage.Open(path);
+                    RepairScanner.Scan(image, null, 1, cancellationToken: TestContext.Current.CancellationToken);
+                });
             }
         }
         finally

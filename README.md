@@ -3,7 +3,7 @@
 .NET 10 port of [MkPFS](https://github.com/PSBrew/MkPFS): build, verify, inspect and unpack PS4/PS5
 PFS images (`.ffpfs`, `.ffpfsc`, `.exfat`), plus PFSC block repair ported from PS5 Game Compressor.
 
-Status: read side done (`inspect`, `tree`, `unpack`, `verify`); image building and repair are next.
+Status: read side (`inspect`, `tree`, `unpack`, `verify`) and `repair` done; image building is next.
 
 ## Usage
 
@@ -32,6 +32,19 @@ mkpfs unpack PPSA12345.ffpfsc out --deep
 ```
 
 Encrypted images take `--ekpfs-key <64 hex>` (and `--new-crypt` for the alternate key derivation).
+
+Find and fix PFSC blocks the PS5 may decode wrongly in a single-file `.ffpfsc` (ISA-L output):
+
+```bash
+mkpfs repair PPSA12345.ffpfsc
+```
+
+- Marked blocks are stored raw (or re-encoded with zlib via `--recompress`), then every block is
+  decoded again and compared with its content before the repair.
+- `--scan` reports only (exit code 3 when blocks need repair).
+- `--bad-blocks bad_blocks.tsv` repairs the blocks PS5 Game Compressor measured on the console.
+- `--mode auto` writes a copy and replaces the image when free space is at least 1.2x the image;
+  otherwise it rewrites in place, which corrupts the image if interrupted.
 
 ## Layout
 
