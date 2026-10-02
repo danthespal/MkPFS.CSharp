@@ -214,6 +214,24 @@ public sealed class GameMetadataTests
     }
 
     [Theory]
+    [InlineData("en-US", "Batman: Legacy")]
+    [InlineData("fr-FR", "Batman : L'héritage")]
+    [InlineData("", "Batman: Legacy")] // no default: en-US
+    public void Localized_title_uses_the_default_language_not_the_first_locale(string defaultLanguage, string expected)
+    {
+        // Retail param.json lists locales alphabetically, so ar-AE comes first (oracle finding 16).
+        using TempDir dir = new();
+        string folder = dir.Dir("PPSA16833-app");
+        string defaultEntry = defaultLanguage.Length > 0 ? $"\"defaultLanguage\": \"{defaultLanguage}\", " : "";
+        dir.File(
+            "PPSA16833-app/sce_sys/param.json",
+            "{\"titleId\": \"PPSA16833\", \"localizedParameters\": {\"ar-AE\": {\"titleName\": \"ليغو باتمان\"}, " + defaultEntry
+            + "\"en-US\": {\"titleName\": \"Batman: Legacy\"}, \"fr-FR\": {\"titleName\": \"Batman : L'héritage\"}}}");
+
+        Assert.Equal(expected, GameMetadataReader.Read(folder).GameTitle);
+    }
+
+    [Theory]
     [InlineData(0, "-")]
     [InlineData(512, "512 B")]
     [InlineData(1536, "2 KB")]

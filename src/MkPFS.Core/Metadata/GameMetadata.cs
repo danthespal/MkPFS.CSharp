@@ -577,6 +577,17 @@ public static partial class GameMetadataReader
 
         if (root.TryGetProperty("localizedParameters", out JsonElement localized) && localized.ValueKind == JsonValueKind.Object)
         {
+            // Python takes the first locale in file order, usually ar-AE (oracle finding 16); prefer the declared
+            // default language, then en-US, and only then the first locale.
+            foreach (string language in new[] { StringValue(localized, "defaultLanguage"), "en-US" })
+            {
+                if (language.Length > 0 && localized.TryGetProperty(language, out JsonElement preferred) &&
+                    preferred.ValueKind == JsonValueKind.Object && StringValue(preferred, "titleName", "title", "name") is { Length: > 0 } title)
+                {
+                    return title;
+                }
+            }
+
             foreach (JsonProperty property in localized.EnumerateObject())
             {
                 if (property.Value.ValueKind == JsonValueKind.Object && StringValue(property.Value, "titleName", "title", "name") is { Length: > 0 } title)
