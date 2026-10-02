@@ -202,6 +202,6 @@ public sealed class UtilTests
 
         Assert.Equal(Path.GetFullPath(target), PathRules.ResolveTempRoot(target));
         Assert.True(Directory.Exists(target));
-        Assert.Equal(Path.GetTempPath(), PathRules.ResolveTempRoot());
+        Assert.Equal(Path.TrimEndingDirectorySeparator(Path.GetTempPath()), PathRules.ResolveTempRoot());
     }
 }

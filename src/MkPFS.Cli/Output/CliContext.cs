@@ -12,13 +12,18 @@ public sealed class CliContext
     /// <param name="useColor">ANSI colors for warnings and errors.</param>
     /// <param name="utf8">UTF-8 icon glyphs.</param>
     /// <param name="progress">Show progress bars on stderr.</param>
-    public CliContext(TextWriter stdout, TextWriter stderr, bool useColor, bool utf8, bool progress)
+    /// <param name="stdin">Standard input for prompts; end of input when <see langword="null"/>.</param>
+    public CliContext(TextWriter stdout, TextWriter stderr, bool useColor, bool utf8, bool progress, TextReader? stdin = null)
     {
+        In = stdin ?? TextReader.Null;
         Out = stdout;
         Err = stderr;
         Log = new ConsoleLog(stdout, stderr, useColor, utf8);
         ProgressEnabled = progress;
     }
+
+    /// <summary>Standard input (overwrite prompts).</summary>
+    public TextReader In { get; }
 
     /// <summary>Standard output.</summary>
     public TextWriter Out { get; }
@@ -38,7 +43,7 @@ public sealed class CliContext
     {
         bool tty = !Console.IsOutputRedirected || !Console.IsErrorRedirected;
         bool color = tty && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MKPFS_NO_COLOR"));
-        return new CliContext(Console.Out, Console.Error, color, ConsoleLog.SupportsUtf8(Console.OutputEncoding), progress: true);
+        return new CliContext(Console.Out, Console.Error, color, ConsoleLog.SupportsUtf8(Console.OutputEncoding), progress: true, Console.In);
     }
 
     /// <summary>Informational line (stdout).</summary>

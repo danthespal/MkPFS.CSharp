@@ -113,6 +113,10 @@ public sealed class ExfatImageWriter
         progress?.Report("exfat", total, total, written);
     }
 
+    /// <summary>Forward-only stream over <see cref="Chunks"/>, for consumers that read a <see cref="Stream"/>.</summary>
+    /// <returns>Readable, non-seekable stream of <see cref="ImageSize"/> bytes.</returns>
+    public Stream OpenRead() => new ChunkStream(Chunks().GetEnumerator(), ImageSize);
+
     /// <summary>
     /// The image in increasing offset order; concatenation is the volume. File chunks reuse one buffer, so each chunk
     /// is valid only until the next one is requested.
@@ -492,6 +496,67 @@ public sealed class ExfatImageWriter
     }
 
     private static long AlignUp(long value, long alignment) => Sizes.CeilDiv(value, alignment) * alignment;
+
+    private sealed class ChunkStream(IEnumerator<ReadOnlyMemory<byte>> chunks, long length) : Stream
+    {
+        private ReadOnlyMemory<byte> _current;
+        private long _position;
+
+        public override bool CanRead => true;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => false;
+
+        public override long Length => length;
+
+        public override long Position
+        {
+            get => _position;
+            set => throw new NotSupportedException();
+        }
+
+        public override int Read(byte[] buffer, int offset, int count) => Read(buffer.AsSpan(offset, count));
+
+        public override int Read(Span<byte> buffer)
+        {
+            while (_current.IsEmpty)
+            {
+                if (!chunks.MoveNext())
+                {
+                    return 0;
+                }
+
+                _current = chunks.Current;
+            }
+
+            int take = Math.Min(buffer.Length, _current.Length);
+            _current.Span[..take].CopyTo(buffer);
+            _current = _current[take..];
+            _position += take;
+            return take;
+        }
+
+        public override void Flush()
+        {
+        }
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                chunks.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
+    }
 
     private sealed class Node(string relPath, string name, bool isDir)
     {

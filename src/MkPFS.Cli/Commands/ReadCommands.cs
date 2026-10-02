@@ -16,7 +16,7 @@ namespace MkPFS.Cli.Commands;
 /// </summary>
 internal static class ReadCommands
 {
-    private const string GameFolderCompressWarning =
+    internal const string GameFolderCompressWarning =
         "IMPORTANT: Do not pack an application/game folder directly with compression enabled.\n" +
         "Although image creation and verification may succeed, the console often misreads compressed files.\n" +
         "Either turn off compression (--no-compress) or create the image using the wrapper-based packaging flow.\n" +
@@ -314,11 +314,11 @@ internal static class ReadCommands
     }
 
     /// <summary>The <c>verify</c> report (Python <c>run_image_check</c> with <c>emit_report</c>).</summary>
-    private static void PrintCheckReport(CliContext ctx, string path, PFSInspection inspection)
+    internal static void PrintCheckReport(CliContext ctx, string path, PFSInspection inspection, string title = "PFS Check Report", bool hideHeaders = false)
     {
         PFSHeader header = inspection.Header!;
         bool gameMarkers = inspection.FileInodes.ContainsKey("eboot.bin") || inspection.FileInodes.ContainsKey("sce_sys/param.json");
-        if (inspection.CompressedFiles > 0 && gameMarkers)
+        if (!hideHeaders && inspection.CompressedFiles > 0 && gameMarkers)
         {
             ctx.Info(string.Empty);
             ctx.Warning(GameFolderCompressWarning);
@@ -326,9 +326,13 @@ internal static class ReadCommands
 
         long imageSize = File.Exists(path) ? new FileInfo(path).Length : 0;
         string yes(bool value) => value ? "yes" : "no";
-        ctx.VersionHeader();
+        if (!hideHeaders)
+        {
+            ctx.VersionHeader();
+        }
+
         ctx.Info(new string('=', 70));
-        ctx.Info("PFS Check Report");
+        ctx.Info(title);
         ctx.Info(new string('=', 70));
         ctx.Info($"Image:                 {path}");
         ctx.Info($"Version:               {header.Version} ({header.VersionLabel})");

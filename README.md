@@ -3,10 +3,28 @@
 .NET 10 port of [MkPFS](https://github.com/PSBrew/MkPFS): build, verify, inspect and unpack PS4/PS5
 PFS images (`.ffpfs`, `.ffpfsc`, `.exfat`), plus PFSC block repair ported from PS5 Game Compressor.
 
-Status: read side (`inspect`, `tree`, `unpack`, `verify`), `repair` and `pack exfat` done; PFS image
-building (`pack file`, `pack folder`) is next.
+Status: read side (`inspect`, `tree`, `unpack`, `verify`), `repair` and every `pack` mode (with the AMPR
+emulation index) done; next are the remaining verification options and `batch`.
 
 ## Usage
+
+Compress an exFAT image into a single-file `.ffpfsc` (zlib 1.3.1, structure check afterwards):
+
+```bash
+mkpfs pack file PPSA12345.exfat PPSA12345.ffpfsc
+```
+
+Pack a game folder into a `.ffpfsc` (wrapped in an exFAT and compressed in one pass, no temp image):
+
+```bash
+mkpfs pack folder PPSA12345-app PPSA12345.ffpfsc
+```
+
+Pack a folder directly as PFS (`--signed`, `--encrypted`, `--inode-bits 64` and `--version PS4` apply here):
+
+```bash
+mkpfs pack folder PPSA12345-app PPSA12345.ffpfs --raw
+```
 
 Build an exFAT image from a game folder (64 KiB clusters by default):
 

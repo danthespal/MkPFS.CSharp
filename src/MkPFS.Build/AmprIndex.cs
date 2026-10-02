@@ -1,0 +1,407 @@
+using System.Buffers.Binary;
+using System.Text;
+using MkPFS.Core.Diagnostics;
+using MkPFS.Core.Util;
+
+namespace MkPFS.Build;
+
+/// <summary>
+/// AMPR emulation index <c>ampr_emu.index</c> (<c>AMPRIDX3</c>, port of Python <c>mkpfs/ampr.py</c>). Maps each game
+/// file <c>/app0/&lt;rel&gt;</c> to its size and modification time, with an FNV-1a-64 open-addressed hash table for
+/// path lookups. The layout is fixed by the PS5 AMPR/APR resolver.
+/// </summary>
+public static class AmprIndex
+{
+    /// <summary>Index file name in the source root.</summary>
+    public const string IndexName = "ampr_emu.index";
+
+    /// <summary>Marker that signals an emulation build (relative to the source root).</summary>
+    public const string FakelibMarker = "fakelib/libSceAmpr.sprx";
+
+    /// <summary>Header size (<c>&lt;8sIIQQQII</c>).</summary>
+    public const int HeaderSize = 48;
+
+    /// <summary>Record size (<c>&lt;IIQq</c>: path offset, path length, size, mtime).</summary>
+    public const int RecordSize = 24;
+
+    /// <summary>Hash slot size (<c>&lt;QII</c>: hash, record index + 1, flags).</summary>
+    public const int HashSlotSize = 16;
+
+    private const uint Version = 3;
+    private const uint DuplicateFlag = 1;
+    private static readonly byte[] Magic = "AMPRIDX3"u8.ToArray();
+
+    /// <summary>One indexed file.</summary>
+    /// <param name="Size">File size.</param>
+    /// <param name="MTime">Modification time, whole Unix seconds.</param>
+    /// <param name="Path"><c>/app0/&lt;rel&gt;</c>.</param>
+    public readonly record struct Row(long Size, long MTime, string Path);
+
+    /// <summary>Hash and collision key: forward slashes, lower case (Python <c>ampr_key_for</c>).</summary>
+    /// <param name="path">Path.</param>
+    /// <returns>Key.</returns>
+    public static string KeyFor(string path) => path.Replace('\\', '/').ToLowerInvariant();
+
+    /// <summary>FNV-1a 64 over the key's code points; 0 becomes 1 so empty slots stay distinct.</summary>
+    /// <param name="path">Path.</param>
+    /// <returns>Hash.</returns>
+    public static ulong PathHash(string path)
+    {
+        ulong hash = 1469598103934665603UL;
+        foreach (Rune rune in KeyFor(path).EnumerateRunes())
+        {
+            hash ^= (ulong)rune.Value;
+            hash = unchecked(hash * 1099511628211UL);
+        }
+
+        return hash == 0 ? 1 : hash;
+    }
+
+    /// <summary>Smallest power of two ≥ 2 × entries (minimum 2), 0 for no entries.</summary>
+    /// <param name="entryCount">Entries.</param>
+    /// <returns>Slot count.</returns>
+    public static int HashSlotCount(int entryCount)
+    {
+        if (entryCount <= 0)
+        {
+            return 0;
+        }
+
+        int slots = 2;
+        while (slots < entryCount * 2)
+        {
+            slots <<= 1;
+        }
+
+        return slots;
+    }
+
+    /// <summary>
+    /// Generate the index when enabled and the marker exists (Python <c>ensure_ampr_index</c>). With
+    /// <paramref name="createIfMissing"/>, a valid existing index is kept unless <paramref name="forceRegen"/>.
+    /// </summary>
+    /// <param name="sourceRoot">Source tree, which also receives the index.</param>
+    /// <param name="log">Messages.</param>
+    /// <param name="enabled">When false, nothing happens.</param>
+    /// <param name="createIfMissing">Skip when a valid index exists.</param>
+    /// <param name="forceRegen">Always rebuild.</param>
+    /// <returns>The index path when generated, else <see langword="null"/>.</returns>
+    public static string? Ensure(string sourceRoot, IMkPFSLog log, bool enabled = true, bool createIfMissing = false, bool forceRegen = false)
+    {
+        if (!enabled)
+        {
+            return null;
+        }
+
+        string indexPath = Path.Combine(sourceRoot, IndexName);
+        string marker = Path.Combine(sourceRoot, "fakelib", "libSceAmpr.sprx");
+        if (!File.Exists(marker) && !Directory.Exists(marker))
+        {
+            return null;
+        }
+
+        if (createIfMissing && !forceRegen && (File.Exists(indexPath) || Directory.Exists(indexPath)))
+        {
+            if (Validate(indexPath, sourceRoot))
+            {
+                log.Info($"{IndexName} valid and present; skipping generation (create_if_missing)");
+                return null;
+            }
+
+            log.Warning($"{IndexName} failed validation; regenerating...");
+        }
+
+        log.Info($"Detected {FakelibMarker}; generating {IndexName}...");
+        int count;
+        try
+        {
+            count = Build(sourceRoot, indexPath);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            log.Warning($"Failed to generate {IndexName}: {ex.Message}");
+            return null;
+        }
+
+        log.Info($"Generated {IndexName} with {count} entries");
+        return indexPath;
+    }
+
+    /// <summary>Write the index for <paramref name="root"/> (Python <c>build_ampr_index</c>).</summary>
+    /// <param name="root">Source tree.</param>
+    /// <param name="outputPath">Index path.</param>
+    /// <returns>Records written (0 and no file when the tree has no files).</returns>
+    public static int Build(string root, string outputPath)
+    {
+        root = Path.GetFullPath(root);
+        outputPath = Path.GetFullPath(outputPath);
+        string tmp = outputPath + ".tmp";
+        List<Row> rows = [];
+        HashSet<string> seen = new(StringComparer.Ordinal);
+        foreach (string file in WalkFiles(root))
+        {
+            if (string.Equals(file, outputPath, PathComparison) || string.Equals(file, tmp, PathComparison))
+            {
+                continue;
+            }
+
+            string indexed = "/app0/" + Path.GetRelativePath(root, file).Replace('\\', '/');
+            string key = KeyFor(indexed);
+            if (key == $"/app0/{IndexName}" || key == $"/app0/{IndexName}.tmp" || !seen.Add(key))
+            {
+                continue; // the index itself, or a case-insensitive duplicate (first wins)
+            }
+
+            FileInfo info = new(file);
+            rows.Add(new Row(info.Length, UnixSeconds(info.LastWriteTimeUtc), indexed));
+        }
+
+        if (rows.Count == 0)
+        {
+            return 0;
+        }
+
+        rows = [.. rows.OrderBy(r => KeyFor(r.Path), CodePointOrder)];
+        byte[] index = Serialize(rows);
+        File.WriteAllBytes(tmp, index);
+        File.Move(tmp, outputPath, overwrite: true);
+        return rows.Count;
+    }
+
+    /// <summary>Serialize rows already in record order.</summary>
+    /// <param name="rows">Rows.</param>
+    /// <returns>Index bytes.</returns>
+    public static byte[] Serialize(IReadOnlyList<Row> rows)
+    {
+        using MemoryStream blob = new();
+        byte[] records = new byte[rows.Count * RecordSize];
+        for (int i = 0; i < rows.Count; i++)
+        {
+            byte[] encoded = Encoding.UTF8.GetBytes(rows[i].Path);
+            Span<byte> record = records.AsSpan(i * RecordSize, RecordSize);
+            BinaryPrimitives.WriteUInt32LittleEndian(record, checked((uint)blob.Length));
+            BinaryPrimitives.WriteUInt32LittleEndian(record[4..], (uint)encoded.Length);
+            BinaryPrimitives.WriteInt64LittleEndian(record[8..], rows[i].Size);
+            BinaryPrimitives.WriteInt64LittleEndian(record[16..], rows[i].MTime);
+            blob.Write(encoded);
+            blob.WriteByte(0);
+        }
+
+        (ulong Hash, uint IndexPlusOne, uint Flags)[] slots = BuildHashSlots(rows);
+        long pathEnd = HeaderSize + records.Length + blob.Length;
+        long hashOffset = (pathEnd + (HashSlotSize - 1)) & ~(long)(HashSlotSize - 1);
+        byte[] output = new byte[hashOffset + (slots.Length * HashSlotSize)];
+        Span<byte> header = output;
+        Magic.CopyTo(header);
+        BinaryPrimitives.WriteUInt32LittleEndian(header[8..], Version);
+        BinaryPrimitives.WriteUInt32LittleEndian(header[12..], RecordSize);
+        BinaryPrimitives.WriteInt64LittleEndian(header[16..], rows.Count);
+        BinaryPrimitives.WriteInt64LittleEndian(header[24..], blob.Length);
+        BinaryPrimitives.WriteInt64LittleEndian(header[32..], hashOffset);
+        BinaryPrimitives.WriteUInt32LittleEndian(header[40..], HashSlotSize);
+        BinaryPrimitives.WriteUInt32LittleEndian(header[44..], (uint)slots.Length);
+        records.CopyTo(output, HeaderSize);
+        blob.ToArray().CopyTo(output, HeaderSize + records.Length);
+        for (int i = 0; i < slots.Length; i++)
+        {
+            Span<byte> slot = output.AsSpan((int)hashOffset + (i * HashSlotSize), HashSlotSize);
+            BinaryPrimitives.WriteUInt64LittleEndian(slot, slots[i].Hash);
+            BinaryPrimitives.WriteUInt32LittleEndian(slot[8..], slots[i].IndexPlusOne);
+            BinaryPrimitives.WriteUInt32LittleEndian(slot[12..], slots[i].Flags);
+        }
+
+        return output;
+    }
+
+    /// <summary>Read the rows of an index (for tests and diagnostics).</summary>
+    /// <param name="data">Index bytes.</param>
+    /// <returns>Rows in record order.</returns>
+    /// <exception cref="InvalidDataException">The header or a record is invalid.</exception>
+    public static List<Row> ReadRows(ReadOnlySpan<byte> data)
+    {
+        if (data.Length < HeaderSize || !data[..8].SequenceEqual(Magic))
+        {
+            throw new InvalidDataException("not an AMPRIDX3 index");
+        }
+
+        long count = BinaryPrimitives.ReadInt64LittleEndian(data[16..]);
+        long blobLength = BinaryPrimitives.ReadInt64LittleEndian(data[24..]);
+        long blobStart = HeaderSize + (count * RecordSize);
+        if (count < 0 || blobLength < 0 || blobStart + blobLength > data.Length)
+        {
+            throw new InvalidDataException("AMPR index is truncated");
+        }
+
+        List<Row> rows = [];
+        for (int i = 0; i < count; i++)
+        {
+            ReadOnlySpan<byte> record = data.Slice(HeaderSize + (i * RecordSize), RecordSize);
+            long offset = BinaryPrimitives.ReadUInt32LittleEndian(record);
+            long length = BinaryPrimitives.ReadUInt32LittleEndian(record[4..]);
+            if (offset + length > blobLength)
+            {
+                throw new InvalidDataException($"AMPR record {i} points outside the path blob");
+            }
+
+            string path = Encoding.UTF8.GetString(data.Slice((int)(blobStart + offset), (int)length));
+            rows.Add(new Row(BinaryPrimitives.ReadInt64LittleEndian(record[8..]), BinaryPrimitives.ReadInt64LittleEndian(record[16..]), path));
+        }
+
+        return rows;
+    }
+
+    /// <summary>
+    /// Header sanity checks plus a row-count comparison against the live tree (Python <c>validate_ampr_index</c>).
+    /// </summary>
+    /// <param name="indexPath">Index path.</param>
+    /// <param name="sourceRoot">Source tree.</param>
+    /// <returns><see langword="true"/> when the index looks current.</returns>
+    public static bool Validate(string indexPath, string sourceRoot)
+    {
+        byte[] data;
+        try
+        {
+            if (!File.Exists(indexPath))
+            {
+                return false;
+            }
+
+            data = File.ReadAllBytes(indexPath);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+
+        if (data.Length < HeaderSize || !data.AsSpan(0, 8).SequenceEqual(Magic) ||
+            BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(8)) != Version ||
+            BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(12)) != RecordSize)
+        {
+            return false;
+        }
+
+        long rows = BinaryPrimitives.ReadInt64LittleEndian(data.AsSpan(16));
+        long blobLength = BinaryPrimitives.ReadInt64LittleEndian(data.AsSpan(24));
+        long hashOffset = BinaryPrimitives.ReadInt64LittleEndian(data.AsSpan(32));
+        uint slotSize = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(40));
+        uint slots = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(44));
+        if (rows <= 0 || blobLength <= 0 || slotSize != HashSlotSize || slots == 0 ||
+            rows > (long.MaxValue - HeaderSize) / RecordSize ||
+            hashOffset < HeaderSize + (rows * RecordSize) + blobLength || hashOffset % slotSize != 0 ||
+            data.Length < hashOffset + ((long)slots * slotSize))
+        {
+            return false;
+        }
+
+        string root = Path.GetFullPath(sourceRoot);
+        string fullIndex = Path.GetFullPath(indexPath);
+        HashSet<string> seen = new(StringComparer.Ordinal);
+        long live = 0;
+        try
+        {
+            foreach (string file in WalkFiles(root))
+            {
+                if (string.Equals(file, fullIndex, PathComparison) || string.Equals(file, fullIndex + ".tmp", PathComparison))
+                {
+                    continue;
+                }
+
+                string key = KeyFor("/app0/" + Path.GetRelativePath(root, file).Replace('\\', '/'));
+                if (key != $"/app0/{IndexName}" && key != $"/app0/{IndexName}.tmp" && seen.Add(key))
+                {
+                    live++;
+                }
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+
+        return live == rows;
+    }
+
+    private static StringComparison PathComparison => OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+
+    private static IComparer<string> CodePointOrder { get; } = Comparer<string>.Create(static (a, b) =>
+    {
+        StringRuneEnumerator x = a.EnumerateRunes();
+        StringRuneEnumerator y = b.EnumerateRunes();
+        while (true)
+        {
+            bool hasX = x.MoveNext();
+            bool hasY = y.MoveNext();
+            if (!hasX || !hasY)
+            {
+                return hasX.CompareTo(hasY);
+            }
+
+            int diff = x.Current.Value.CompareTo(y.Current.Value);
+            if (diff != 0)
+            {
+                return diff;
+            }
+        }
+    });
+
+    // Python os.walk top-down with directories and files sorted by name.lower(): ignored names skipped,
+    // directory links listed but not descended, file links kept when their target is a file.
+    private static IEnumerable<string> WalkFiles(string root)
+    {
+        EnumerationOptions options = new() { AttributesToSkip = 0, IgnoreInaccessible = true };
+        Stack<string> pending = new();
+        pending.Push(root);
+        while (pending.Count > 0)
+        {
+            string dir = pending.Pop();
+            List<FileSystemInfo> entries = [.. new DirectoryInfo(dir).EnumerateFileSystemInfos("*", options)
+                .Where(e => !NameRules.IsIgnoredName(e.Name))];
+            foreach (FileSystemInfo file in entries.Where(e => e is FileInfo).OrderBy(e => e.Name.ToLowerInvariant(), CodePointOrder))
+            {
+                if (file.LinkTarget is null || file.ResolveLinkTarget(returnFinalTarget: true) is FileInfo { Exists: true })
+                {
+                    yield return file.FullName;
+                }
+            }
+
+            // Push in reverse so subdirectories are visited in sorted order.
+            foreach (FileSystemInfo sub in entries.Where(e => e is DirectoryInfo && e.LinkTarget is null)
+                         .OrderByDescending(e => e.Name.ToLowerInvariant(), CodePointOrder))
+            {
+                pending.Push(sub.FullName);
+            }
+        }
+    }
+
+    // Python int(st_mtime): truncate toward zero.
+    private static long UnixSeconds(DateTime utc) => (utc.Ticks - DateTime.UnixEpoch.Ticks) / TimeSpan.TicksPerSecond;
+
+    private static (ulong Hash, uint IndexPlusOne, uint Flags)[] BuildHashSlots(IReadOnlyList<Row> rows)
+    {
+        (ulong Hash, uint IndexPlusOne, uint Flags)[] slots = new (ulong, uint, uint)[HashSlotCount(rows.Count)];
+        if (slots.Length == 0)
+        {
+            return slots;
+        }
+
+        int mask = slots.Length - 1;
+        for (int i = 0; i < rows.Count; i++)
+        {
+            ulong hash = PathHash(rows[i].Path);
+            int pos = (int)(hash & (ulong)mask);
+            while (slots[pos].IndexPlusOne != 0)
+            {
+                if (slots[pos].Hash == hash)
+                {
+                    slots[pos].Flags |= DuplicateFlag;
+                }
+
+                pos = (pos + 1) & mask;
+            }
+
+            slots[pos] = (hash, (uint)(i + 1), 0);
+        }
+
+        return slots;
+    }
+}

@@ -39,6 +39,9 @@ public sealed record PFSInspectOptions
     /// <summary>Optional source to compare paths and contents against.</summary>
     public SourceTree? Source { get; init; }
 
+    /// <summary>Also compare file contents with <see cref="Source"/> (paths are always compared).</summary>
+    public bool CompareSourceContents { get; init; } = true;
+
     /// <summary>Expected cumulative CRC32 of all logical payloads.</summary>
     public uint? ExpectedCrc32 { get; init; }
 
@@ -277,7 +280,7 @@ public static class PFSInspector
 
         if (options.Source is not null)
         {
-            CompareSource(image, result, options.Source, options.Progress);
+            CompareSource(image, result, options.Source, options.CompareSourceContents, options.Progress);
         }
 
         foreach (long number in result.FileInodes.Values)
@@ -948,7 +951,7 @@ public static class PFSInspector
     /// <c>verify</c> runs the path check twice and reports each difference twice (oracle finding 10);
     /// this runs it once.
     /// </summary>
-    private static void CompareSource(PFSImage image, PFSInspection result, SourceTree source, IProgressSink? progress)
+    private static void CompareSource(PFSImage image, PFSInspection result, SourceTree source, bool compareContents, IProgressSink? progress)
     {
         if (!source.IsValid)
         {
@@ -966,6 +969,11 @@ public static class PFSInspector
         foreach (string rel in imagePaths.Except(sourcePaths).Order(StringComparer.Ordinal))
         {
             result.Errors.Add($"extra in image: {rel}");
+        }
+
+        if (!compareContents)
+        {
+            return;
         }
 
         List<string> common = [.. sourcePaths.Intersect(imagePaths).Order(StringComparer.Ordinal)];

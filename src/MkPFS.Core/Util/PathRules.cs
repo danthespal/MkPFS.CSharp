@@ -59,7 +59,7 @@ public static class PathRules
     {
         if (tempFolder is null)
         {
-            return Path.GetTempPath();
+            return Path.TrimEndingDirectorySeparator(Path.GetTempPath());
         }
 
         string full = Path.GetFullPath(ExpandUser(tempFolder));
