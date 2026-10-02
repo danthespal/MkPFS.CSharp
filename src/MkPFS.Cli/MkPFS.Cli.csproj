@@ -17,4 +17,7 @@
     <PublishAot>true</PublishAot>
     <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="MkPFS.Tests" />
+  </ItemGroup>
 </Project>

@@ -40,7 +40,11 @@ public sealed class PFSCReader
     /// <summary>Stored length of block <paramref name="index"/> (65536 = raw).</summary>
     /// <param name="index">Block index.</param>
     /// <returns>Stored span length.</returns>
-    public int StoredLength(long index) => checked((int)(_offsets[index + 1] - _offsets[index]));
+    public int StoredLength(long index)
+    {
+        long length = _offsets[index + 1] - _offsets[index];
+        return length <= int.MaxValue ? (int)length : throw new InvalidDataException($"PFSC block {index} stored size {length} is out of range");
+    }
 
     /// <summary>Whether block <paramref name="index"/> is stored compressed.</summary>
     /// <param name="index">Block index.</param>
@@ -69,6 +73,12 @@ public sealed class PFSCReader
         if (tableEnd > header.DataOffset || tableEnd > payloadLength)
         {
             throw new InvalidDataException("PFSC payload is truncated before block offset table");
+        }
+
+        // A corrupt inode size can claim more than the image holds; check before allocating the table.
+        if (tableSize > int.MaxValue || baseOffset + tableEnd > stream.Length)
+        {
+            throw new InvalidDataException("PFSC block offset table extends past the end of the image");
         }
 
         byte[] table = new byte[checked((int)tableSize)];

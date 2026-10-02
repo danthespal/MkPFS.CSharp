@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import shutil
 import struct
@@ -114,9 +115,12 @@ def normalize_log(text: str, cwd: Path) -> str:
 
 def run_oracle(argv: list[str], cwd: Path, log_name: str) -> int:
     """Run the oracle CLI in ``cwd`` and store combined output in ``log_name``."""
+    # UTF-8 so non-ASCII names survive the pipe; MKPFS_NO_UTF8 keeps MkPFS' ASCII icons (WARN/ERROR).
+    env: dict[str, str] = {**os.environ, "PYTHONIOENCODING": "utf-8", "MKPFS_NO_UTF8": "1"}
     proc: subprocess.CompletedProcess[str] = subprocess.run(
         [sys.executable, str(ORACLE), *argv],
         cwd=cwd,
+        env=env,
         capture_output=True,
         text=True,
         encoding="utf-8",
@@ -126,7 +130,7 @@ def run_oracle(argv: list[str], cwd: Path, log_name: str) -> int:
     text: str = (
         f"$ mkpfs {' '.join(argv)}\nexit={proc.returncode}\n--- stdout\n{proc.stdout}\n--- stderr\n{proc.stderr}"
     )
-    (cwd / log_name).write_text(normalize_log(text, cwd), encoding="utf-8")
+    (cwd / log_name).write_text(normalize_log(text, cwd), encoding="utf-8", newline="\n")
     return proc.returncode
 
 

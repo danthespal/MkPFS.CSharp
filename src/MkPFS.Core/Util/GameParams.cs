@@ -80,7 +80,8 @@ public static class GameParams
         return sanitized.Length > 0 ? sanitized : "image";
     }
 
-    private static bool IsFalsy(JsonElement element) => element.ValueKind switch
+    /// <summary>Python truthiness of a JSON value (<c>not value</c>).</summary>
+    internal static bool IsFalsy(JsonElement element) => element.ValueKind switch
     {
         JsonValueKind.Null or JsonValueKind.False or JsonValueKind.Undefined => true,
         JsonValueKind.String => element.GetString()!.Length == 0,

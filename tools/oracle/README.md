@@ -46,7 +46,10 @@ Both default to `tests/fixtures/generated/` (git-ignored, about 270 MB).
 | `pack folder` | exFAT-wrapped default for 3 trees |
 | `pack folder --raw` | PS5, PS4, inode 64, case-sensitive, no-compress, signed, signed 64, encrypted, encrypted + key, filters, level 1, FPT collision (CI/CS), many files, AMPR, non-ASCII (expected failure) |
 
-Logs (`*.log`) contain Windows path separators; compare them only on Windows or normalize `\` first.
+Logs (`*.log`) are UTF-8 with `
+` line endings: Python runs with `PYTHONIOENCODING=utf-8` and
+`MKPFS_NO_UTF8=1` (ASCII icons such as `WARN`). They contain Windows path separators; compare them
+only on Windows or normalize `\` first.
 Images are platform independent.
 
 ## Results (2026-10-02, Windows 11, 32 threads, Python 3.11.15, zlib 1.3.1)
@@ -77,3 +80,11 @@ Images are platform independent.
    `3411`, no initializer). So `--compression-backend zlib` alone does not avoid ISA-L on real
    game images; `--cpu-count 1` does. `oracle.py` wraps `mp.Pool` to force the backend, and
    `build_goldens.py` re-compresses every stored block to prove the corpus is pure zlib.
+9. **Bug:** signed-image verification reads the `ib[0]` signature records only when the `ib[0]`
+   signature mismatches (`verify_signed_image_signatures`), so a valid signed file larger than
+   12 blocks fails with an unbound `records` variable. Port: records are always read.
+10. **Bug:** `verify --source-dir` runs the path comparison twice (`run_image_check` calls
+    `validate_source_paths`, then `validate_source_match` calls it again), so every
+    "missing in image" / "extra in image" error is printed twice. Port: reported once.
+11. `extract_pfs_image` and the exFAT extractors do not check that entry names stay inside the
+    output folder. Port: refuses paths that escape it ("unsafe path in image").

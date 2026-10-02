@@ -3,7 +3,35 @@
 .NET 10 port of [MkPFS](https://github.com/PSBrew/MkPFS): build, verify, inspect and unpack PS4/PS5
 PFS images (`.ffpfs`, `.ffpfsc`, `.exfat`), plus PFSC block repair ported from PS5 Game Compressor.
 
-Status: Phase 1 (native zlib, core utilities, CI). Phase 0 oracle corpus is in place.
+Status: read side done (`inspect`, `tree`, `unpack`, `verify`); image building and repair are next.
+
+## Usage
+
+Inspect an image (text or `--format json`):
+
+```bash
+mkpfs inspect PPSA12345.ffpfsc
+```
+
+List the files, including inside a wrapped exFAT:
+
+```bash
+mkpfs tree PPSA12345.ffpfsc --deep
+```
+
+Verify structure and payloads against the source:
+
+```bash
+mkpfs verify PPSA12345.ffpfsc --source-file PPSA12345.exfat
+```
+
+Extract the files inside the wrapped exFAT:
+
+```bash
+mkpfs unpack PPSA12345.ffpfsc out --deep
+```
+
+Encrypted images take `--ekpfs-key <64 hex>` (and `--new-crypt` for the alternate key derivation).
 
 ## Layout
 

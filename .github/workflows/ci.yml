@@ -43,6 +43,13 @@ jobs:
             !tests/fixtures/generated/goldens/*/src
           retention-days: 7
 
+      # Packing AMPR trees writes ampr_emu.index into the case's source copy; verify needs that copy.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: oracle-corpus-ampr-src
+          path: tests/fixtures/generated/goldens/*ampr*/src
+          retention-days: 7
+
   build:
     name: Build and test (${{ matrix.rid }})
     needs: oracle
@@ -68,6 +75,11 @@ jobs:
         with:
           name: oracle-corpus
           path: tests/fixtures/generated
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: oracle-corpus-ampr-src
+          path: tests/fixtures/generated/goldens
 
       # vcvarsall.bat (used by native/build.ps1 and the AOT linker) calls vswhere.exe by name.
       - name: Put vswhere on PATH (Windows)

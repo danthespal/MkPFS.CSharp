@@ -30,25 +30,37 @@ public static class MkPFSCli
     public static string Title => $"MkPFS {Version} - {ProjectUrl}";
 
     /// <summary>Build the root command.</summary>
+    /// <param name="ctx">Output context.</param>
     /// <returns>Configured root command.</returns>
-    public static RootCommand BuildRootCommand()
+    public static RootCommand BuildRootCommand(CliContext ctx)
     {
         RootCommand root = new("Create and manage unsigned PFS (PlayStation File System) images with PFSC compression.");
         root.SetAction(_ =>
         {
-            Console.Out.WriteLine(Title);
-            Console.Out.WriteLine("No commands available yet. Run 'mkpfs --help'.");
+            ctx.Out.WriteLine(Title);
+            ctx.Out.WriteLine("Run 'mkpfs --help' for the available commands.");
             return 0;
         });
+        root.Subcommands.Add(Commands.ReadCommands.Verify(ctx));
+        root.Subcommands.Add(Commands.ReadCommands.Inspect(ctx));
+        root.Subcommands.Add(Commands.ReadCommands.Tree(ctx));
+        root.Subcommands.Add(Commands.ReadCommands.Unpack(ctx));
         root.Subcommands.Add(BuildSelfTestCommand());
         root.Subcommands.Add(BuildPFSCBenchCommand());
         return root;
     }
 
-    /// <summary>Parse and run.</summary>
+    /// <summary>Parse and run against the process console.</summary>
     /// <param name="args">Process arguments.</param>
     /// <returns>Exit code.</returns>
-    public static int Run(string[] args) => BuildRootCommand().Parse(args).Invoke();
+    public static int Run(string[] args) => Run(args, CliContext.CreateDefault());
+
+    /// <summary>Parse and run with explicit output writers.</summary>
+    /// <param name="args">Process arguments.</param>
+    /// <param name="ctx">Output context.</param>
+    /// <returns>Exit code.</returns>
+    public static int Run(string[] args, CliContext ctx) =>
+        BuildRootCommand(ctx).Parse(args).Invoke(new InvocationConfiguration { Output = ctx.Out, Error = ctx.Err });
 
     // Hidden diagnostics: PFSC encode throughput for one file (compare with tools/oracle/bench.py).
     private static Command BuildPFSCBenchCommand()
