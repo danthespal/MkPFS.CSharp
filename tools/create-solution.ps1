@@ -1,6 +1,9 @@
 <#
 .SYNOPSIS
     Create the MkPFS .NET 10 solution skeleton (Phase 1 layout).
+.NOTES
+    Historical record of the initial skeleton. Later changes (own mkpfs_zlib instead of
+    XenoAtom.Interop.zlib, xunit.v3 on Microsoft Testing Platform) are in git history.
 .EXAMPLE
     powershell -ExecutionPolicy Bypass -File create-solution.ps1 -Root D:\TOOLS\PS5\MkPFS.NET
 #>

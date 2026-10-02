@@ -1,1 +1,1 @@
-﻿Console.WriteLine("Hello, World!");
+return MkPFS.Cli.MkPFSCli.Run(args);

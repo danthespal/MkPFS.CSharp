@@ -1,13 +1,36 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="XenoAtom.Interop.zlib" Version="1.0.0" />
+    <InternalsVisibleTo Include="MkPFS.Tests" />
+  </ItemGroup>
+
+  <!--
+    Native zlib 1.3.1 shim (native/). Built on demand for the host RID, or the publish RID
+    when one is set; cross-RID builds must provide artifacts/native/<rid>/ themselves (CI).
+  -->
+  <PropertyGroup>
+    <MkPFSNativeRid Condition="'$(RuntimeIdentifier)' != ''">$(RuntimeIdentifier)</MkPFSNativeRid>
+    <MkPFSNativeRid Condition="'$(MkPFSNativeRid)' == ''">$(NETCoreSdkRuntimeIdentifier)</MkPFSNativeRid>
+    <MkPFSNativeDir>$(MSBuildThisFileDirectory)..\..\artifacts\native\$(MkPFSNativeRid)\</MkPFSNativeDir>
+    <MkPFSNativeFile Condition="$(MkPFSNativeRid.StartsWith('win'))">mkpfs_zlib.dll</MkPFSNativeFile>
+    <MkPFSNativeFile Condition="$(MkPFSNativeRid.StartsWith('osx'))">libmkpfs_zlib.dylib</MkPFSNativeFile>
+    <MkPFSNativeFile Condition="'$(MkPFSNativeFile)' == ''">libmkpfs_zlib.so</MkPFSNativeFile>
+  </PropertyGroup>
+
+  <Target Name="BuildMkPFSNative" BeforeTargets="AssignTargetPaths" Condition="!Exists('$(MkPFSNativeDir)$(MkPFSNativeFile)')">
+    <Exec Condition="'$(OS)' == 'Windows_NT'" Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildThisFileDirectory)..\..\native\build.ps1&quot; -Rid $(MkPFSNativeRid)" />
+    <Exec Condition="'$(OS)' != 'Windows_NT'" Command="sh &quot;$(MSBuildThisFileDirectory)../../native/build.sh&quot; $(MkPFSNativeRid)" />
+    <ItemGroup>
+      <None Include="$(MkPFSNativeDir)$(MkPFSNativeFile)" Link="$(MkPFSNativeFile)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup Condition="Exists('$(MkPFSNativeDir)$(MkPFSNativeFile)')">
+    <None Include="$(MkPFSNativeDir)$(MkPFSNativeFile)" Link="$(MkPFSNativeFile)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  oracle:
+    name: Oracle corpus (Python MkPFS)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout Python MkPFS
+        uses: actions/checkout@v4
+        with:
+          repository: PSBrew/MkPFS
+          path: mkpfs-python
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Build golden corpus
+        run: uv run --project mkpfs-python python tools/oracle/build_goldens.py --check
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: oracle-corpus
+          path: |
+            tests/fixtures/generated/goldens/manifest.json
+            tests/fixtures/generated/vectors
+            tests/fixtures/generated/determinism.json
+          retention-days: 7
+
+  build:
+    name: Build and test (${{ matrix.rid }})
+    needs: oracle
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+          - os: ubuntu-latest
+            rid: linux-x64
+          - os: macos-latest
+            rid: osx-arm64
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: oracle-corpus
+          path: tests/fixtures/generated
+
+      # vcvarsall.bat (used by native/build.ps1 and the AOT linker) calls vswhere.exe by name.
+      - name: Put vswhere on PATH (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Add-Content $env:GITHUB_PATH "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer"
+
+      - name: Build native zlib (Windows)
+        if: runner.os == 'Windows'
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File native/build.ps1 -Rid ${{ matrix.rid }}
+
+      - name: Build native zlib (Unix)
+        if: runner.os != 'Windows'
+        run: sh native/build.sh ${{ matrix.rid }}
+
+      - name: Test
+        run: dotnet test --solution MkPFS.slnx -c Release
+
+      - name: Install AOT prerequisites (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y clang zlib1g-dev
+
+      - name: Publish (Native AOT)
+        shell: bash
+        run: dotnet publish src/MkPFS.Cli -r ${{ matrix.rid }} -c Release -o publish
+
+      - name: Smoke test
+        shell: bash
+        run: |
+          ./publish/mkpfs --version
+          ./publish/mkpfs selftest
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mkpfs-${{ matrix.rid }}
+          path: |
+            publish/*
+            !publish/*.pdb
+            !publish/*.dbg
+            !publish/*.dSYM
+          retention-days: 7
