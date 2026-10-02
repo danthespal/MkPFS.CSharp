@@ -28,7 +28,7 @@ fi
 generated="$(gh api "${generate_args[@]}" --jq .body 2>/dev/null || true)"
 
 cat <<EOF
-# MkPFS ${version}
+# MkPFS.C# ${version}
 
 ## Downloads
 

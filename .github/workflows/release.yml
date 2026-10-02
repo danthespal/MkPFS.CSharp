@@ -1,7 +1,7 @@
 name: Release
 
-# Push a version tag to publish:  git tag v2.0.0-alpha.1 && git push origin v2.0.0-alpha.1
-# Tags with a suffix (-alpha.1, -rc.1) become pre-releases.
+# Push a version tag to publish:  git tag v2.0.0 && git push origin v2.0.0
+# Every tag, with or without a suffix (-rc.1), is published as a normal release and marked latest.
 on:
   push:
     tags: ['v*']
@@ -19,7 +19,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
-      prerelease: ${{ steps.version.outputs.prerelease }}
     steps:
       - id: version
         env:
@@ -31,7 +30,6 @@ jobs:
           fi
           version="${TAG#v}"
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          if [[ "$version" == *-* ]]; then echo "prerelease=true" >> "$GITHUB_OUTPUT"; else echo "prerelease=false" >> "$GITHUB_OUTPUT"; fi
 
   ci:
     name: CI
@@ -67,7 +65,7 @@ jobs:
           for dir in build/mkpfs-*; do
             rid="${dir#build/mkpfs-}"
             name="mkpfs-${VERSION}-${rid}"
-            cp README.md "$dir/"
+            cp README.md LICENSE.md "$dir/"
             if [[ "$rid" == win-* ]]; then
               (cd "$dir" && zip -q -r "../../dist/${name}.zip" .)
             else
@@ -82,9 +80,4 @@ jobs:
         run: bash tools/ci/release-notes.sh "$TAG" "$GITHUB_REPOSITORY" > notes.md
 
       - name: Create release
-        env:
-          PRERELEASE: ${{ needs.meta.outputs.prerelease }}
-        run: |
-          flags=(--verify-tag --title "MkPFS ${VERSION}" --notes-file notes.md)
-          if [[ "$PRERELEASE" == "true" ]]; then flags+=(--prerelease); else flags+=(--latest); fi
-          gh release create "$TAG" dist/* "${flags[@]}"
+        run: gh release create "$TAG" dist/* --verify-tag --latest --title "MkPFS.C# ${VERSION}" --notes-file notes.md
