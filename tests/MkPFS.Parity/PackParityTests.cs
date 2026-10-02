@@ -58,6 +58,11 @@ public sealed partial class PackParityTests
     [GeneratedRegex(@" using \d+ CPU cores?\.\.\.$", RegexOptions.Multiline)]
     private static partial Regex CpuCores();
 
+    // Python's multiprocessing pool finishes its progress bar once or twice depending on process timing, so the
+    // number of blank lines it leaves in stderr varies between runs.
+    [GeneratedRegex(@"\n{3,}")]
+    private static partial Regex BlankRuns();
+
     [Theory]
     [MemberData(nameof(Cases))]
     public void Pack_matches_python(string caseName)
@@ -132,5 +137,5 @@ public sealed partial class PackParityTests
     }
 
     private static string Neutral(string text) =>
-        CliParityTests.NeutralSeparators(CpuCores().Replace(VolatileLine().Replace(text, "$1<varies>"), " using <n> CPU cores..."));
+        BlankRuns().Replace(CliParityTests.NeutralSeparators(CpuCores().Replace(VolatileLine().Replace(text, "$1<varies>"), " using <n> CPU cores...")), "\n\n");
 }
