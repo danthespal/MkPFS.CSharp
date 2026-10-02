@@ -291,6 +291,22 @@ internal static class ReadCommands
                 return 2;
             }
 
+            // Python compares --source-dir with the outer image, which for an exFAT-wrapped image holds only the
+            // .exfat, so every game file reads "missing in image" (oracle finding 17). Compare the folder with the
+            // files inside the exFAT instead, unless the folder holds that .exfat itself.
+            string? innerSourceDir = null;
+            if (dirArg is not null && PFSExtractor.OpenInnerExfat(path, ekpfs, parse.GetValue(newCrypt)) is { } wrapped)
+            {
+                using (wrapped.Image)
+                {
+                    if (!File.Exists(Path.Combine(FullPath(dirArg), wrapped.InnerName)))
+                    {
+                        innerSourceDir = FullPath(dirArg);
+                        source = null;
+                    }
+                }
+            }
+
             PFSInspection inspection = PFSInspector.Inspect(path, new PFSInspectOptions
             {
                 Ekpfs = ekpfs,
@@ -302,6 +318,17 @@ internal static class ReadCommands
                 Progress = ctx.CreateProgress(),
                 CheckPFSCStreams = true,
             });
+            if (innerSourceDir is not null && PFSExtractor.OpenInnerExfat(path, ekpfs, parse.GetValue(newCrypt)) is { } innerImage)
+            {
+                using (innerImage.Image)
+                {
+                    ctx.Info($"Comparing {innerSourceDir} with the files inside {innerImage.InnerName}");
+                    (List<string> innerErrors, List<string> innerWarnings) = PFSExtractor.VerifyExfat(innerImage.View, innerSourceDir);
+                    inspection.Errors.AddRange(innerErrors);
+                    inspection.Warnings.AddRange(innerWarnings);
+                }
+            }
+
             if (inspection.UrootInode >= 0 && inspection.Header is not null)
             {
                 PrintCheckReport(ctx, path, inspection);

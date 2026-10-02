@@ -89,7 +89,7 @@ public sealed class CheckPanelTests
         using TempDir dir = new();
         string image = Image(dir);
 
-        VerifyPanelViewModel verify = new(Colors.Green, Sync()) { Image = image };
+        VerifyPanelViewModel verify = new(Colors.Green, Sync()) { Image = image, SourceDir = Path.Combine(dir.Path, "PPSA01234-app") };
         await verify.RunCommand.ExecuteAsync(null);
         Assert.Equal("✓ Completed successfully.", verify.Job.Lines[^1].Text);
 

@@ -51,6 +51,35 @@ public sealed class PackFolderTests
     }
 
     [Fact]
+    public void Verify_source_dir_compares_a_wrapped_image_with_its_inner_exfat()
+    {
+        // Python compares with the outer image and reports every game file missing (oracle finding 17).
+        using TempDir dir = new();
+        string source = Tree(dir);
+        string image = Path.Combine(dir.Path, "game.ffpfsc");
+        Assert.Equal(0, Run("pack", "folder", source, image, "--cpu-count", "1").Exit);
+
+        (int exit, string output, string err) = Run("verify", image, "--source-dir", source);
+        Assert.True(exit == 0, output + err);
+        Assert.Contains($"Comparing {source} with the files inside PPSA05678.exfat", output, StringComparison.Ordinal);
+
+        File.WriteAllText(Path.Combine(source, "eboot.bin"), new string('x', 70_000));
+        dir.File("PPSA05678-app/extra.txt");
+        (exit, output, err) = Run("verify", image, "--source-dir", source);
+        Assert.Equal(1, exit);
+        Assert.Contains("content mismatch for eboot.bin", err, StringComparison.Ordinal);
+        Assert.Contains("missing files in exFAT image: extra.txt", err, StringComparison.Ordinal);
+
+        // A folder that holds the .exfat itself is still compared with the outer image.
+        string outer = dir.Dir("outer");
+        Assert.Equal(0, Run("unpack", image, Path.Combine(dir.Path, "outer-unpacked")).Exit);
+        File.Copy(Path.Combine(dir.Path, "outer-unpacked", "PPSA05678.exfat"), Path.Combine(outer, "PPSA05678.exfat"));
+        (exit, output, err) = Run("verify", image, "--source-dir", outer);
+        Assert.True(exit == 0, output + err);
+        Assert.DoesNotContain("Comparing", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Dry_run_reports_the_inner_size_and_writes_nothing()
     {
         using TempDir dir = new();
