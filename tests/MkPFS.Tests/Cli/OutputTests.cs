@@ -131,6 +131,17 @@ public sealed class OutputTests
         Assert.DoesNotContain("+", MkPFSCli.Version, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData(2, "verify")] // missing argument
+    [InlineData(2, "inspect", "x.ffpfs", "--bogus")] // unknown option
+    [InlineData(2, "pack", "folder", "a", "b", "--compress", "--no-compress")] // mutually exclusive
+    [InlineData(1, "verify", "missing.ffpfs")] // runtime error
+    public void Usage_errors_exit_with_2_like_argparse(int expected, params string[] args)
+    {
+        CliContext ctx = new(TextWriter.Null, TextWriter.Null, useColor: false, utf8: false, progress: false);
+        Assert.Equal(expected, MkPFSCli.Run(args, ctx));
+    }
+
     private sealed class RecordingSink : IProgressSink
     {
         public List<(string Phase, long Done, long Total, long Bytes)> Steps { get; } = [];

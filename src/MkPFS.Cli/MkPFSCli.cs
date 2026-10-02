@@ -64,9 +64,13 @@ public static class MkPFSCli
     /// <summary>Parse and run with explicit output writers.</summary>
     /// <param name="args">Process arguments.</param>
     /// <param name="ctx">Output context.</param>
-    /// <returns>Exit code.</returns>
-    public static int Run(string[] args, CliContext ctx) =>
-        BuildRootCommand(ctx).Parse(args).Invoke(new InvocationConfiguration { Output = ctx.Out, Error = ctx.Err });
+    /// <returns>Exit code; 2 for usage errors, like Python argparse.</returns>
+    public static int Run(string[] args, CliContext ctx)
+    {
+        ParseResult parse = BuildRootCommand(ctx).Parse(args);
+        int exit = parse.Invoke(new InvocationConfiguration { Output = ctx.Out, Error = ctx.Err });
+        return parse.Errors.Count > 0 ? 2 : exit;
+    }
 
     // Hidden diagnostics: PFSC encode throughput for one file (compare with tools/oracle/bench.py).
     private static Command BuildPFSCBenchCommand()
