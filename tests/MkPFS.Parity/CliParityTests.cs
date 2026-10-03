@@ -17,7 +17,8 @@ public sealed partial class CliParityTests
     [GeneratedRegex(@"^\s*\[[#-]+\]\s+\d+%")]
     private static partial Regex ProgressLine();
 
-    // Python prints its own name and URL; this port prints MkPFS.CSharp and its repository on purpose.
+    // Python prints its own name, version and URL; this port prints MkPFS.CSharp and its repository on purpose.
+    // The oracle checkout follows Python MkPFS main, so its version is not pinned either.
     [GeneratedRegex(@"(?:MkPFS \S+ - https://github\.com/PSBrew/MkPFS|MkPFS\.CSharp \S+ - https://github\.com/danthespal/MkPFS\.CSharp)")]
     private static partial Regex TitleLine();
 
@@ -82,8 +83,9 @@ public sealed partial class CliParityTests
         Assert.Equal(NeutralSeparators(expected), NeutralSeparators(actual));
     }
 
+    // Also replaces the banner on both sides, so expected and actual agree whatever the Python version is.
     internal static string NeutralSeparators(string text) =>
-        CasePath().Replace(text, match => match.Value.Replace(@"\\", "/", StringComparison.Ordinal).Replace('\\', '/'));
+        CasePath().Replace(TitleLine().Replace(text, "MkPFS <version> - https://github.com/PSBrew/MkPFS"), match => match.Value.Replace(@"\\", "/", StringComparison.Ordinal).Replace('\\', '/'));
 
     internal static string TreeOf(string caseName)
     {
@@ -92,13 +94,12 @@ public sealed partial class CliParityTests
     }
 
     // Same normalization as tools/oracle/build_goldens.py: case folder -> <CASE>, progress lines dropped,
-    // Python splitlines() semantics; plus the version in the banner (Python 1.0.0 vs this port).
+    // Python splitlines() semantics.
     internal static string Normalize(string text, string caseDir)
     {
         string root = Path.GetFullPath(caseDir);
         text = text.Replace(root.Replace("\\", "\\\\", StringComparison.Ordinal), "<CASE>", StringComparison.Ordinal)
             .Replace(root, "<CASE>", StringComparison.Ordinal);
-        text = TitleLine().Replace(text, "MkPFS 1.0.0 - https://github.com/PSBrew/MkPFS");
         IEnumerable<string> lines = text.Replace("\r\n", "\n", StringComparison.Ordinal).Split(['\n', '\r'])
             .Where(line => !ProgressLine().IsMatch(line));
         List<string> list = [.. lines];
