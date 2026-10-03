@@ -568,7 +568,17 @@ public static class PFSExtractor
     private static bool TryTarget(string root, string rel, out string target)
     {
         string fullRoot = Path.GetFullPath(root);
-        target = Path.GetFullPath(Path.Combine(fullRoot, rel.Replace('/', Path.DirectorySeparatorChar)));
+        try
+        {
+            target = Path.GetFullPath(Path.Combine(fullRoot, rel.Replace('/', Path.DirectorySeparatorChar)));
+        }
+        catch (ArgumentException)
+        {
+            // A crafted name with a NUL character is not a valid path.
+            target = string.Empty;
+            return false;
+        }
+
         string prefix = Path.EndsInDirectorySeparator(fullRoot) ? fullRoot : fullRoot + Path.DirectorySeparatorChar;
         return target.StartsWith(prefix, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
     }

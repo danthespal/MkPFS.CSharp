@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Wrap a published mkpfs-gui folder into "MkPFS.C#.app" (macOS only: uses sips and iconutil).
+# Wrap a published mkpfs-gui folder into "MkPFS.CSharp.app" (macOS only: uses sips and iconutil).
 # Usage: tools/ci/macos-app.sh <publish dir> <output dir> <version>
 set -euo pipefail
 
 src="${1:?usage: macos-app.sh <publish dir> <output dir> <version>}"
 out="${2:?usage: macos-app.sh <publish dir> <output dir> <version>}"
 version="${3:-0.0.0}"
-app="${out}/MkPFS.C#.app"
+app="${out}/MkPFS.CSharp.app"
 icon_png="$(dirname "$0")/../../src/MkPFS.Gui/Assets/icon.png"
 
 rm -rf "$app"
@@ -29,8 +29,8 @@ cat > "$app/Contents/Info.plist" <<EOF
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>CFBundleName</key><string>MkPFS.C#</string>
-  <key>CFBundleDisplayName</key><string>MkPFS.C#</string>
+  <key>CFBundleName</key><string>MkPFS.CSharp</string>
+  <key>CFBundleDisplayName</key><string>MkPFS.CSharp</string>
   <key>CFBundleIdentifier</key><string>io.github.danthespal.mkpfs-csharp</string>
   <key>CFBundleExecutable</key><string>mkpfs-gui</string>
   <key>CFBundleIconFile</key><string>AppIcon</string>

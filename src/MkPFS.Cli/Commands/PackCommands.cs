@@ -29,13 +29,8 @@ internal static class PackCommands
         Command command = new("folder", "Build image from a source directory");
         PackOptions options = new(command, "source_dir", "Source app or homebrew folder", includeRequireGameFiles: true);
         Option<bool> raw = new("--raw") { Description = "Pack the folder directly into a PFS image instead of the default exFAT-wrapped .ffpfsc" };
-        Option<bool> noAmpr = new("--no-ampr-index") { Description = "Do not generate ampr_emu.index even when fakelib/libSceAmpr.sprx is present" };
-        Option<bool> amprSkip = new("--ampr-skip-regen-if-exists") { Description = "If AMPR generation is enabled, validate and skip regen when a valid index exists" };
-        Option<bool> amprForce = new("--ampr-force-regen") { Description = "Force AMPR index regeneration even when an existing index is present" };
         command.Options.Add(raw);
-        command.Options.Add(noAmpr);
-        command.Options.Add(amprSkip);
-        command.Options.Add(amprForce);
+        AmprCliOptions ampr = new(command);
         command.SetAction(parse =>
         {
             PackArgs args = options.Read(parse);
@@ -43,10 +38,10 @@ internal static class PackCommands
             {
                 string source = FullPath(args.Source);
 
-                // The AMPR emulation index goes into the source tree first so the image includes it.
+                // AMPR Emu libraries and index go into the source tree first so the image includes them.
                 if (!args.DryRun)
                 {
-                    AmprIndex.Ensure(source, ctx.Log, enabled: !parse.GetValue(noAmpr), createIfMissing: parse.GetValue(amprSkip), forceRegen: parse.GetValue(amprForce));
+                    AmprLibs.Prepare(source, ampr.Read(parse), ctx.Log);
                 }
 
                 return parse.GetValue(raw) ? PackFolderRaw(ctx, args, source) : PackFolderWrapped(ctx, args, source);
@@ -506,6 +501,7 @@ internal static class PackCommands
         {
             sourceDir, output, clusterSize, overwrite, verbose, noProgress,
         };
+        AmprCliOptions ampr = new(command);
         command.SetAction(parse =>
         {
             string source = FullPath(parse.GetValue(sourceDir)!);
@@ -544,6 +540,18 @@ internal static class PackCommands
             ctx.VersionHeader();
             ctx.Info($"Building exFAT image from {source}");
             ctx.Info($"  Output: {target}");
+
+            // Python pack exfat never prepares AMPR Emu (oracle finding 18); the port does, like pack folder.
+            try
+            {
+                AmprLibs.Prepare(source, ampr.Read(parse), ctx.Log);
+            }
+            catch (BuildException ex)
+            {
+                ctx.Log.Error(ex.Message);
+                return 1;
+            }
+
             IProgressSink? progress = ctx.CreateProgress(!parse.GetValue(noProgress));
             string written = ExfatImageWriter.Write(source, target, cluster, progress);
             ctx.Info($"Successfully wrote {Sizes.HumanReadable(new FileInfo(written).Length)} exFAT image: {written}");

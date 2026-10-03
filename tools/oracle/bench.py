@@ -1,6 +1,6 @@
 """Record Python baseline timings on the ~330 MiB perf tree (zlib backend, level 7).
 
-Usage (from the MkPFS.C# root; ../MkPFS is the Python repo):
+Usage (from the MkPFS.CSharp root; ../MkPFS is the Python repo):
     uv run --project ../MkPFS python tools/oracle/bench.py
 """
 

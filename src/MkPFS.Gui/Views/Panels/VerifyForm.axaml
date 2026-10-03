@@ -13,6 +13,7 @@
     <TextBlock Text="{l:Tr paths}" Classes="section" Foreground="{Binding Accent}" />
     <c:PathField Label="{l:Tr v_image_label}" Placeholder="{l:Tr v_image_ph}" Mode="Open" Filters="PFS image:*.ffpfs *.ffpfsc|All files:*.*" Text="{Binding Image}" />
     <c:PathField Label="{l:Tr v_source_label}" Placeholder="{l:Tr v_source_ph}" Mode="Folder" Text="{Binding SourceDir}" />
+    <c:PathField Label="{l:Tr v_source_file_label}" Placeholder="{l:Tr v_source_file_ph}" Mode="Open" Text="{Binding SourceFile}" />
     <Rectangle Classes="separator" />
     <TextBlock Text="{l:Tr v_hashes}" Classes="section" Foreground="{Binding Accent}" />
     <Grid ColumnDefinitions="*,12,*">
@@ -30,5 +31,19 @@
     <TextBlock Text="{l:Tr v_ekpfs}" Classes="fieldlabel" />
     <TextBox Text="{Binding Ekpfs}" PlaceholderText="{l:Tr v_ekpfs_ph}" Classes="mono" />
     <CheckBox Content="{l:Tr v_newcrypt}" IsChecked="{Binding NewCrypt}" />
+    <Rectangle Classes="separator" />
+    <Expander Name="AdvancedExpander" Header="{l:Tr adv_title}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+      <StackPanel Spacing="8">
+        <StackPanel Spacing="3">
+          <TextBlock Text="{l:Tr adv_image_format}" Classes="fieldlabel" />
+          <ComboBox Name="FormatPicker" ItemsSource="{Binding ImageFormats}" SelectedItem="{Binding ImageFormat}" HorizontalAlignment="Stretch">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:Choice"><TextBlock Text="{Binding Label}" /></DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+        </StackPanel>
+        <CheckBox Content="{l:Tr v_require}" IsChecked="{Binding RequireGameFiles}" />
+      </StackPanel>
+    </Expander>
   </StackPanel>
 </UserControl>

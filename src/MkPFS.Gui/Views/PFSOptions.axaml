@@ -1,0 +1,38 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MkPFS.Gui.ViewModels"
+             xmlns:l="using:MkPFS.Gui.Localization"
+             x:Class="MkPFS.Gui.Views.PFSOptions"
+             x:DataType="vm:PFSOptionsViewModel">
+  <StackPanel Spacing="8">
+    <Grid ColumnDefinitions="*,12,*">
+      <StackPanel Grid.Column="0" Spacing="3">
+        <TextBlock Text="{l:Tr adv_version}" Classes="fieldlabel" />
+        <ComboBox Name="VersionPicker" ItemsSource="{Binding Versions}" SelectedItem="{Binding Version}" HorizontalAlignment="Stretch">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:Choice"><TextBlock Text="{Binding Label}" /></DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+      </StackPanel>
+      <StackPanel Grid.Column="2" Spacing="3" IsVisible="{Binding OfferInodeBits}" IsEnabled="{Binding InodeBitsEnabled}">
+        <TextBlock Text="{l:Tr adv_inode}" Classes="fieldlabel" />
+        <ComboBox Name="InodePicker" ItemsSource="{Binding InodeWidths}" SelectedItem="{Binding InodeBits}" HorizontalAlignment="Stretch">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:Choice"><TextBlock Text="{Binding Label}" /></DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+      </StackPanel>
+    </Grid>
+    <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto">
+      <CheckBox Grid.Row="0" Grid.Column="0" Content="{l:Tr adv_case}" IsChecked="{Binding CaseSensitive}" />
+      <CheckBox Grid.Row="0" Grid.Column="1" Content="{l:Tr adv_verbose}" IsChecked="{Binding Verbose}" />
+      <CheckBox Grid.Row="1" Grid.Column="0" Content="{l:Tr adv_encrypted}" IsChecked="{Binding Encrypted}" />
+      <CheckBox Grid.Row="1" Grid.Column="1" Content="{l:Tr adv_new_crypt}" IsChecked="{Binding NewCrypt}"
+                IsVisible="{Binding OfferNewCrypt}" IsEnabled="{Binding Encrypted}" />
+    </Grid>
+    <StackPanel Spacing="3" IsEnabled="{Binding Encrypted}">
+      <TextBlock Text="{l:Tr adv_ekpfs}" Classes="fieldlabel" />
+      <TextBox Text="{Binding EkpfsKey}" PlaceholderText="{l:Tr adv_ekpfs_ph}" />
+    </StackPanel>
+  </StackPanel>
+</UserControl>

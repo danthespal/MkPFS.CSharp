@@ -20,6 +20,21 @@
     <Color x:Key="SystemAccentColor">#00C8FF</Color>
     <Color x:Key="SystemAccentColorDark1">#00A8D6</Color>
     <Color x:Key="SystemAccentColorLight1">#33D3FF</Color>
+    <!-- Fluent Expander (Advanced sections) in the card and input colors. -->
+    <SolidColorBrush x:Key="ExpanderHeaderBackground" Color="#1A2035" />
+    <SolidColorBrush x:Key="ExpanderHeaderBackgroundPointerOver" Color="#202842" />
+    <SolidColorBrush x:Key="ExpanderHeaderBackgroundPressed" Color="#202842" />
+    <SolidColorBrush x:Key="ExpanderHeaderBorderBrush" Color="#2B3553" />
+    <SolidColorBrush x:Key="ExpanderHeaderBorderBrushPointerOver" Color="#2B3553" />
+    <SolidColorBrush x:Key="ExpanderHeaderBorderBrushPressed" Color="#2B3553" />
+    <SolidColorBrush x:Key="ExpanderHeaderForeground" Color="#E8EDF5" />
+    <SolidColorBrush x:Key="ExpanderHeaderForegroundPointerOver" Color="#E8EDF5" />
+    <SolidColorBrush x:Key="ExpanderHeaderForegroundPressed" Color="#E8EDF5" />
+    <SolidColorBrush x:Key="ExpanderChevronForeground" Color="#8892B0" />
+    <SolidColorBrush x:Key="ExpanderChevronForegroundPointerOver" Color="#E8EDF5" />
+    <SolidColorBrush x:Key="ExpanderChevronForegroundPressed" Color="#E8EDF5" />
+    <SolidColorBrush x:Key="ExpanderContentBackground" Color="#121626" />
+    <SolidColorBrush x:Key="ExpanderContentBorderBrush" Color="#2B3553" />
   </Styles.Resources>
 
   <Style Selector="Window">

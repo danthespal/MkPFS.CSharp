@@ -25,6 +25,9 @@ public sealed class Localizer : INotifyPropertyChanged
         new("en", "English"),
         new("pt_BR", "Português (BR)"),
         new("es", "Español"),
+        new("ro", "Română"),
+        new("de", "Deutsch"),
+        new("fr", "Français"),
     ];
 
     private static readonly ResourceManager English = Table("Strings");
@@ -33,6 +36,9 @@ public sealed class Localizer : INotifyPropertyChanged
         ["en"] = English,
         ["pt_BR"] = Table("Strings_pt_BR"),
         ["es"] = Table("Strings_es"),
+        ["ro"] = Table("Strings_ro"),
+        ["de"] = Table("Strings_de"),
+        ["fr"] = Table("Strings_fr"),
     };
 
     private ResourceManager _current = English;

@@ -20,5 +20,20 @@
     <Rectangle Classes="separator" />
     <TextBlock Text="{l:Tr ct_title}" Classes="section" Foreground="{Binding Accent}" />
     <v:CompressionSettings DataContext="{Binding Compression}" />
+    <Rectangle Classes="separator" />
+    <Expander Name="AdvancedExpander" Header="{l:Tr adv_title}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+      <StackPanel Spacing="8">
+        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto">
+          <CheckBox Grid.Row="0" Grid.Column="0" Content="{l:Tr pf_signed}" IsChecked="{Binding Signed}" />
+          <CheckBox Grid.Row="0" Grid.Column="1" Content="{l:Tr pf_dry}" IsChecked="{Binding DryRun}" />
+          <CheckBox Grid.Row="1" Grid.Column="0" Content="{l:Tr pf_verify}" IsChecked="{Binding VerifyAfter}" />
+          <CheckBox Grid.Row="1" Grid.Column="1" Content="{l:Tr adv_skip_check}" IsChecked="{Binding SkipVerification}" IsEnabled="{Binding !VerifyAfter}" />
+          <CheckBox Grid.Row="2" Grid.Column="0" Content="{l:Tr adv_keep_ext}" IsChecked="{Binding KeepExtension}" />
+          <CheckBox Grid.Row="2" Grid.Column="1" Content="{l:Tr adv_keep_inner}" IsChecked="{Binding KeepInnerName}" />
+          <CheckBox Grid.Row="3" Grid.Column="0" Content="{l:Tr adv_spool}" IsChecked="{Binding UseSpool}" />
+        </Grid>
+        <v:PFSOptions DataContext="{Binding PFS}" />
+      </StackPanel>
+    </Expander>
   </StackPanel>
 </UserControl>

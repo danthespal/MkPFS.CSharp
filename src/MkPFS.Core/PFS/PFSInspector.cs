@@ -134,6 +134,10 @@ public sealed class PFSInspection
 public static class PFSInspector
 {
     private const long ProgressInterval = 8L * 1024 * 1024;
+
+    // Deeper trees are reported instead of walked: the renderers recurse per level (Python stops near 1000 levels
+    // with RecursionError), and same limit as the exFAT reader.
+    private const int MaxDirectoryDepth = 1024;
     private static readonly byte[] ExfatSignature = "EXFAT   "u8.ToArray();
 
     /// <summary>Inspect an image file.</summary>
@@ -674,7 +678,13 @@ public static class PFSInspector
         Dictionary<long, string> dirPathByInode = new() { [uroot] = string.Empty };
         List<string> errors = result.Errors;
 
-        void Walk(long dirInode, string relPath, long parentInode, HashSet<long> ancestors)
+        // One frame per open directory instead of one call per level: same pre-order (so the same errors and entry
+        // order), but a deep crafted tree cannot overflow the stack, which would end the process. The ancestors of
+        // the directory being walked are exactly the directories on the stack.
+        Stack<WalkFrame> stack = new();
+        HashSet<long> ancestors = [];
+
+        void Enter(long dirInode, string relPath, long parentInode)
         {
             if (!visited.Add(dirInode))
             {
@@ -744,77 +754,94 @@ public static class PFSInspector
                 }
             }
 
-            HashSet<string> namesSeen = new(StringComparer.Ordinal);
-            HashSet<long> nextAncestors = [.. ancestors, dirInode];
-            foreach (PFSDirent entry in entries)
-            {
-                if (entry.Name is "." or "..")
-                {
-                    continue;
-                }
-
-                if (!namesSeen.Add(entry.Name))
-                {
-                    errors.Add($"directory '{shown}' has duplicate entry '{entry.Name}'");
-                    continue;
-                }
-
-                if (entry.Name.Contains('/', StringComparison.Ordinal))
-                {
-                    errors.Add($"directory '{shown}' has invalid entry name containing '/': {entry.Name}");
-                    continue;
-                }
-
-                string childPath = relPath.Length == 0 ? entry.Name : $"{relPath}/{entry.Name}";
-                if (entry.InodeNumber < 0 || entry.InodeNumber >= inodes.Count)
-                {
-                    errors.Add($"entry '{childPath}' references out-of-range inode {entry.InodeNumber}");
-                    continue;
-                }
-
-                PFSInode child = inodes[(int)entry.InodeNumber];
-                if (entry.TypeCode == PFSConstants.DirentTypeDirectory)
-                {
-                    if (!child.IsDir)
-                    {
-                        errors.Add($"entry '{childPath}' typed directory but inode mode is 0x{child.Mode:X4}");
-                        continue;
-                    }
-
-                    if (nextAncestors.Contains(entry.InodeNumber))
-                    {
-                        errors.Add($"directory cycle detected at '{childPath}' (inode {entry.InodeNumber})");
-                        continue;
-                    }
-
-                    if (dirPathByInode.TryGetValue(entry.InodeNumber, out string? previous) && previous != childPath)
-                    {
-                        errors.Add($"directory inode {entry.InodeNumber} is reachable from multiple paths: '{previous}' and '{childPath}'");
-                        continue;
-                    }
-
-                    dirPathByInode[entry.InodeNumber] = childPath;
-                    result.DirInodes[childPath] = entry.InodeNumber;
-                    Walk(entry.InodeNumber, childPath, dirInode, nextAncestors);
-                }
-                else if (entry.TypeCode == PFSConstants.DirentTypeFile)
-                {
-                    if (!child.IsFile)
-                    {
-                        errors.Add($"entry '{childPath}' typed file but inode mode is 0x{child.Mode:X4}");
-                        continue;
-                    }
-
-                    result.FileInodes[childPath] = entry.InodeNumber;
-                }
-                else
-                {
-                    errors.Add($"directory '{shown}' has unsupported dirent type {entry.TypeCode}");
-                }
-            }
+            ancestors.Add(dirInode);
+            stack.Push(new WalkFrame(dirInode, relPath, shown, entries));
         }
 
-        Walk(uroot, string.Empty, uroot, []);
+        Enter(uroot, string.Empty, uroot);
+        while (stack.Count > 0)
+        {
+            WalkFrame frame = stack.Peek();
+            if (frame.Next >= frame.Entries.Count)
+            {
+                stack.Pop();
+                ancestors.Remove(frame.DirInode);
+                continue;
+            }
+
+            PFSDirent entry = frame.Entries[frame.Next++];
+            string relPath = frame.RelPath;
+            string shown = frame.Shown;
+            if (entry.Name is "." or "..")
+            {
+                continue;
+            }
+
+            if (!frame.NamesSeen.Add(entry.Name))
+            {
+                errors.Add($"directory '{shown}' has duplicate entry '{entry.Name}'");
+                continue;
+            }
+
+            if (entry.Name.Contains('/', StringComparison.Ordinal))
+            {
+                errors.Add($"directory '{shown}' has invalid entry name containing '/': {entry.Name}");
+                continue;
+            }
+
+            string childPath = relPath.Length == 0 ? entry.Name : $"{relPath}/{entry.Name}";
+            if (entry.InodeNumber < 0 || entry.InodeNumber >= inodes.Count)
+            {
+                errors.Add($"entry '{childPath}' references out-of-range inode {entry.InodeNumber}");
+                continue;
+            }
+
+            PFSInode child = inodes[(int)entry.InodeNumber];
+            if (entry.TypeCode == PFSConstants.DirentTypeDirectory)
+            {
+                if (!child.IsDir)
+                {
+                    errors.Add($"entry '{childPath}' typed directory but inode mode is 0x{child.Mode:X4}");
+                    continue;
+                }
+
+                if (ancestors.Contains(entry.InodeNumber))
+                {
+                    errors.Add($"directory cycle detected at '{childPath}' (inode {entry.InodeNumber})");
+                    continue;
+                }
+
+                if (dirPathByInode.TryGetValue(entry.InodeNumber, out string? previous) && previous != childPath)
+                {
+                    errors.Add($"directory inode {entry.InodeNumber} is reachable from multiple paths: '{previous}' and '{childPath}'");
+                    continue;
+                }
+
+                if (ancestors.Count > MaxDirectoryDepth)
+                {
+                    errors.Add($"directory '{childPath}' is nested deeper than {MaxDirectoryDepth} levels");
+                    continue;
+                }
+
+                dirPathByInode[entry.InodeNumber] = childPath;
+                result.DirInodes[childPath] = entry.InodeNumber;
+                Enter(entry.InodeNumber, childPath, frame.DirInode);
+            }
+            else if (entry.TypeCode == PFSConstants.DirentTypeFile)
+            {
+                if (!child.IsFile)
+                {
+                    errors.Add($"entry '{childPath}' typed file but inode mode is 0x{child.Mode:X4}");
+                    continue;
+                }
+
+                result.FileInodes[childPath] = entry.InodeNumber;
+            }
+            else
+            {
+                errors.Add($"directory '{shown}' has unsupported dirent type {entry.TypeCode}");
+            }
+        }
     }
 
     /// <summary>Compare the flat_path_table with the walked tree (Python <c>build_expected_fpt</c> + <c>validate_fpt_maps</c>).</summary>
@@ -1084,4 +1111,20 @@ public static class PFSInspector
     }
 
     private static string PyBool(bool value) => value ? "True" : "False";
+
+    /// <summary>A directory whose entries <see cref="BuildTree"/> is walking.</summary>
+    private sealed class WalkFrame(long dirInode, string relPath, string shown, List<PFSDirent> entries)
+    {
+        public long DirInode { get; } = dirInode;
+
+        public string RelPath { get; } = relPath;
+
+        public string Shown { get; } = shown;
+
+        public List<PFSDirent> Entries { get; } = entries;
+
+        public HashSet<string> NamesSeen { get; } = new(StringComparer.Ordinal);
+
+        public int Next { get; set; }
+    }
 }

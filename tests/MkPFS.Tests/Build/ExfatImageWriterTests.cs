@@ -197,6 +197,41 @@ public sealed class ExfatImageWriterTests
     }
 
     [Fact]
+    public void Reader_rejects_directories_nested_deeper_than_the_limit()
+    {
+        using TempDir dir = new();
+        string source = dir.Dir("src");
+        string deepest = Path.Combine([source, .. Enumerable.Repeat("d", 1026)]);
+        Directory.CreateDirectory(deepest);
+        File.WriteAllText(Path.Combine(deepest, "a.txt"), "hi");
+
+        // Before the fix each level recursed once, so a deep enough crafted chain ended the process.
+        using FileStream stream = File.OpenRead(Pack(dir, source));
+        InvalidDataException error = Assert.Throws<InvalidDataException>(() => new ExfatReader(stream).RootEntries());
+        Assert.Contains("nested deeper than 1024 levels", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Unpack_refuses_a_name_with_a_nul_character()
+    {
+        using TempDir dir = new();
+        string source = dir.Dir("src");
+        dir.File("src/aXb.txt", "hi");
+        byte[] image = File.ReadAllBytes(Pack(dir, source));
+        (int rootOffset, int clusterSize, _) = RootDirectory(image);
+        int name = Enumerable.Range(0, clusterSize / 32).Select(i => rootOffset + (i * 32)).First(o => image[o] == 0xC1);
+        Assert.Equal('X', (char)BinaryPrimitives.ReadUInt16LittleEndian(image.AsSpan(name + 2 + 2)));
+        BinaryPrimitives.WriteUInt16LittleEndian(image.AsSpan(name + 2 + 2), 0);
+        string crafted = Path.Combine(dir.Path, "nul.exfat");
+        File.WriteAllBytes(crafted, image);
+
+        // Before the fix Path.GetFullPath threw ArgumentException out of the extractor.
+        ExtractionResult result = PFSExtractor.ExtractExfat(crafted, Path.Combine(dir.Path, "out"));
+
+        Assert.Equal(["unsafe path in image: a\0b.txt"], result.Errors);
+    }
+
+    [Fact]
     public void Reader_stops_a_fat_cycle_at_the_real_volume_size()
     {
         using TempDir dir = new();

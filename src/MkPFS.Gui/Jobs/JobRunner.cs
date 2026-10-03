@@ -94,6 +94,7 @@ public sealed partial class JobRunner : ObservableObject
     private readonly Lock _gate = new();
     private readonly List<LogLine> _pendingLines = [];
     private CancellationTokenSource? _cancel;
+    private TaskCompletionSource? _idle;
     private bool _flushQueued;
     private bool _progressDirty;
     private string _phase = string.Empty;
@@ -162,6 +163,8 @@ public sealed partial class JobRunner : ObservableObject
 
         using CancellationTokenSource cancel = new();
         _cancel = cancel;
+        TaskCompletionSource idle = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        _idle = idle;
         _phase = string.Empty;
         _label = string.Empty;
         IsRunning = true;
@@ -225,11 +228,16 @@ public sealed partial class JobRunner : ObservableObject
             PhaseText = string.Empty;
         }
 
+        idle.TrySetResult();
         return outcome;
     }
 
     /// <summary>Ask the running job to stop at its next progress report.</summary>
     public void Cancel() => _cancel?.Cancel();
+
+    /// <summary>Completes when no job is running (at once when idle).</summary>
+    /// <returns>Task that ends with the current job.</returns>
+    public Task WhenIdle() => _idle?.Task ?? Task.CompletedTask;
 
     /// <summary>Add a line from the UI thread (form validation errors).</summary>
     /// <param name="line">Line.</param>

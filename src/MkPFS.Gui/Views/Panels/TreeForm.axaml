@@ -13,9 +13,25 @@
     <TextBlock Text="{l:Tr paths}" Classes="section" Foreground="{Binding Accent}" />
     <c:PathField Label="{l:Tr t_image_label}" Placeholder="{l:Tr t_image_ph}" Mode="Any" Filters="{x:Static vm:TreePanelViewModel.ImageFilters}" Text="{Binding Image}" />
     <Rectangle Classes="separator" />
+    <TextBlock Text="{l:Tr options}" Classes="section" Foreground="{Binding Accent}" />
+    <CheckBox Content="{l:Tr t_deep}" IsChecked="{Binding Deep}" />
+    <Rectangle Classes="separator" />
     <TextBlock Text="{l:Tr encryption}" Classes="section" Foreground="{Binding Accent}" />
     <TextBlock Text="{l:Tr t_ekpfs}" Classes="fieldlabel" />
     <TextBox Text="{Binding Ekpfs}" PlaceholderText="{l:Tr t_ekpfs_ph}" Classes="mono" />
     <CheckBox Content="{l:Tr t_newcrypt}" IsChecked="{Binding NewCrypt}" />
+    <Rectangle Classes="separator" />
+    <Expander Name="AdvancedExpander" Header="{l:Tr adv_title}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+      <StackPanel Spacing="8">
+        <StackPanel Spacing="3">
+          <TextBlock Text="{l:Tr adv_image_format}" Classes="fieldlabel" />
+          <ComboBox Name="FormatPicker" ItemsSource="{Binding ImageFormats}" SelectedItem="{Binding ImageFormat}" HorizontalAlignment="Stretch">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:Choice"><TextBlock Text="{Binding Label}" /></DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+        </StackPanel>
+      </StackPanel>
+    </Expander>
   </StackPanel>
 </UserControl>

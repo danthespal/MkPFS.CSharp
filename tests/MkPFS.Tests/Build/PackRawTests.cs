@@ -172,4 +172,64 @@ public sealed class PackRawTests
         Assert.Empty(inspection.Errors);
         Assert.Equal(1, inspection.CheckedFiles);
     }
+
+    [Theory]
+    [InlineData(1024, true)]
+    [InlineData(1025, false)]
+    public void Deeply_nested_directories_are_walked_up_to_the_limit(int depth, bool accepted)
+    {
+        using TempDir dir = new();
+        string source = dir.Dir("src");
+        string deepest = Path.Combine([source, .. Enumerable.Repeat("d", depth)]);
+        Directory.CreateDirectory(deepest);
+        File.WriteAllText(Path.Combine(deepest, "a.txt"), "hi");
+        string image = Path.Combine(dir.Path, "deep.ffpfs");
+        Assert.Equal(0, Run("pack", "folder", source, image, "--raw", "--no-compress", "--skip-verification", "--no-adjust-output-file-extension").Exit);
+
+        // Before the fix the tree walk recursed once per level and a ~600-level image ended the process.
+        PFSInspection inspection = PFSInspector.Inspect(image, new PFSInspectOptions { VerifyPayloads = false });
+
+        if (accepted)
+        {
+            Assert.Empty(inspection.Errors);
+            (int exit, string output, _) = Run("tree", image);
+            Assert.Equal(0, exit);
+            Assert.EndsWith("`-- a.txt\n", output, StringComparison.Ordinal);
+        }
+        else
+        {
+            Assert.Contains(inspection.Errors, e => e.EndsWith("is nested deeper than 1024 levels", StringComparison.Ordinal));
+        }
+    }
+
+    [Fact]
+    public void Cancelling_parallel_compression_surfaces_as_cancellation()
+    {
+        using TempDir dir = new();
+        string source = dir.Dir("src");
+        dir.File("src/a.dat", string.Concat(Enumerable.Repeat("compressible block of text ", 10_000)));
+        dir.File("src/b.dat", string.Concat(Enumerable.Repeat("another compressible block ", 10_000)));
+        StringWriter output = new() { NewLine = "\n" };
+        CliContext ctx = new(output, output, useColor: false, utf8: false, progress: true, progressSink: new CancelOnCompress());
+
+        // The sink throws inside Parallel.ForEach, which wraps it; before the fix the GUI log showed the stack trace.
+        Assert.ThrowsAny<OperationCanceledException>(() => MkPFSCli.Run(["pack", "folder", source, Path.Combine(dir.Path, "out.ffpfs"), "--raw", "--cpu-count", "2"], ctx));
+        Assert.DoesNotContain("Unhandled exception", output.ToString(), StringComparison.Ordinal);
+    }
+
+    // Like the GUI job sink after Cancel: throws on the first block reported from the compression workers.
+    private sealed class CancelOnCompress : MkPFS.Core.Diagnostics.IProgressSink
+    {
+        public void Step(string phase, long done, long total, long bytesProcessed)
+        {
+            if (phase == "compress" && done > 0)
+            {
+                throw new OperationCanceledException();
+            }
+        }
+
+        public void Status(string message)
+        {
+        }
+    }
 }

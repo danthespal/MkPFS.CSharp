@@ -1,16 +1,16 @@
 # Moving from Python MkPFS
 
-MkPFS.C# is a drop-in replacement for the Python [MkPFS](https://github.com/PSBrew/MkPFS) 1.0.0 command
+MkPFS.CSharp is a drop-in replacement for the Python [MkPFS](https://github.com/PSBrew/MkPFS) 1.0.0 command
 line. Scripts keep working: the program is still `mkpfs`, the commands and every flag have the same
 names, and the console output has the same layout.
 
 ## Install
 
-| Python MkPFS | MkPFS.C# |
+| Python MkPFS | MkPFS.CSharp |
 |---|---|
 | `pip install mkpfs` or `uv tool install mkpfs` | Unpack `mkpfs-<version>-<system>` from the [releases page](https://github.com/danthespal/MkPFS.CSharp/releases) |
 | Needs Python 3.9+ with `cryptography` and, on x64 and ARM, `isal` | Single native executable plus `mkpfs_zlib`; no runtime to install |
-| `mkpfs-gui` (customtkinter) | `mkpfs-gui-<version>-<system>`; on macOS `MkPFS.C#.app` |
+| `mkpfs-gui` (customtkinter) | `mkpfs-gui-<version>-<system>`; on macOS `MkPFS.CSharp.app` |
 
 ## Commands and flags
 
@@ -31,10 +31,10 @@ are worded differently from Python's argparse.
 
 **Compression backend.** Python's default `auto` backend picks ISA-L, which Python MkPFS installs
 on x64 and ARM. ISA-L streams use back-references the PS5 decodes wrongly (corrupted game files
-after mounting). MkPFS.C# always compresses with zlib 1.3.1 at the same level (7 by default):
+after mounting). MkPFS.CSharp always compresses with zlib 1.3.1 at the same level (7 by default):
 `auto` and `zlib` are accepted silently, `isal` and `zlib-ng` print a warning and use zlib.
 
-**Same images.** With the same source and flags, MkPFS.C# writes the same bytes as Python MkPFS
+**Same images.** With the same source and flags, MkPFS.CSharp writes the same bytes as Python MkPFS
 compressing with zlib, except for the build time stored in the image. In Python that takes
 `--compression-backend zlib`, plus `--cpu-count 1` for large inputs, because its worker processes
 ignore the backend option. Set `SOURCE_DATE_EPOCH` (seconds since 1970) to pin the build time for
@@ -55,10 +55,10 @@ reproducible builds.
 - Game titles use the `param.json` default language instead of the first language in the file
   (often Arabic).
 
-**Name.** The header line reads `MkPFS.C# <version> - https://github.com/danthespal/MkPFS.CSharp`.
+**Name.** The header line reads `MkPFS.CSharp <version> - https://github.com/danthespal/MkPFS.CSharp`.
 Tools that parse the first lines of the output should accept both names.
 
-## New in MkPFS.C#
+## New in MkPFS.CSharp
 
 - `mkpfs repair` for single-file `.ffpfsc` images, with `--scan`, `--bad-blocks` (PS5 Game Compressor
   `bad_blocks.tsv`), `--recompress`, `--mode`, and `--report-dir`.

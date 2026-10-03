@@ -22,7 +22,7 @@ internal static class RepairCommand
         mode.AcceptOnlyFromAmong("auto", "in-place", "copy");
         Option<string?> reportDir = new("--report-dir") { Description = "Write summary.json and bad_blocks.tsv to this folder" };
         Option<bool> noSlack = new("--no-slack-cleanup") { Description = "Do not zero unused bytes in the outer PFS wrapper" };
-        Option<int> cpuCount = new("--cpu-count") { Description = "Worker threads (0 = all cores)", DefaultValueFactory = _ => 0 };
+        Option<int> cpuCount = new("--cpu-count") { Description = "Worker threads (0 = auto min(16, max(1, cpu_count() - 1)))", DefaultValueFactory = _ => 0 };
         Option<bool> noProgress = new("--no-progress") { Description = "Disable progress output" };
         Command command = new("repair", "Find and fix PFSC blocks the PS5 may decode wrongly (single-file .ffpfsc)")
         {

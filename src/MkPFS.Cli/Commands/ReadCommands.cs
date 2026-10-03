@@ -476,13 +476,13 @@ internal static class ReadCommands
 
         if (value.Length is 0 or > 8)
         {
-            ctx.Info("--expected-crc32 must be a 32-bit hex value");
+            ctx.Info("--expect-crc32 must be a 32-bit hex value");
             return false;
         }
 
         if (!uint.TryParse(value, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out uint parsed))
         {
-            ctx.Info("--expected-crc32 must be hex (example: 7F528D1F or 0x7F528D1F)");
+            ctx.Info("--expect-crc32 must be hex (example: 7F528D1F or 0x7F528D1F)");
             return false;
         }
 
@@ -501,7 +501,7 @@ internal static class ReadCommands
         string digest = text.Trim().ToLowerInvariant();
         if (digest.Length != 64 || digest.Any(c => !char.IsAsciiHexDigitLower(c) && !char.IsAsciiDigit(c)))
         {
-            ctx.Info("--expected-manifest-sha256 must be a 64-hex SHA256 digest");
+            ctx.Info("--expect-manifest-sha256 must be a 64-hex SHA256 digest");
             return false;
         }
 

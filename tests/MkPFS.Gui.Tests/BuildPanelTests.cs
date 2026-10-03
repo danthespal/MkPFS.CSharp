@@ -39,8 +39,9 @@ public sealed class BuildPanelTests
         panel.Compress = false;
         panel.Signed = panel.VerifyAfter = panel.DryRun = true;
         panel.TempFolder = "T:/tmp";
+        panel.Ampr.LibsDir = "L:/ampr";
         Assert.Equal(
-            ["pack", "folder", "D:/games/x", "D:/out/x.ffpfsc", "--no-compress", "--signed", "--verify", "--dry-run", "--temp-folder", "T:/tmp"],
+            ["pack", "folder", "D:/games/x", "D:/out/x.ffpfsc", "--no-compress", "--signed", "--verify", "--dry-run", "--temp-folder", "T:/tmp", "--ampr-libs", "L:/ampr"],
             Build(panel, out _));
     }
 
@@ -55,7 +56,8 @@ public sealed class BuildPanelTests
         Assert.Equal(["pack", "exfat", "D:/games/x"], Build(panel, out _));
         panel.Output = "D:/x.exfat";
         panel.Overwrite = true;
-        Assert.Equal(["pack", "exfat", "D:/games/x", "D:/x.exfat", "--overwrite"], Build(panel, out _));
+        panel.Ampr.LibsDir = "L:/ampr";
+        Assert.Equal(["pack", "exfat", "D:/games/x", "D:/x.exfat", "--overwrite", "--ampr-libs", "L:/ampr"], Build(panel, out _));
     }
 
     [Fact]
@@ -75,7 +77,94 @@ public sealed class BuildPanelTests
         batch.Source = "D:/in";
         batch.Compress = false;
         batch.Overwrite = batch.DryRun = batch.VerifyAfter = true;
-        Assert.Equal(["batch", "D:/in", "D:/out", "--no-compress", "--overwrite", "--dry-run", "--verify"], Build(batch, out _));
+        batch.Ampr.LibsDir = "L:/ampr";
+        Assert.Equal(["batch", "D:/in", "D:/out", "--no-compress", "--overwrite", "--dry-run", "--verify", "--ampr-libs", "L:/ampr"], Build(batch, out _));
+    }
+
+    [Fact]
+    public void Advanced_options_map_to_cli_flags()
+    {
+        PackFolderPanelViewModel folder = new(Colors.Blue, Sync()) { Source = "D:/g", Output = "D:/g.ffpfs" };
+        folder.PFS.InodeBits = folder.PFS.InodeWidths[1];
+        folder.PFS.Version = folder.PFS.Versions[1];
+        folder.PFS.Encrypted = folder.PFS.CaseSensitive = folder.PFS.Verbose = true;
+        folder.PFS.EkpfsKey = " ab ";
+        folder.RequireGameFiles = folder.SkipVerification = folder.KeepExtension = true;
+        Assert.Equal(
+            ["pack", "folder", "D:/g", "D:/g.ffpfs", "--require-game-files", "--skip-verification", "--no-adjust-output-file-extension",
+             "--version", "PS4", "--case-sensitive", "--encrypted", "--ekpfs-key", "ab", "--verbose"],
+            Build(folder, out _)); // 64-bit inodes need --raw
+        folder.Raw = folder.VerifyAfter = true;
+        Assert.Equal(
+            ["pack", "folder", "D:/g", "D:/g.ffpfs", "--verify", "--raw", "--require-game-files", "--no-adjust-output-file-extension",
+             "--version", "PS4", "--inode-bits", "64", "--case-sensitive", "--encrypted", "--ekpfs-key", "ab", "--verbose"],
+            Build(folder, out _)); // --skip-verification conflicts with --verify
+
+        PackExfatPanelViewModel exfat = new(Colors.Orange, Sync()) { Source = "D:/g", Output = "D:/g.exfat" };
+        Assert.Equal("auto", exfat.ClusterSize.Value);
+        exfat.ClusterSize = exfat.ClusterSizes.Single(c => c.Label == "32 MiB");
+        exfat.Verbose = true;
+        Assert.Equal(["pack", "exfat", "D:/g", "D:/g.exfat", "--cluster-size", "33554432", "--verbose"], Build(exfat, out _));
+
+        PackFilePanelViewModel file = new(Colors.Cyan, Sync()) { Source = "D:/a.exfat", Output = "D:/a.ffpfsc" };
+        file.Signed = file.DryRun = file.UseSpool = file.KeepInnerName = true;
+        file.PFS.InodeBits = file.PFS.InodeWidths[1];
+        Assert.Equal(
+            ["pack", "file", "D:/a.exfat", "D:/a.ffpfsc", "--signed", "--dry-run", "--use-spool", "--no-rename-inner-image", "--inode-bits", "64"],
+            Build(file, out _));
+
+        BatchPanelViewModel batch = new(Colors.Teal, Sync()) { Source = "D:/in", Output = "D:/out" };
+        batch.PFS.NewCrypt = true; // only with --encrypted
+        Assert.Equal(["batch", "D:/in", "D:/out"], Build(batch, out _));
+        batch.PFS.Encrypted = true;
+        batch.PFS.InodeBits = batch.PFS.InodeWidths[1]; // not offered by batch
+        Assert.Equal(["batch", "D:/in", "D:/out", "--encrypted", "--new-crypt"], Build(batch, out _));
+    }
+
+    [Fact]
+    public void Ampr_settings_map_to_cli_flags()
+    {
+        AmprSettingsViewModel ampr = new();
+        List<string> args = [];
+        ampr.ForceAprTitle = true; // needs a libs folder
+        ampr.AppendTo(args);
+        Assert.Empty(args);
+
+        ampr.LibsDir = " L:/ampr ";
+        ampr.KeepValidIndex = ampr.ForceRegen = true;
+        ampr.AppendTo(args);
+        Assert.Equal(["--ampr-libs", "L:/ampr", "--ampr-title", "--ampr-skip-regen-if-exists", "--ampr-force-regen"], args);
+
+        args.Clear();
+        ampr.GenerateIndex = false;
+        ampr.AppendTo(args);
+        Assert.Equal(["--ampr-libs", "L:/ampr", "--ampr-title", "--no-ampr-index"], args);
+    }
+
+    [AvaloniaFact]
+    public void A_source_with_an_index_keeps_it_by_default()
+    {
+        using TempDir dir = new();
+        string indexed = Game(dir, "indexed");
+        dir.File("indexed/ampr_emu.index", "idx");
+        string plain = Game(dir, "plain");
+
+        PackExfatPanelViewModel exfat = new(Colors.Orange, Sync()) { Source = indexed };
+        Assert.True(exfat.Ampr.HasExistingIndex);
+        Assert.Equal(["pack", "exfat", indexed, exfat.Output, "--ampr-skip-regen-if-exists"], Build(exfat, out _));
+        exfat.Source = plain; // the automatic choice follows the source
+        Assert.False(exfat.Ampr.HasExistingIndex);
+        Assert.False(exfat.Ampr.KeepValidIndex);
+
+        PackFolderPanelViewModel folder = new(Colors.Blue, Sync());
+        folder.Ampr.KeepValidIndex = true; // the user's choice stays
+        folder.Source = indexed;
+        folder.Source = plain;
+        Assert.True(folder.Ampr.KeepValidIndex);
+
+        BatchPanelViewModel batch = new(Colors.Teal, Sync()) { Source = dir.Path };
+        Assert.True(batch.Ampr.HasExistingIndex);
+        Assert.True(batch.Ampr.KeepValidIndex);
     }
 
     [AvaloniaFact]

@@ -126,7 +126,7 @@ public sealed class OutputTests
     [Fact]
     public void Title_has_python_header_shape()
     {
-        Assert.StartsWith("MkPFS.C# ", MkPFSCli.Title, StringComparison.Ordinal);
+        Assert.StartsWith("MkPFS.CSharp ", MkPFSCli.Title, StringComparison.Ordinal);
         Assert.EndsWith(" - https://github.com/danthespal/MkPFS.CSharp", MkPFSCli.Title, StringComparison.Ordinal);
         Assert.DoesNotContain("+", MkPFSCli.Version, StringComparison.Ordinal);
     }

@@ -111,4 +111,4 @@ jobs:
           } >> notes.md
 
       - name: Create release
-        run: gh release create "$TAG" dist/* --verify-tag --latest --title "MkPFS.C# ${VERSION}" --notes-file notes.md
+        run: gh release create "$TAG" dist/* --verify-tag --latest --title "MkPFS.CSharp ${VERSION}" --notes-file notes.md

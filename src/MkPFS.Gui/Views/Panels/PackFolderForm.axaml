@@ -25,5 +25,20 @@
     <Rectangle Classes="separator" />
     <TextBlock Text="{l:Tr ct_title}" Classes="section" Foreground="{Binding Accent}" />
     <v:CompressionSettings DataContext="{Binding Compression}" />
+    <Rectangle Classes="separator" />
+    <TextBlock Text="{l:Tr am_section}" Classes="section" Foreground="{Binding Accent}" />
+    <v:AmprSettings DataContext="{Binding Ampr}" />
+    <Rectangle Classes="separator" />
+    <Expander Name="AdvancedExpander" Header="{l:Tr adv_title}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+      <StackPanel Spacing="8">
+        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto">
+          <CheckBox Grid.Row="0" Grid.Column="0" Content="{l:Tr adv_raw}" IsChecked="{Binding Raw}" />
+          <CheckBox Grid.Row="0" Grid.Column="1" Content="{l:Tr adv_require}" IsChecked="{Binding RequireGameFiles}" />
+          <CheckBox Grid.Row="1" Grid.Column="0" Content="{l:Tr adv_skip_check}" IsChecked="{Binding SkipVerification}" IsEnabled="{Binding !VerifyAfter}" />
+          <CheckBox Grid.Row="1" Grid.Column="1" Content="{l:Tr adv_keep_ext}" IsChecked="{Binding KeepExtension}" />
+        </Grid>
+        <v:PFSOptions DataContext="{Binding PFS}" />
+      </StackPanel>
+    </Expander>
   </StackPanel>
 </UserControl>

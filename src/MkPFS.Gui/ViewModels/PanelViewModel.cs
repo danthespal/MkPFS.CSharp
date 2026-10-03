@@ -74,6 +74,21 @@ public abstract partial class PanelViewModel : ObservableObject
         }
     }
 
+    /// <summary>Image formats for <c>--format</c> on the read pages; auto-detect first.</summary>
+    protected static readonly IReadOnlyList<Choice> ImageFormatChoices = [new("auto", "fmt_auto"), new("pfs", null, "PFS"), new("exfat", null, "exFAT")];
+
+    /// <summary>Append <c>--format</c> unless <paramref name="format"/> is auto-detect.</summary>
+    /// <param name="args">Argument list.</param>
+    /// <param name="format">Selected format.</param>
+    protected static void AddFormat(List<string> args, Choice format)
+    {
+        if (format.Value != "auto")
+        {
+            args.Add("--format");
+            args.Add(format.Value);
+        }
+    }
+
     /// <summary>Append <paramref name="flag"/> when <paramref name="enabled"/>.</summary>
     /// <param name="args">Argument list.</param>
     /// <param name="enabled">Condition.</param>

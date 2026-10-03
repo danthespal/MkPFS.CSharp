@@ -133,29 +133,9 @@ public static class AmprIndex
     /// <returns>Records written (0 and no file when the tree has no files).</returns>
     public static int Build(string root, string outputPath)
     {
-        root = Path.GetFullPath(root);
         outputPath = Path.GetFullPath(outputPath);
         string tmp = outputPath + ".tmp";
-        List<Row> rows = [];
-        HashSet<string> seen = new(StringComparer.Ordinal);
-        foreach (string file in WalkFiles(root))
-        {
-            if (string.Equals(file, outputPath, PathComparison) || string.Equals(file, tmp, PathComparison))
-            {
-                continue;
-            }
-
-            string indexed = "/app0/" + Path.GetRelativePath(root, file).Replace('\\', '/');
-            string key = KeyFor(indexed);
-            if (key == $"/app0/{IndexName}" || key == $"/app0/{IndexName}.tmp" || !seen.Add(key))
-            {
-                continue; // the index itself, or a case-insensitive duplicate (first wins)
-            }
-
-            FileInfo info = new(file);
-            rows.Add(new Row(info.Length, UnixSeconds(info.LastWriteTimeUtc), indexed));
-        }
-
+        List<Row> rows = ScanRows(root, outputPath);
         if (rows.Count == 0)
         {
             return 0;
@@ -259,7 +239,9 @@ public static class AmprIndex
     }
 
     /// <summary>
-    /// Header sanity checks plus a row-count comparison against the live tree (Python <c>validate_ampr_index</c>).
+    /// Header sanity checks plus a comparison of every indexed path (case-insensitive) and size with the live tree.
+    /// Modification times are not compared: copying a game folder changes them. Python <c>validate_ampr_index</c>
+    /// only compares the row count, so a swapped or resized file passes there (oracle finding 19).
     /// </summary>
     /// <param name="indexPath">Index path.</param>
     /// <param name="sourceRoot">Source tree.</param>
@@ -301,32 +283,56 @@ public static class AmprIndex
             return false;
         }
 
-        string root = Path.GetFullPath(sourceRoot);
-        string fullIndex = Path.GetFullPath(indexPath);
-        HashSet<string> seen = new(StringComparer.Ordinal);
-        long live = 0;
+        Dictionary<string, long> indexed = new(StringComparer.Ordinal);
+        List<Row> live;
         try
         {
-            foreach (string file in WalkFiles(root))
+            foreach (Row row in ReadRows(data))
             {
-                if (string.Equals(file, fullIndex, PathComparison) || string.Equals(file, fullIndex + ".tmp", PathComparison))
+                if (!indexed.TryAdd(KeyFor(row.Path), row.Size))
                 {
-                    continue;
-                }
-
-                string key = KeyFor("/app0/" + Path.GetRelativePath(root, file).Replace('\\', '/'));
-                if (key != $"/app0/{IndexName}" && key != $"/app0/{IndexName}.tmp" && seen.Add(key))
-                {
-                    live++;
+                    return false;
                 }
             }
+
+            live = ScanRows(sourceRoot, Path.GetFullPath(indexPath));
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        catch (Exception ex) when (ex is InvalidDataException or IOException or UnauthorizedAccessException)
         {
             return false;
         }
 
-        return live == rows;
+        return live.Count == indexed.Count &&
+            live.All(row => indexed.TryGetValue(KeyFor(row.Path), out long size) && size == row.Size);
+    }
+
+    // Files the index lists, in walk order: the index and its temp file skipped, case-insensitive duplicates
+    // dropped (first wins).
+    private static List<Row> ScanRows(string root, string indexPath)
+    {
+        root = Path.GetFullPath(root);
+        string tmp = indexPath + ".tmp";
+        List<Row> rows = [];
+        HashSet<string> seen = new(StringComparer.Ordinal);
+        foreach (string file in WalkFiles(root))
+        {
+            if (string.Equals(file, indexPath, PathComparison) || string.Equals(file, tmp, PathComparison))
+            {
+                continue;
+            }
+
+            string indexed = "/app0/" + Path.GetRelativePath(root, file).Replace('\\', '/');
+            string key = KeyFor(indexed);
+            if (key == $"/app0/{IndexName}" || key == $"/app0/{IndexName}.tmp" || !seen.Add(key))
+            {
+                continue;
+            }
+
+            FileInfo info = new(file);
+            rows.Add(new Row(info.Length, UnixSeconds(info.LastWriteTimeUtc), indexed));
+        }
+
+        return rows;
     }
 
     private static StringComparison PathComparison => OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;

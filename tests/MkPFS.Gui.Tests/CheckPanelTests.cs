@@ -61,6 +61,31 @@ public sealed class CheckPanelTests
         Assert.Equal(["tree", "D:/data.EXFAT", "--new-crypt"], tree.BuildArguments(out _)); // a bare exFAT has no inner image
     }
 
+    [Fact]
+    public void Read_pages_map_their_extra_options_to_cli_flags()
+    {
+        VerifyPanelViewModel verify = new(Colors.Green, Sync()) { Image = "D:/a.ffpfsc", SourceDir = "D:/src", SourceFile = "D:/a.exfat" };
+        Assert.Null(verify.BuildArguments(out string? error));
+        Assert.Equal("✗ Use a source folder or a source file, not both.", error);
+        verify.SourceDir = string.Empty;
+        verify.RequireGameFiles = true;
+        verify.ImageFormat = verify.ImageFormats.Single(f => f.Value == "pfs");
+        Assert.Equal(["verify", "D:/a.ffpfsc", "--source-file", "D:/a.exfat", "--format", "pfs", "--require-game-files"], verify.BuildArguments(out _));
+
+        InspectPanelViewModel inspect = new(Colors.Purple, Sync()) { Image = "D:/a.ffpfs", NewCrypt = true };
+        Assert.Equal(["inspect", "D:/a.ffpfs", "--format", "text", "--new-crypt"], inspect.BuildArguments(out _));
+
+        TreePanelViewModel tree = new(Colors.Orange, Sync()) { Image = "D:/a.ffpfsc", Deep = false };
+        tree.ImageFormat = tree.ImageFormats.Single(f => f.Value == "exfat");
+        Assert.Equal(["tree", "D:/a.ffpfsc", "--format", "exfat"], tree.BuildArguments(out _));
+
+        UnpackPanelViewModel unpack = new(Colors.Pink, Sync()) { Image = "D:/a.ffpfsc", Output = "Z:/missing/out", Only = " sce_sys ; eboot.bin ;" };
+        Assert.Equal(["unpack", "D:/a.ffpfsc", "Z:/missing/out"], unpack.BuildArguments(out _)); // --only needs --deep
+        unpack.Deep = true;
+        unpack.ImageFormat = unpack.ImageFormats.Single(f => f.Value == "pfs");
+        Assert.Equal(["unpack", "D:/a.ffpfsc", "Z:/missing/out", "--deep", "--only", "sce_sys", "--only", "eboot.bin", "--format", "pfs"], unpack.BuildArguments(out _));
+    }
+
     [AvaloniaFact]
     public void Unpack_suggests_a_folder_and_avoids_existing_ones()
     {

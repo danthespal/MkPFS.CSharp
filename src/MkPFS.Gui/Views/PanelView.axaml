@@ -7,7 +7,7 @@
              xmlns:panels="using:MkPFS.Gui.Views.Panels"
              x:Class="MkPFS.Gui.Views.PanelView"
              x:DataType="vm:PanelViewModel">
-  <!-- Python BasePanel: fixed header; the options card, progress, output log, and Run scroll below it. -->
+  <!-- Python BasePanel: fixed header; the options card, Run, progress, and output log scroll below it. -->
   <DockPanel Margin="0,20,0,0">
     <StackPanel DockPanel.Dock="Top" Margin="24,0,24,14">
       <TextBlock Name="TitleText" Text="{Binding Title}" FontSize="24" FontWeight="Bold" Foreground="{Binding Accent}" />
@@ -33,6 +33,10 @@
             </ContentControl.DataTemplates>
           </ContentControl>
         </Border>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,12,0,0">
+          <Button Name="CancelButton" Content="{l:Tr cancel}" Command="{Binding CancelCommand}" IsVisible="{Binding Job.IsRunning}" MinWidth="96" />
+          <Button Name="RunButton" Content="{Binding RunLabel}" Command="{Binding RunCommand}" Classes="run" Background="{Binding Accent}" MinWidth="120" />
+        </StackPanel>
 
         <ProgressBar Name="Progress" Minimum="0" Maximum="1" Value="{Binding Job.Progress}" IsIndeterminate="{Binding Job.IsIndeterminate}"
                      Foreground="{Binding Accent}" Background="{StaticResource BgInput}" MinHeight="6" Margin="0,14,0,0" />
@@ -50,10 +54,6 @@
           </ListBox.ItemTemplate>
         </ListBox>
 
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,12,0,0">
-          <Button Name="CancelButton" Content="{l:Tr cancel}" Command="{Binding CancelCommand}" IsVisible="{Binding Job.IsRunning}" MinWidth="96" />
-          <Button Name="RunButton" Content="{Binding RunLabel}" Command="{Binding RunCommand}" Classes="run" Background="{Binding Accent}" MinWidth="120" />
-        </StackPanel>
       </StackPanel>
     </ScrollViewer>
   </DockPanel>

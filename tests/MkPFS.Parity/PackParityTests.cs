@@ -103,6 +103,13 @@ public sealed partial class PackParityTests
                 _ when arg == outputName => Path.Combine(outDir, arg),
                 _ => arg,
             })];
+
+            // Python pack exfat never writes ampr_emu.index (oracle finding 18); keep the golden's source untouched.
+            if (entry.GetProperty("kind").GetString() == "exfat")
+            {
+                resolved = [.. resolved, "--no-ampr-index"];
+            }
+
             StringWriter stdout = new() { NewLine = "\n" };
             StringWriter stderr = new() { NewLine = "\n" };
             int exit = MkPFSCli.Run(resolved, new CliContext(stdout, stderr, useColor: false, utf8: false, progress: true));

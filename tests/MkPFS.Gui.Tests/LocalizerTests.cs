@@ -37,6 +37,26 @@ public sealed partial class LocalizerTests
         Assert.Equal("3 item(s): 1 folder(s), 2 file(s)", Localizer.Instance.Format("bt_preview_count", 3, 1, 2));
     }
 
+    [AvaloniaTheory]
+    [InlineData("ro", "Română", "Despachetare")]
+    [InlineData("de", "Deutsch", "Entpacken")]
+    [InlineData("fr", "Français", "Extraire")]
+    public void Romanian_german_and_french_are_offered_and_translated(string code, string name, string unpack)
+    {
+        Language language = Localizer.Languages.Single(l => l.Code == code);
+        Assert.Equal(name, language.DisplayName);
+        try
+        {
+            Localizer.Instance.Language = language;
+            Assert.Equal(unpack, Localizer.Instance["nav_unpack"]);
+            Assert.Contains("MkPFS.CSharp", Localizer.Instance["close_message"], StringComparison.Ordinal);
+        }
+        finally
+        {
+            Localizer.Instance.Language = Localizer.Languages[0];
+        }
+    }
+
     // Windows from other tests still listen to the localizer, so switch on the UI thread.
     [AvaloniaFact]
     public void Switching_language_notifies_and_translates()

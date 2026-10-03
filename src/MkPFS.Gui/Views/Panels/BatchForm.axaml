@@ -27,5 +27,14 @@
     <Rectangle Classes="separator" />
     <TextBlock Text="{l:Tr ct_title}" Classes="section" Foreground="{Binding Accent}" />
     <v:CompressionSettings DataContext="{Binding Compression}" />
+    <Rectangle Classes="separator" />
+    <TextBlock Text="{l:Tr am_section}" Classes="section" Foreground="{Binding Accent}" />
+    <v:AmprSettings DataContext="{Binding Ampr}" />
+    <Rectangle Classes="separator" />
+    <Expander Name="AdvancedExpander" Header="{l:Tr adv_title}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+      <StackPanel Spacing="8">
+        <v:PFSOptions DataContext="{Binding PFS}" />
+      </StackPanel>
+    </Expander>
   </StackPanel>
 </UserControl>

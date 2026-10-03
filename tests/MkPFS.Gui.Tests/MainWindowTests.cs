@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Headless;
@@ -6,6 +7,7 @@ using Avalonia.LogicalTree;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using MkPFS.Gui.Jobs;
 using MkPFS.Gui.Localization;
 using MkPFS.Gui.ViewModels;
 using MkPFS.Gui.Views;
@@ -44,9 +46,110 @@ public sealed class MainWindowTests
         Assert.True(Nav(window, "batch").IsChecked);
         Assert.Equal("Batch Convert", PageTitle(window));
         Assert.True(Shows(window, "BUILD"));
-        Assert.Equal("MkPFS.C#", window.Title);
-        Assert.True(Shows(window, "MkPFS.C#"));
+        Assert.Equal("MkPFS.CSharp", window.Title);
+        Assert.True(Shows(window, "MkPFS.CSharp"));
         window.Close();
+    }
+
+    [AvaloniaFact]
+    public void Packing_pages_link_to_the_apr_emu_downloads()
+    {
+        (MainWindow window, _) = Open();
+
+        foreach (string page in new[] { "batch", "pack_folder", "pack_exfat" })
+        {
+            Nav(window, page).IsChecked = true;
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.Equal(
+                ["https://github.com/drakmor/ampr_emu/releases", "https://github.com/drakmor/pgo_stub/releases"],
+                window.GetVisualDescendants().OfType<HyperlinkButton>().Select(b => b.NavigateUri?.ToString()));
+            Assert.True(Shows(window, "APR Emu"));
+        }
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void Run_sits_between_the_options_and_the_log_and_advanced_starts_collapsed()
+    {
+        (MainWindow window, _) = Open();
+
+        foreach (string page in new[] { "batch", "pack_folder", "pack_exfat", "pack_file" })
+        {
+            Nav(window, page).IsChecked = true;
+            Dispatcher.UIThread.RunJobs();
+
+            Control card = window.GetVisualDescendants().OfType<ContentControl>().Single(c => c.Name == "FormHost");
+            Control run = window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "RunButton");
+            Control log = window.GetVisualDescendants().OfType<ListBox>().Single(l => l.Name == "Log");
+            double Top(Control c) => c.TranslatePoint(default, window)!.Value.Y;
+            Assert.True(Top(card) < Top(run) && Top(run) < Top(log), page);
+            Assert.False(window.GetVisualDescendants().OfType<Expander>().Single(e => e.Name == "AdvancedExpander").IsExpanded);
+        }
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void Closing_during_a_job_asks_then_keeps_running_or_stops_it()
+    {
+        (MainWindow window, MainWindowViewModel model) = Open();
+        bool closed = false;
+        window.Closed += (_, _) => closed = true;
+        JobRunner job = model.Items.First().Page.Job;
+        Task<JobOutcome> running = job.RunAsync(context =>
+        {
+            while (true)
+            {
+                context.Progress.Step("work", 0, 1, 0); // throws once cancelled
+                Thread.Sleep(5);
+            }
+        });
+
+        ConfirmCloseDialog AskToClose()
+        {
+            window.Close();
+            Dispatcher.UIThread.RunJobs();
+            return window.OwnedWindows.OfType<ConfirmCloseDialog>().Single();
+        }
+
+        void Click(ConfirmCloseDialog dialog, string button)
+        {
+            dialog.GetLogicalDescendants().OfType<Button>().Single(b => b.Name == button).RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        // Keep Running: the window and the job stay.
+        Click(AskToClose(), "KeepButton");
+        Assert.False(closed);
+        Assert.True(job.IsRunning);
+
+        // Stop and Close: the job is cancelled and has ended before the window closes.
+        Click(AskToClose(), "StopButton");
+        for (int i = 0; i < 500 && !closed; i++)
+        {
+            Thread.Sleep(10);
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        Assert.True(closed);
+        Assert.Equal(JobOutcome.Cancelled, running.Result);
+        Assert.False(model.HasRunningJob);
+    }
+
+    [AvaloniaFact]
+    public void Closing_without_a_job_does_not_ask()
+    {
+        (MainWindow window, _) = Open();
+        bool closed = false;
+        window.Closed += (_, _) => closed = true;
+
+        window.Close();
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.True(closed);
+        Assert.Empty(window.OwnedWindows);
     }
 
     [AvaloniaFact]

@@ -111,3 +111,15 @@ Images are platform independent.
     (`pack folder` without `--raw`) the outer image holds one `.exfat`, so every game file reads
     "missing in image". Port: compares the folder with the files inside the exFAT, unless the folder
     holds that `.exfat` itself. The goldens only use `--source-dir` with raw images and bare exFATs.
+18. **Bug:** only `pack folder` calls `ensure_ampr_index`. `pack exfat` and `batch` folder items pack
+    an APR Emu build (`fakelib/libSceAmpr.sprx`) without `ampr_emu.index`, so the game cannot resolve
+    its files. Port: all three build the index. The `exfat_ampr` parity case passes `--no-ampr-index`
+    to match the golden.
+19. **Bug:** `validate_ampr_index` (`--ampr-skip-regen-if-exists`) only compares the row count with the
+    file count, so an index whose files were resized or swapped for others is kept. Port: compares every
+    path (case-insensitive) and size; modification times are ignored because copies change them.
+20. **Bug:** `verify` rejects a bad `--expect-crc32` or `--expect-manifest-sha256` with messages that name
+    `--expected-crc32` and `--expected-manifest-sha256`, options that do not exist. Port: names the real options.
+21. **Bug:** the directory walks recurse once per level, so a crafted image nested about 1000 levels deep stops
+    with `RecursionError`. Port: walks PFS trees without recursion and reports directories nested deeper than
+    1024 levels (PFS and exFAT) as errors instead of ending the process.

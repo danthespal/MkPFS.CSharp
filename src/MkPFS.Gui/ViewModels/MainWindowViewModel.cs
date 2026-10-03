@@ -134,6 +134,21 @@ public sealed partial class MainWindowViewModel : ObservableObject
         Current = item.Page;
     }
 
+    /// <summary>Some page is running a job (closing the window asks first).</summary>
+    public bool HasRunningJob => Items.Any(i => i.Page.Job.IsRunning);
+
+    /// <summary>Cancel every running job and wait until each one has ended and cleaned up.</summary>
+    /// <returns>Completes when no job is running.</returns>
+    public Task StopJobsAsync()
+    {
+        foreach (NavItem item in Items)
+        {
+            item.Page.Job.Cancel();
+        }
+
+        return Task.WhenAll(Items.Select(i => i.Page.Job.WhenIdle()));
+    }
+
     /// <summary>Select the entry with <paramref name="key"/>.</summary>
     /// <param name="key">Page key.</param>
     public void Select(string key) => Select(Items.First(i => i.Key == key));

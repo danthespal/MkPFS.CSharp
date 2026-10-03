@@ -1,5 +1,6 @@
 using System.CommandLine;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using MkPFS.Cli.Output;
 using MkPFS.Core.Compression;
 using MkPFS.Core.Diagnostics;
@@ -11,7 +12,7 @@ namespace MkPFS.Cli;
 public static class MkPFSCli
 {
     /// <summary>Product name; distinct from the Python MkPFS so users can tell the two projects apart.</summary>
-    public const string Name = "MkPFS.C#";
+    public const string Name = "MkPFS.CSharp";
 
     /// <summary>Project URL shown in the header.</summary>
     public const string ProjectUrl = "https://github.com/danthespal/MkPFS.CSharp";
@@ -78,6 +79,12 @@ public static class MkPFSCli
             // Missing, locked, unreadable or corrupt inputs: one error line instead of a stack trace.
             ctx.Error(ex.Message);
             return 1;
+        }
+        catch (AggregateException ex) when (ex.Flatten().InnerExceptions.All(e => e is OperationCanceledException))
+        {
+            // A cancelled job sink throws inside parallel compression, which wraps it; surface it as a cancellation.
+            ExceptionDispatchInfo.Throw(ex.Flatten().InnerExceptions[0]);
+            throw;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

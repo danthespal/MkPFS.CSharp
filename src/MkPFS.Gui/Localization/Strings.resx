@@ -5,6 +5,33 @@
   <resheader name="version"><value>2.0</value></resheader>
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="adv_case" xml:space="preserve"><value>Case-Sensitive Names</value></data>
+  <data name="adv_cluster" xml:space="preserve"><value>Cluster Size</value></data>
+  <data name="adv_cluster_auto" xml:space="preserve"><value>Auto (64 KiB)</value></data>
+  <data name="adv_ekpfs" xml:space="preserve"><value>EKPFS Key (optional)</value></data>
+  <data name="adv_ekpfs_ph" xml:space="preserve"><value>64 hex characters; all zeros when empty…</value></data>
+  <data name="adv_encrypted" xml:space="preserve"><value>Encrypt (AES-XTS)</value></data>
+  <data name="adv_image_format" xml:space="preserve"><value>Image Format</value></data>
+  <data name="adv_inode" xml:space="preserve"><value>Inode Size</value></data>
+  <data name="adv_keep_ext" xml:space="preserve"><value>Keep Output Extension</value></data>
+  <data name="adv_keep_inner" xml:space="preserve"><value>Keep Inner File Name</value></data>
+  <data name="adv_new_crypt" xml:space="preserve"><value>Alternate Key Derivation (newCrypt)</value></data>
+  <data name="adv_raw" xml:space="preserve"><value>Raw PFS Image (.ffpfs)</value></data>
+  <data name="adv_require" xml:space="preserve"><value>Require Game Files</value></data>
+  <data name="adv_skip_check" xml:space="preserve"><value>Skip Post-Pack Check</value></data>
+  <data name="adv_spool" xml:space="preserve"><value>Use Spool Builder</value></data>
+  <data name="adv_title" xml:space="preserve"><value>Advanced</value></data>
+  <data name="adv_verbose" xml:space="preserve"><value>Verbose Log</value></data>
+  <data name="adv_version" xml:space="preserve"><value>PFS Version</value></data>
+  <data name="am_existing" xml:space="preserve"><value>This source already has ampr_emu.index: “Keep valid existing index” is on, so it is kept while it lists exactly the current files and sizes, and rebuilt otherwise.</value></data>
+  <data name="am_force" xml:space="preserve"><value>Always rebuild index</value></data>
+  <data name="am_help" xml:space="preserve"><value>APR/PlayGo titles need AMPR Emu. Download libSceAmpr.sprx and libScePlayGo.sprx into one folder and pick it below; they are copied into fakelib/ and ampr_emu.index is built.</value></data>
+  <data name="am_index" xml:space="preserve"><value>Generate ampr_emu.index</value></data>
+  <data name="am_keep" xml:space="preserve"><value>Keep valid existing index</value></data>
+  <data name="am_libs" xml:space="preserve"><value>AMPR Emu Libraries (optional)</value></data>
+  <data name="am_libs_ph" xml:space="preserve"><value>Folder with libSceAmpr.sprx…</value></data>
+  <data name="am_section" xml:space="preserve"><value>APR Emu</value></data>
+  <data name="am_title" xml:space="preserve"><value>Treat as APR title</value></data>
   <data name="app_subtitle" xml:space="preserve"><value>PlayStation File System</value></data>
   <data name="browse" xml:space="preserve"><value>Browse</value></data>
   <data name="browse_file" xml:space="preserve"><value>File</value></data>
@@ -30,6 +57,11 @@
   <data name="bt_version" xml:space="preserve"><value>Version</value></data>
   <data name="cancel" xml:space="preserve"><value>Cancel</value></data>
   <data name="cancelled" xml:space="preserve"><value>✗ Cancelled.</value></data>
+  <data name="close_keep" xml:space="preserve"><value>Keep Running</value></data>
+  <data name="close_message" xml:space="preserve"><value>A job is still running. Stop it and close MkPFS.CSharp?
+Partly written output is removed; an in-place repair finishes its rewrite first so the image stays usable.</value></data>
+  <data name="close_stop" xml:space="preserve"><value>Stop and Close</value></data>
+  <data name="close_title" xml:space="preserve"><value>Job Running</value></data>
   <data name="ct_block" xml:space="preserve"><value>Block Size (PS5 games use 64 KiB)</value></data>
   <data name="ct_block_auto" xml:space="preserve"><value>Auto (64 KiB)</value></data>
   <data name="ct_block_fit" xml:space="preserve"><value>Auto-fit (least padding)</value></data>
@@ -61,12 +93,14 @@
   <data name="exf_subtitle" xml:space="preserve"><value>Build an EXFAT image from a source folder</value></data>
   <data name="exf_title" xml:space="preserve"><value>Pack exFAT</value></data>
   <data name="export_log" xml:space="preserve"><value>Export Log</value></data>
+  <data name="fmt_auto" xml:space="preserve"><value>Auto-detect</value></data>
   <data name="i_ekpfs" xml:space="preserve"><value>EKPFS Key (optional)</value></data>
   <data name="i_ekpfs_ph" xml:space="preserve"><value>64 hex chars…</value></data>
   <data name="i_err" xml:space="preserve"><value>✗ Image path is required.</value></data>
   <data name="i_format" xml:space="preserve"><value>Output Format</value></data>
   <data name="i_image_label" xml:space="preserve"><value>PFS Image</value></data>
   <data name="i_image_ph" xml:space="preserve"><value>Select .ffpfs image…</value></data>
+  <data name="i_newcrypt" xml:space="preserve"><value>Use newCrypt EKPFS derivation</value></data>
   <data name="i_subtitle" xml:space="preserve"><value>View image metadata, version, block size, and warnings</value></data>
   <data name="i_title" xml:space="preserve"><value>Inspect</value></data>
   <data name="lang_label" xml:space="preserve"><value>Language</value></data>
@@ -154,6 +188,7 @@
   <data name="section_build" xml:space="preserve"><value>BUILD</value></data>
   <data name="section_check" xml:space="preserve"><value>CHECK</value></data>
   <data name="section_read" xml:space="preserve"><value>READ</value></data>
+  <data name="t_deep" xml:space="preserve"><value>List files inside a wrapped exFAT</value></data>
   <data name="t_ekpfs" xml:space="preserve"><value>EKPFS Key (optional)</value></data>
   <data name="t_ekpfs_ph" xml:space="preserve"><value>64 hex chars…</value></data>
   <data name="t_err" xml:space="preserve"><value>✗ Image path is required.</value></data>
@@ -163,12 +198,15 @@
   <data name="t_subtitle" xml:space="preserve"><value>Browse the directory tree embedded in a PFS image</value></data>
   <data name="t_title" xml:space="preserve"><value>Tree</value></data>
   <data name="u_auto_subdir" xml:space="preserve"><value>→ Output subfolder: {0}</value></data>
+  <data name="u_deep" xml:space="preserve"><value>Extract files inside a wrapped exFAT</value></data>
   <data name="u_ekpfs" xml:space="preserve"><value>EKPFS Key (optional)</value></data>
   <data name="u_ekpfs_ph" xml:space="preserve"><value>64 hex chars…</value></data>
   <data name="u_err" xml:space="preserve"><value>✗ Image and output folder are both required.</value></data>
   <data name="u_image_label" xml:space="preserve"><value>PFS Image</value></data>
   <data name="u_image_ph" xml:space="preserve"><value>Select .ffpfs image…</value></data>
   <data name="u_newcrypt" xml:space="preserve"><value>Use newCrypt EKPFS derivation</value></data>
+  <data name="u_only" xml:space="preserve"><value>Only These Inner Paths (optional, separated by ;)</value></data>
+  <data name="u_only_ph" xml:space="preserve"><value>sce_sys; eboot.bin…</value></data>
   <data name="u_out_label" xml:space="preserve"><value>Output Folder</value></data>
   <data name="u_out_ph" xml:space="preserve"><value>Destination folder…</value></data>
   <data name="u_overwrite" xml:space="preserve"><value>Overwrite existing output folder</value></data>
@@ -179,12 +217,16 @@
   <data name="v_ekpfs" xml:space="preserve"><value>EKPFS Key (64 hex, optional)</value></data>
   <data name="v_ekpfs_ph" xml:space="preserve"><value>64 hex chars…</value></data>
   <data name="v_err" xml:space="preserve"><value>✗ Image path is required.</value></data>
+  <data name="v_err_sources" xml:space="preserve"><value>✗ Use a source folder or a source file, not both.</value></data>
   <data name="v_hashes" xml:space="preserve"><value>Expected Hashes (optional)</value></data>
   <data name="v_image_label" xml:space="preserve"><value>PFS Image</value></data>
   <data name="v_image_ph" xml:space="preserve"><value>Select .ffpfs image…</value></data>
   <data name="v_newcrypt" xml:space="preserve"><value>Use newCrypt EKPFS derivation</value></data>
+  <data name="v_require" xml:space="preserve"><value>PS5 Game-File Checklist</value></data>
   <data name="v_sha256" xml:space="preserve"><value>Expected SHA256 (64 hex)</value></data>
   <data name="v_sha256_ph" xml:space="preserve"><value>64 hex chars…</value></data>
+  <data name="v_source_file_label" xml:space="preserve"><value>Source File (optional — single-file image comparison)</value></data>
+  <data name="v_source_file_ph" xml:space="preserve"><value>Optional source file…</value></data>
   <data name="v_source_label" xml:space="preserve"><value>Source Folder (optional — payload comparison)</value></data>
   <data name="v_source_ph" xml:space="preserve"><value>Optional source folder…</value></data>
   <data name="v_subtitle" xml:space="preserve"><value>Validate image structure, inodes, and payload checksums</value></data>

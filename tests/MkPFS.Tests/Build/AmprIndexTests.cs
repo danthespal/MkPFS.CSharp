@@ -108,6 +108,32 @@ public sealed class AmprIndexTests
     }
 
     [Fact]
+    public void Validation_compares_every_path_and_size_but_not_mtimes()
+    {
+        using TempDir dir = new();
+        string source = AmprTree(dir);
+        AmprIndex.Ensure(source, new ListLog());
+        string index = Path.Combine(source, AmprIndex.IndexName);
+
+        File.SetLastWriteTimeUtc(Path.Combine(source, "eboot.bin"), DateTime.UnixEpoch); // a copied folder
+        Assert.True(AmprIndex.Validate(index, source));
+
+        File.WriteAllText(Path.Combine(source, "eboot.bin"), "resized eboot"); // same file count
+        Assert.False(AmprIndex.Validate(index, source));
+
+        AmprIndex.Ensure(source, new ListLog());
+        File.Move(Path.Combine(source, "data2", "b.bin"), Path.Combine(source, "data2", "c.bin")); // swapped name
+        Assert.False(AmprIndex.Validate(index, source));
+
+        AmprIndex.Ensure(source, new ListLog());
+        File.Move(Path.Combine(source, "Data", "Level1.pak"), Path.Combine(source, "Data", "LEVEL1.PAK")); // case only
+        Assert.True(AmprIndex.Validate(index, source));
+
+        File.WriteAllBytes(index, File.ReadAllBytes(index)[..60]); // truncated
+        Assert.False(AmprIndex.Validate(index, source));
+    }
+
+    [Fact]
     public void Create_if_missing_keeps_a_valid_index_and_rebuilds_a_stale_one()
     {
         using TempDir dir = new();

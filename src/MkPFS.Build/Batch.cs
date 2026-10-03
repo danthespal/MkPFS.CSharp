@@ -110,6 +110,9 @@ public sealed record BatchOptions
 
     /// <summary>Settings for the per-item builders (source, output and inner name are set per item).</summary>
     public required SingleFileBuildOptions Build { get; init; }
+
+    /// <summary>AMPR Emu setup applied to each folder item before it is packed.</summary>
+    public AmprOptions Ampr { get; init; } = new();
 }
 
 /// <summary>
@@ -228,6 +231,13 @@ public static class Batch
             try
             {
                 Directory.CreateDirectory(output);
+
+                // Python run_batch never prepares AMPR Emu (oracle finding 18); folders get it like pack folder.
+                if (item.Kind == BatchItemKind.Folder)
+                {
+                    AmprLibs.Prepare(item.Source, options.Ampr, log);
+                }
+
                 SingleFileBuildOptions build = options.Build with { SourceFile = item.Source, OutputPath = outputPath, InnerFileName = null, DryRun = false };
                 BuildStats stats = item.Kind == BatchItemKind.Folder
                     ? ExfatWrappedImageBuilder.Build(build, log, progress)

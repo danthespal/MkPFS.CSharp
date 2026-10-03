@@ -1,4 +1,4 @@
-# MkPFS.C#
+# MkPFS.CSharp
 
 [![CI](https://github.com/danthespal/MkPFS.CSharp/actions/workflows/ci.yml/badge.svg)](https://github.com/danthespal/MkPFS.CSharp/actions/workflows/ci.yml)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE.md)
@@ -6,7 +6,7 @@
 Build, check, and repair PS4/PS5 PFS game images (`.ffpfs`, `.ffpfsc`, `.exfat`) from the command line
 or a desktop app.
 
-MkPFS.C# is a .NET 10 port of the Python [MkPFS](https://github.com/PSBrew/MkPFS) by PSBrew. It ships
+MkPFS.CSharp is a .NET 10 port of the Python [MkPFS](https://github.com/PSBrew/MkPFS) by PSBrew. It ships
 as a native executable (no Python needed), writes the same images as the original, and adds an
 offline PFSC block repair ported from PS5 Game Compressor.
 
@@ -19,9 +19,10 @@ offline PFSC block repair ported from PS5 Game Compressor.
 - **Check**: `verify`, `inspect`, `tree`, and `unpack` for PFS, PFSC, and exFAT images, including
   encrypted ones (`--ekpfs-key`).
 - **Repair**: find and fix compressed blocks the PS5 may decode wrongly (images made with ISA-L).
-- **APR Emu**: `ampr_emu.index` is created or refreshed automatically for games that use it.
+- **APR Emu**: copies your AMPR Emu libraries into `fakelib/` of APR titles (`--ampr-libs`) and builds
+  `ampr_emu.index` when `pack folder`, `pack exfat`, or `batch` packs a game that has them.
 - **GUI**: `mkpfs-gui` with a page per command, cover and metadata preview, batch queue, and a PFSC
-  block map; English, Português (BR), and Español.
+  block map; English, Português (BR), Español, Română, Deutsch, and Français.
 
 ## Download
 
@@ -36,7 +37,7 @@ Get the archive for your system from the
 
 - Keep each program in its folder with the libraries next to it (`mkpfs_zlib`, plus Skia and
   HarfBuzz for the desktop app).
-- macOS: the desktop app is `MkPFS.C#.app`. It is not notarized, so open it the first time with
+- macOS: the desktop app is `MkPFS.CSharp.app`. It is not notarized, so open it the first time with
   right-click > Open.
 - Linux: the desktop app needs X11 and fontconfig, which desktop distributions include.
 - `SHA256SUMS.txt` on the release page lists the archive checksums.
@@ -164,15 +165,12 @@ size remains 64 KiB. Use `--raw` to make options that control direct PFS layout 
 | `--verify-structure` / `--no-verify-structure` | structure check on | Explicitly enable or disable the default quick post-pack check. The two flags are mutually exclusive. |
 | `--skip-verification` | off | Skip all post-pack verification. It cannot be combined with `--verify`. |
 
-`pack folder` also accepts the following options:
+`pack folder` also accepts the [APR Emu options](#apr-emu) and the following:
 
 | Option | Default | Meaning |
 |---|---|---|
 | `--raw` | off | Package the source directly as a PFS `.ffpfs`, rather than making the default exFAT-wrapped `.ffpfsc`. Use this mode for `--signed`, `--inode-bits 64`, and other direct-PFS settings. |
 | `--require-game-files` | off | Refuse to pack unless `sce_sys/param.json` and `eboot.bin` are present. |
-| `--no-ampr-index` | off | Do not create `ampr_emu.index` when `fakelib/libSceAmpr.sprx` is present. |
-| `--ampr-skip-regen-if-exists` | off | When AMPR generation applies, retain a valid existing index. |
-| `--ampr-force-regen` | off | Regenerate an existing AMPR index. |
 
 `pack file` also accepts:
 
@@ -194,6 +192,8 @@ accepted and receives that derived filename.
 | `--verbose` | off | Print detailed packing output. |
 | `--no-progress` | off | Hide the progress bar written to standard error. |
 
+It also accepts the [APR Emu options](#apr-emu).
+
 ### `batch`
 
 `mkpfs batch <source_dir> <output_dir>` discovers packable folders and image files in `source_dir`
@@ -210,6 +210,43 @@ PFS-profile, naming, and encryption options have the same meanings and defaults 
 | `--dry-run` | off | Report the conversions without writing images. |
 | `--verify` | off | Run full verification for each successful image. |
 | `--compress` / `--no-compress` | compression on | Enable or disable compression; these flags are mutually exclusive. |
+
+Folder items get the [APR Emu options](#apr-emu) too.
+
+### APR Emu
+
+Some PS5 titles use PlayGo/APR and need Drakmor's APR Emu to run from a mounted image: the emulator
+libraries in the game's `fakelib/` folder plus an `ampr_emu.index` that lists every file. MkPFS does
+not ship or download the libraries. Download them into one folder and pass it with `--ampr-libs`:
+
+| Library | Download | Required |
+|---|---|---|
+| `libSceAmpr.sprx` | [drakmor/ampr_emu releases](https://github.com/drakmor/ampr_emu/releases) | yes |
+| `libScePlayGo.sprx` | [drakmor/pgo_stub releases](https://github.com/drakmor/pgo_stub/releases) | copied when present |
+
+Before packing a game folder, `pack folder`, `pack exfat`, and `batch` (folder items):
+
+1. With `--ampr-libs`, copy the libraries into `<game>/fakelib/` when the game is an APR title
+   (`sce_sys/playgo-chunk.dat` exists) or `--ampr-title` is given. Identical files are left alone;
+   changed ones are replaced.
+2. When `fakelib/libSceAmpr.sprx` exists, write `ampr_emu.index` into the game folder.
+
+Both steps change the source folder, so the image includes them. An APR title without
+`fakelib/libSceAmpr.sprx` and without `--ampr-libs` gets a warning and no index.
+
+A folder that already has `ampr_emu.index` gets it rebuilt by default. To keep an index made by other
+tools, pass `--ampr-skip-regen-if-exists`: the index is kept while it lists exactly the folder's files
+and sizes (paths compared case-insensitively, modification times ignored) and rebuilt otherwise. The GUI
+turns this on when the chosen folder already has an index. `--no-ampr-index` packs the existing index
+untouched, even when it no longer matches.
+
+| Option | Default | Meaning |
+|---|---|---|
+| `--ampr-libs <dir>` | none | Folder holding `libSceAmpr.sprx` (required) and `libScePlayGo.sprx` (optional) to copy into `fakelib/`. |
+| `--ampr-title` | off | With `--ampr-libs`, add the libraries even without `sce_sys/playgo-chunk.dat`. |
+| `--no-ampr-index` | off | Do not create `ampr_emu.index` when `fakelib/libSceAmpr.sprx` is present. |
+| `--ampr-skip-regen-if-exists` | off | Keep an existing index while it lists exactly the folder's files and sizes; rebuild it otherwise. |
+| `--ampr-force-regen` | off | Regenerate an existing AMPR index. |
 
 ### Reading and extracting images
 
@@ -262,6 +299,16 @@ dotnet run --project src/MkPFS.Gui -c Release
 
 - Pick a game folder or image to see its cover, title, IDs, version, region, and APR Emu marker.
 - The Batch page lists every item it will pack before you run it.
+- Pack Folder, Pack exFAT, and Batch have an APR Emu section: the libraries folder, download links,
+  and every [APR Emu option](#apr-emu).
+- The packing pages have a collapsed Advanced section with the remaining CLI options: raw PFS, PFS
+  version, inode size, case sensitivity, encryption and EKPFS key, verification, cluster size, and
+  verbose output.
+- The check pages cover the CLI options too: Verify takes a source file, the image format, and the
+  game-file checklist; Unpack extracts inside a wrapped exFAT (`--deep`, `--only`); Tree and Unpack
+  take the image format; Inspect, Tree, Verify, and Unpack take newCrypt keys.
+- Closing the window while a job runs asks first; Stop and Close cancels the job and waits for its
+  cleanup (an in-place repair finishes its rewrite) before the window closes.
 - Pack File, Pack Folder, and Batch have compression presets (Fast, Balanced, Max, Low RAM) and
   settings for the zlib level, CPU cores, block size, and when to keep blocks uncompressed.
 - The Repair page scans an image and draws a block map (zlib, raw, risky); click a cell for its
@@ -274,6 +321,9 @@ dotnet run --project src/MkPFS.Gui -c Release
 - Compression always uses zlib 1.3.1 at level 7. `--compression-backend` is accepted but ignored:
   ISA-L output uses back-references the PS5 decodes wrongly.
 - `repair` is new.
+- `pack exfat` and `batch` also build `ampr_emu.index` (Python only does it in `pack folder`), and
+  `--ampr-libs`/`--ampr-title` are new. `--ampr-skip-regen-if-exists` checks every path and size, not
+  just the file count.
 - Bugs found in the Python version while porting are listed in
   [tools/oracle/README.md](tools/oracle/README.md); some are fixed here.
 - Switching from Python MkPFS: see [MIGRATION.md](MIGRATION.md).
@@ -355,6 +405,7 @@ git push origin v2.0.0
 - [MkPFS](https://github.com/PSBrew/MkPFS) by PSBrew: the Python original this port follows.
 - PS5 Game Compressor by Juma Sayeh: the PFSC repair logic.
 - Drakmor's [APR Emu](https://github.com/drakmor/ampr_emu): the `ampr_emu.index` format.
+- Drakmor's [PlayGo stub](https://github.com/drakmor/pgo_stub): `libScePlayGo.sprx`.
 
 Third-party components:
 

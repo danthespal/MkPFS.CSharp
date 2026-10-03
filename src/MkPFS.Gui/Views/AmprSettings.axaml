@@ -1,0 +1,28 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MkPFS.Gui.ViewModels"
+             xmlns:c="using:MkPFS.Gui.Controls"
+             xmlns:l="using:MkPFS.Gui.Localization"
+             x:Class="MkPFS.Gui.Views.AmprSettings"
+             x:DataType="vm:AmprSettingsViewModel">
+  <StackPanel Spacing="6">
+    <TextBlock Text="{l:Tr am_help}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+    <WrapPanel>
+      <!-- TextBlock content: a bare string would read "_" as an access key. -->
+      <HyperlinkButton Name="AmprLink" NavigateUri="https://github.com/drakmor/ampr_emu/releases" Padding="0" Margin="0,0,16,0">
+        <TextBlock Text="libSceAmpr.sprx · drakmor/ampr_emu" />
+      </HyperlinkButton>
+      <HyperlinkButton Name="PlayGoLink" NavigateUri="https://github.com/drakmor/pgo_stub/releases" Padding="0">
+        <TextBlock Text="libScePlayGo.sprx · drakmor/pgo_stub" />
+      </HyperlinkButton>
+    </WrapPanel>
+    <TextBlock Name="ExistingIndexNote" Text="{l:Tr am_existing}" IsVisible="{Binding HasExistingIndex}" Foreground="{StaticResource Warning}" FontSize="12" TextWrapping="Wrap" />
+    <c:PathField Label="{l:Tr am_libs}" Placeholder="{l:Tr am_libs_ph}" Mode="Folder" Text="{Binding LibsDir}" />
+    <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto">
+      <CheckBox Grid.Row="0" Grid.Column="0" IsChecked="{Binding GenerateIndex}"><TextBlock Text="{l:Tr am_index}" /></CheckBox>
+      <CheckBox Grid.Row="1" Grid.Column="0" Content="{l:Tr am_title}" IsChecked="{Binding ForceAprTitle}" />
+      <CheckBox Grid.Row="0" Grid.Column="1" Content="{l:Tr am_keep}" IsChecked="{Binding KeepValidIndex}" IsEnabled="{Binding GenerateIndex}" />
+      <CheckBox Grid.Row="1" Grid.Column="1" Content="{l:Tr am_force}" IsChecked="{Binding ForceRegen}" IsEnabled="{Binding GenerateIndex}" />
+    </Grid>
+  </StackPanel>
+</UserControl>

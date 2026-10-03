@@ -24,5 +24,6 @@
         <TextBox Text="{Binding Ekpfs}" PlaceholderText="{l:Tr i_ekpfs_ph}" Classes="mono" />
       </StackPanel>
     </Grid>
+    <CheckBox Content="{l:Tr i_newcrypt}" IsChecked="{Binding NewCrypt}" />
   </StackPanel>
 </UserControl>

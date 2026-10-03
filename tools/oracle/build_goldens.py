@@ -6,7 +6,7 @@ Layout of ``--out``:
     goldens/manifest.json         case → argv, exit code, sha256 of every output file
     vectors/zlib_vectors.bin      raw 64 KiB blocks + zlib outputs for codec byte tests
 
-Usage (from the MkPFS.C# root; ../MkPFS is the Python repo):
+Usage (from the MkPFS.CSharp root; ../MkPFS is the Python repo):
     uv run --project ../MkPFS python tools/oracle/build_goldens.py
     uv run --project ../MkPFS python tools/oracle/build_goldens.py --check    # build twice, compare
 """

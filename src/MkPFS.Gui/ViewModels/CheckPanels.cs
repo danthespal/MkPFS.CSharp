@@ -22,6 +22,21 @@ public sealed partial class VerifyPanelViewModel(Color accent, JobRunner? job = 
     [ObservableProperty]
     public partial string SourceDir { get; set; } = string.Empty;
 
+    /// <summary><c>--source-file</c>, optional comparison for a single-file image.</summary>
+    [ObservableProperty]
+    public partial string SourceFile { get; set; } = string.Empty;
+
+    /// <summary><c>--require-game-files</c>: the PS5 game-file checklist.</summary>
+    [ObservableProperty]
+    public partial bool RequireGameFiles { get; set; }
+
+    /// <summary>Image formats (<c>--format</c>).</summary>
+    public IReadOnlyList<Choice> ImageFormats => ImageFormatChoices;
+
+    /// <summary><c>--format</c>; auto-detect adds nothing.</summary>
+    [ObservableProperty]
+    public partial Choice ImageFormat { get; set; } = ImageFormatChoices[0];
+
     /// <summary><c>--expect-crc32</c>.</summary>
     [ObservableProperty]
     public partial string Crc32 { get; set; } = string.Empty;
@@ -45,7 +60,9 @@ public sealed partial class VerifyPanelViewModel(Color accent, JobRunner? job = 
     protected internal override IReadOnlyList<string>? BuildArguments(out string? error)
     {
         string image = Image.Trim();
-        error = image.Length == 0 ? Localizer.Instance["v_err"] : null;
+        error = image.Length == 0 ? Localizer.Instance["v_err"]
+            : SourceDir.Trim().Length > 0 && SourceFile.Trim().Length > 0 ? Localizer.Instance["v_err_sources"]
+            : null;
         if (error is not null)
         {
             return null;
@@ -53,10 +70,13 @@ public sealed partial class VerifyPanelViewModel(Color accent, JobRunner? job = 
 
         List<string> args = ["verify", image];
         AddOption(args, "--source-dir", SourceDir);
+        AddOption(args, "--source-file", SourceFile);
         AddOption(args, "--expect-crc32", Crc32);
         AddOption(args, "--expect-manifest-sha256", Sha256);
         AddOption(args, "--ekpfs-key", Ekpfs);
         AddFlag(args, NewCrypt, "--new-crypt");
+        AddFormat(args, ImageFormat);
+        AddFlag(args, RequireGameFiles, "--require-game-files");
         return args;
     }
 
@@ -86,6 +106,10 @@ public sealed partial class InspectPanelViewModel(Color accent, JobRunner? job =
     [ObservableProperty]
     public partial string Ekpfs { get; set; } = string.Empty;
 
+    /// <summary><c>--new-crypt</c>.</summary>
+    [ObservableProperty]
+    public partial bool NewCrypt { get; set; }
+
     /// <inheritdoc />
     public override object Form => this;
 
@@ -101,6 +125,7 @@ public sealed partial class InspectPanelViewModel(Color accent, JobRunner? job =
 
         List<string> args = ["inspect", image, "--format", Format];
         AddOption(args, "--ekpfs-key", Ekpfs);
+        AddFlag(args, NewCrypt, "--new-crypt");
         return args;
     }
 
@@ -130,6 +155,17 @@ public sealed partial class TreePanelViewModel(Color accent, JobRunner? job = nu
     [ObservableProperty]
     public partial bool NewCrypt { get; set; }
 
+    /// <summary><c>--deep</c>: list the files inside a wrapped exFAT (on by default, like Python).</summary>
+    [ObservableProperty]
+    public partial bool Deep { get; set; } = true;
+
+    /// <summary>Image formats (<c>--format</c>).</summary>
+    public IReadOnlyList<Choice> ImageFormats => ImageFormatChoices;
+
+    /// <summary><c>--format</c>; auto-detect adds nothing.</summary>
+    [ObservableProperty]
+    public partial Choice ImageFormat { get; set; } = ImageFormatChoices[0];
+
     /// <inheritdoc />
     public override object Form => this;
 
@@ -145,9 +181,10 @@ public sealed partial class TreePanelViewModel(Color accent, JobRunner? job = nu
 
         // Python: every input except a bare exFAT image also lists the inner exFAT (--deep).
         List<string> args = ["tree", image];
-        AddFlag(args, !image.EndsWith(".exfat", StringComparison.OrdinalIgnoreCase), "--deep");
+        AddFlag(args, Deep && !image.EndsWith(".exfat", StringComparison.OrdinalIgnoreCase), "--deep");
         AddOption(args, "--ekpfs-key", Ekpfs);
         AddFlag(args, NewCrypt, "--new-crypt");
+        AddFormat(args, ImageFormat);
         return args;
     }
 
@@ -182,6 +219,21 @@ public sealed partial class UnpackPanelViewModel(Color accent, JobRunner? job = 
     [ObservableProperty]
     public partial bool NewCrypt { get; set; }
 
+    /// <summary><c>--deep</c>: extract the files inside a wrapped exFAT.</summary>
+    [ObservableProperty]
+    public partial bool Deep { get; set; }
+
+    /// <summary><c>--only</c> paths inside the wrapped exFAT, separated by <c>;</c> (used with <see cref="Deep"/>).</summary>
+    [ObservableProperty]
+    public partial string Only { get; set; } = string.Empty;
+
+    /// <summary>Image formats (<c>--format</c>).</summary>
+    public IReadOnlyList<Choice> ImageFormats => ImageFormatChoices;
+
+    /// <summary><c>--format</c>; auto-detect adds nothing.</summary>
+    [ObservableProperty]
+    public partial Choice ImageFormat { get; set; } = ImageFormatChoices[0];
+
     /// <inheritdoc />
     public override object Form => this;
 
@@ -208,6 +260,17 @@ public sealed partial class UnpackPanelViewModel(Color accent, JobRunner? job = 
         AddFlag(args, Overwrite, "--overwrite");
         AddOption(args, "--ekpfs-key", Ekpfs);
         AddFlag(args, NewCrypt, "--new-crypt");
+        AddFlag(args, Deep, "--deep");
+        if (Deep)
+        {
+            foreach (string path in Only.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                args.Add("--only");
+                args.Add(path);
+            }
+        }
+
+        AddFormat(args, ImageFormat);
         return args;
     }
 

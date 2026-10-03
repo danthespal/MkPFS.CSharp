@@ -16,6 +16,11 @@
     <Rectangle Classes="separator" />
     <TextBlock Text="{l:Tr options}" Classes="section" Foreground="{Binding Accent}" />
     <CheckBox Content="{l:Tr u_overwrite}" IsChecked="{Binding Overwrite}" />
+    <CheckBox Content="{l:Tr u_deep}" IsChecked="{Binding Deep}" />
+    <StackPanel Spacing="3" IsEnabled="{Binding Deep}">
+      <TextBlock Text="{l:Tr u_only}" Classes="fieldlabel" />
+      <TextBox Text="{Binding Only}" PlaceholderText="{l:Tr u_only_ph}" />
+    </StackPanel>
     <Grid ColumnDefinitions="*,12,*">
       <StackPanel Grid.Column="0" Spacing="3">
         <TextBlock Text="{l:Tr u_ekpfs}" Classes="fieldlabel" />
@@ -23,5 +28,18 @@
       </StackPanel>
       <CheckBox Grid.Column="2" Content="{l:Tr u_newcrypt}" IsChecked="{Binding NewCrypt}" VerticalAlignment="Bottom" />
     </Grid>
+    <Rectangle Classes="separator" />
+    <Expander Name="AdvancedExpander" Header="{l:Tr adv_title}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+      <StackPanel Spacing="8">
+        <StackPanel Spacing="3">
+          <TextBlock Text="{l:Tr adv_image_format}" Classes="fieldlabel" />
+          <ComboBox Name="FormatPicker" ItemsSource="{Binding ImageFormats}" SelectedItem="{Binding ImageFormat}" HorizontalAlignment="Stretch">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:Choice"><TextBlock Text="{Binding Label}" /></DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+        </StackPanel>
+      </StackPanel>
+    </Expander>
   </StackPanel>
 </UserControl>

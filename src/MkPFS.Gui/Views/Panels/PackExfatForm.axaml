@@ -16,5 +16,24 @@
     <Rectangle Classes="separator" />
     <TextBlock Text="{l:Tr options}" Classes="section" Foreground="{Binding Accent}" />
     <CheckBox Content="{l:Tr exf_overwrite}" IsChecked="{Binding Overwrite}" />
+    <Rectangle Classes="separator" />
+    <TextBlock Text="{l:Tr am_section}" Classes="section" Foreground="{Binding Accent}" />
+    <v:AmprSettings DataContext="{Binding Ampr}" />
+    <Rectangle Classes="separator" />
+    <Expander Name="AdvancedExpander" Header="{l:Tr adv_title}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+      <StackPanel Spacing="8">
+        <Grid ColumnDefinitions="*,12,*">
+          <StackPanel Grid.Column="0" Spacing="3">
+            <TextBlock Text="{l:Tr adv_cluster}" Classes="fieldlabel" />
+            <ComboBox Name="ClusterPicker" ItemsSource="{Binding ClusterSizes}" SelectedItem="{Binding ClusterSize}" HorizontalAlignment="Stretch">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:Choice"><TextBlock Text="{Binding Label}" /></DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+          </StackPanel>
+          <CheckBox Grid.Column="2" Content="{l:Tr adv_verbose}" IsChecked="{Binding Verbose}" VerticalAlignment="Bottom" />
+        </Grid>
+      </StackPanel>
+    </Expander>
   </StackPanel>
 </UserControl>

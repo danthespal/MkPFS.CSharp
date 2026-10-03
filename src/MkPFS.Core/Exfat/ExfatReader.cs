@@ -62,6 +62,10 @@ public sealed class ExfatReader
     private const ushort AttrDirectory = 0x10;
     private const byte FlagNoFatChain = 0x02;
     private const uint FatEndOfChain = 0xFFFFFFFF;
+
+    // Directory walks recurse once per level; a crafted chain of nested directories would otherwise exhaust the
+    // stack, which ends the process (Python stops near 1000 levels with RecursionError).
+    private const int MaxDirectoryDepth = 1024;
     private readonly Stream _stream;
 
     /// <summary>Parse the boot sector of <paramref name="stream"/> (not owned).</summary>
@@ -78,7 +82,7 @@ public sealed class ExfatReader
     /// <summary>Directory tree under the volume root, in on-disk order.</summary>
     /// <returns>Root entries.</returns>
     public List<ExfatEntry> RootEntries() =>
-        WalkDirectory(Geometry.RootDirCluster, noFatChain: false, length: 0, relDir: string.Empty, visited: [Geometry.RootDirCluster]);
+        WalkDirectory(Geometry.RootDirCluster, noFatChain: false, length: 0, relDir: string.Empty, visited: [Geometry.RootDirCluster], depth: 0);
 
     /// <summary>Every file (not directory), depth first, sorted by lowercase path per level (Python <c>iter_files</c>).</summary>
     /// <returns>File entries.</returns>
@@ -332,8 +336,13 @@ public sealed class ExfatReader
 
     // visited holds the first clusters of directories already walked; a crafted entry that points back at one
     // would otherwise recurse until the stack overflows (Python stops with RecursionError).
-    private List<ExfatEntry> WalkDirectory(uint first, bool noFatChain, ulong length, string relDir, HashSet<uint> visited)
+    private List<ExfatEntry> WalkDirectory(uint first, bool noFatChain, ulong length, string relDir, HashSet<uint> visited, int depth)
     {
+        if (depth > MaxDirectoryDepth)
+        {
+            throw new InvalidDataException($"directory '{relDir}' is nested deeper than {MaxDirectoryDepth} levels");
+        }
+
         List<ExfatEntry> result = [];
         List<byte[]> pending = DirectoryEntries(first, noFatChain, length);
         int index = 0;
@@ -388,7 +397,7 @@ public sealed class ExfatReader
                 FirstCluster = childCluster,
                 Length = dataLength,
                 NoFatChain = childNoFat,
-                Children = isDir ? WalkDirectory(childCluster, childNoFat, dataLength, relPath, visited) : [],
+                Children = isDir ? WalkDirectory(childCluster, childNoFat, dataLength, relPath, visited, depth + 1) : [],
             });
         }
 

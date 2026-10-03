@@ -28,7 +28,7 @@ fi
 generated="$(gh api "${generate_args[@]}" --jq .body 2>/dev/null || true)"
 
 cat <<EOF
-# MkPFS.C# ${version}
+# MkPFS.CSharp ${version}
 
 ## Downloads
 
@@ -39,7 +39,7 @@ cat <<EOF
 | macOS Apple silicon | \`mkpfs-${version}-osx-arm64.tar.gz\` | \`mkpfs-gui-${version}-osx-arm64.tar.gz\` |
 
 Keep each program with the libraries next to it (\`mkpfs_zlib\`, and Skia/HarfBuzz for the desktop
-app). On macOS the desktop app is \`MkPFS.C#.app\`; it is not notarized, so open it the first time
+app). On macOS the desktop app is \`MkPFS.CSharp.app\`; it is not notarized, so open it the first time
 with right-click > Open. Verify downloads with \`SHA256SUMS.txt\`.
 
 ## Changes${prev:+ since ${prev}}

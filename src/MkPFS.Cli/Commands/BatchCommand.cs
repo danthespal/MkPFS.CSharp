@@ -48,6 +48,7 @@ internal static class BatchCommand
             caseSensitive, caseInsensitive, cpuCount, level, backend, maxRatio, minCompressSize, skipExecutables, verbose,
             encrypted, ekpfsKey, newCrypt,
         };
+        AmprCliOptions ampr = new(command);
         command.Validators.Add(result =>
         {
             foreach ((Option<bool> a, Option<bool> b) in new[] { (compress, noCompress), (caseSensitive, caseInsensitive) })
@@ -92,7 +93,7 @@ internal static class BatchCommand
                     DryRun = parse.GetValue(dryRun),
                     Verify = parse.GetValue(verify),
                 };
-                return Run(ctx, args, PackBuildConfig.Resolve(args, resolvedBlock), source, output, parse.GetValue(overwrite));
+                return Run(ctx, args, PackBuildConfig.Resolve(args, resolvedBlock), source, output, parse.GetValue(overwrite), ampr.Read(parse));
             }
             catch (BuildException ex)
             {
@@ -103,7 +104,7 @@ internal static class BatchCommand
         return command;
     }
 
-    private static int Run(CliContext ctx, PackArgs args, PackBuildConfig config, string source, string output, bool overwrite)
+    private static int Run(CliContext ctx, PackArgs args, PackBuildConfig config, string source, string output, bool overwrite, AmprOptions ampr)
     {
         if (args.CompressionBackend is not ("auto" or "zlib"))
         {
@@ -127,6 +128,7 @@ internal static class BatchCommand
                 Overwrite = overwrite,
                 DryRun = args.DryRun,
                 Verify = args.Verify,
+                Ampr = ampr,
                 Build = new SingleFileBuildOptions
                 {
                     SourceFile = source,

@@ -193,8 +193,8 @@ public sealed class ReaderUnitTests
         Assert.Equal((2, "--only requires --deep (it selects entries inside the wrapped exFAT)\n", string.Empty), RunCli("unpack", image, Path.Combine(temp.Path, "o2"), "--only", "data"));
         Assert.Equal((2, $"output path {existing} exists (use --overwrite to force)\n", string.Empty), RunCli("unpack", image, existing));
         Assert.Equal(2, RunCli("verify", image, "--source-dir", temp.Path, "--source-file", image).Exit);
-        Assert.Equal((2, "--expected-crc32 must be a 32-bit hex value\n", string.Empty), RunCli("verify", image, "--expect-crc32", "0x123456789"));
-        Assert.Equal((2, "--expected-manifest-sha256 must be a 64-hex SHA256 digest\n", string.Empty), RunCli("verify", image, "--expect-manifest-sha256", "abc"));
+        Assert.Equal((2, "--expect-crc32 must be a 32-bit hex value\n", string.Empty), RunCli("verify", image, "--expect-crc32", "0x123456789"));
+        Assert.Equal((2, "--expect-manifest-sha256 must be a 64-hex SHA256 digest\n", string.Empty), RunCli("verify", image, "--expect-manifest-sha256", "abc"));
         Assert.Equal(2, RunCli("inspect", image, "--ekpfs-key", "123").Exit);
     }
 
