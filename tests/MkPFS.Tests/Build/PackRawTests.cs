@@ -178,6 +178,11 @@ public sealed class PackRawTests
     [InlineData(1025, false)]
     public void Deeply_nested_directories_are_walked_up_to_the_limit(int depth, bool accepted)
     {
+        if (OperatingSystem.IsMacOS())
+        {
+            Assert.Skip("macOS limits paths to 1024 bytes, so the source tree cannot be created");
+        }
+
         using TempDir dir = new();
         string source = dir.Dir("src");
         string deepest = Path.Combine([source, .. Enumerable.Repeat("d", depth)]);

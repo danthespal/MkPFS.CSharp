@@ -199,6 +199,11 @@ public sealed class ExfatImageWriterTests
     [Fact]
     public void Reader_rejects_directories_nested_deeper_than_the_limit()
     {
+        if (OperatingSystem.IsMacOS())
+        {
+            Assert.Skip("macOS limits paths to 1024 bytes, so the source tree cannot be created");
+        }
+
         using TempDir dir = new();
         string source = dir.Dir("src");
         string deepest = Path.Combine([source, .. Enumerable.Repeat("d", 1026)]);
