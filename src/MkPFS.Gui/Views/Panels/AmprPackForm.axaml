@@ -6,6 +6,9 @@
              x:Class="MkPFS.Gui.Views.Panels.AmprPackForm"
              x:DataType="vm:AmprPackPanelViewModel">
   <StackPanel Classes="form">
+    <Border BorderBrush="{StaticResource Warning}" BorderThickness="1" CornerRadius="4" Padding="10,8">
+      <TextBlock Name="ExperimentalNote" Text="{l:Tr ap_experimental}" TextWrapping="Wrap" Foreground="{StaticResource Warning}" />
+    </Border>
     <StackPanel Spacing="3">
       <TextBlock Text="{l:Tr ap_action}" Classes="fieldlabel" />
       <ComboBox Name="ActionPicker" ItemsSource="{Binding Actions}" SelectedItem="{Binding Action}" HorizontalAlignment="Stretch">

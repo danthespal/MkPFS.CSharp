@@ -21,7 +21,7 @@ offline PFSC block repair ported from PS5 Game Compressor.
 - **Repair**: find and fix compressed blocks the PS5 may decode wrongly (images made with ISA-L).
 - **APR Emu**: copies your AMPR Emu libraries into `fakelib/` of APR titles (`--ampr-libs`) and builds
   `ampr_emu.index` when `pack folder`, `pack exfat`, or `batch` packs a game that has them.
-- **AMPR packs**: `ampr` builds, checks, and extracts AMPR Emu seekable LZ4 asset packs, byte for byte
+- **AMPR packs (experimental)**: `ampr` builds, checks, and extracts AMPR Emu seekable LZ4 asset packs, byte for byte
   like ampr_emu's `ampr_pack.py`.
 - **GUI**: `mkpfs-gui` with a page per command, cover and metadata preview, batch queue, and a PFSC
   block map; English, Português (BR), Español, Română, Deutsch, and Français.
@@ -263,6 +263,11 @@ rebuild a missing index from the remaining files, with the same result.
 | `--ampr-force-regen` | off | Regenerate an existing AMPR index. |
 
 ### `ampr` (asset packs)
+
+> **Experimental.** Whether a packed game runs depends on how it reads its files, and only a test on the
+> console shows that. Only a few games have been tested so far. Keep the original, unpacked game until the
+> packed one has been played on the PS5, and report games that do not start, together with the
+> ShadowMountPlus log.
 
 AMPR Emu (`libSceAmpr.sprx`) can serve selected `/app0` files from seekable LZ4 packs: the pack
 manifest `ampr_assets.index`, data volumes `ampr_assets-*.pak`, and an offline CRC sidecar

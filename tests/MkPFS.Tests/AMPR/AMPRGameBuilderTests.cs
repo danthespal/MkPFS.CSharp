@@ -185,6 +185,7 @@ public sealed class AMPRGameBuilderTests
         int exit = MkPFSCli.Run(["ampr", "game", "--root", game, "--output", Path.Combine(dir.Path, "out"), "--fakelib", Path.Combine(dir.Path, "libs")], ctx);
 
         Assert.True(exit == 0, stdout.ToString() + stderr.ToString());
+        Assert.StartsWith(global::MkPFS.Cli.Commands.AmprCommand.ExperimentalWarning + "\n", stdout.ToString(), StringComparison.Ordinal);
         foreach (string step in (string[])["[1/5] Libraries: fakelib/", "[2/5] Writing ampr_emu.index", "[3/5] Packing", "[4/5] Copying loose files", "[5/5] Verifying"])
         {
             Assert.Contains(step + "\n", stdout.ToString(), StringComparison.Ordinal);

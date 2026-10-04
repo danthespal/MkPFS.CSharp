@@ -33,6 +33,7 @@
   <data name="am_section" xml:space="preserve"><value>APR Emu</value></data>
   <data name="am_title" xml:space="preserve"><value>Tratar como título APR</value></data>
   <data name="ap_act_game" xml:space="preserve"><value>Crear juego listo (packs + archivos sueltos)</value></data>
+  <data name="ap_experimental" xml:space="preserve"><value>⚠ Experimental: que un juego empaquetado funcione depende de cómo lee sus archivos, y solo una prueba en la PS5 lo muestra. Conserva el juego original hasta haber jugado el empaquetado.</value></data>
   <data name="ap_game_note" xml:space="preserve"><value>Crea una carpeta nueva que puedes copiar a la PS5 y jugar: tus bibliotecas en fakelib/, ampr_emu.index, los packs LZ4 y todos los archivos que quedan sueltos. La carpeta del juego solo se lee. Requiere AMPR Emu 0.4.2.1 o posterior y un juego que use AMPR.</value></data>
   <data name="ap_libs_label" xml:space="preserve"><value>Carpeta de Bibliotecas (fakelib)</value></data>
   <data name="ap_libs_ph" xml:space="preserve"><value>Carpeta con libSceAmpr.sprx y otras bibliotecas fakelib (opcional si el juego ya las tiene)…</value></data>

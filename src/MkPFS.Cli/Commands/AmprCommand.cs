@@ -22,6 +22,10 @@ internal static class AmprCommand
     internal const string NothingPackedWarning =
         "warning: no files were packed; without --config or --preset default every file stays loose";
 
+    /// <summary>Printed by <c>ampr game</c> before it starts.</summary>
+    internal const string ExperimentalWarning =
+        "warning: AMPR packing is experimental; keep the original game until the packed one has been played on the PS5";
+
     /// <summary>Printed to stderr when files were packed but the root has no AMPR Emu (an addition to the oracle output).</summary>
     internal const string NoEmulatorWarning =
         "warning: --root has no fakelib/libSceAmpr.sprx or fakelib2/libSceAmpr.sprx; only AMPR Emu reads these packs, " +
@@ -29,7 +33,7 @@ internal static class AmprCommand
 
     public static Command Create(CliContext ctx)
     {
-        Command command = new("ampr", "Build and manage AMPR Emu seekable LZ4 asset packs for /app0");
+        Command command = new("ampr", "Build and manage AMPR Emu seekable LZ4 asset packs for /app0 (experimental)");
         command.Subcommands.Add(Pack(ctx));
         command.Subcommands.Add(Game(ctx));
         command.Subcommands.Add(Unpack(ctx));
@@ -169,6 +173,7 @@ internal static class AmprCommand
         };
         command.SetAction(parse => Run(ctx, () =>
         {
+            ctx.Log.Warning(ExperimentalWarning);
             string? configPath = parse.GetValue(config);
             AMPRPackConfig loaded = (configPath, parse.GetValue(preset)) switch
             {

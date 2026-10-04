@@ -33,6 +33,7 @@
   <data name="am_section" xml:space="preserve"><value>APR Emu</value></data>
   <data name="am_title" xml:space="preserve"><value>Treat as APR title</value></data>
   <data name="ap_act_game" xml:space="preserve"><value>Build playable game (packs + loose files)</value></data>
+  <data name="ap_experimental" xml:space="preserve"><value>⚠ Experimental: whether a packed game runs depends on how it reads its files, and only a test on the PS5 shows that. Keep the original game until the packed one has been played.</value></data>
   <data name="ap_game_note" xml:space="preserve"><value>Builds a new folder you can copy to the PS5 and play: your libraries in fakelib/, ampr_emu.index, the LZ4 packs, and every file that stays loose. The game folder is only read. Needs AMPR Emu 0.4.2.1 or newer and a game that uses AMPR.</value></data>
   <data name="ap_libs_label" xml:space="preserve"><value>Library Folder (fakelib)</value></data>
   <data name="ap_libs_ph" xml:space="preserve"><value>Folder with libSceAmpr.sprx and other fakelib libraries (optional if the game has them)…</value></data>
