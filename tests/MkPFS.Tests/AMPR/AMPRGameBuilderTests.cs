@@ -185,11 +185,17 @@ public sealed class AMPRGameBuilderTests
         int exit = MkPFSCli.Run(["ampr", "game", "--root", game, "--output", Path.Combine(dir.Path, "out"), "--fakelib", Path.Combine(dir.Path, "libs")], ctx);
 
         Assert.True(exit == 0, stdout.ToString() + stderr.ToString());
-        Assert.StartsWith(global::MkPFS.Cli.Commands.AmprCommand.ExperimentalWarning + "\n", stdout.ToString(), StringComparison.Ordinal);
+        Assert.StartsWith(global::MkPFS.Cli.Commands.AmprCommand.ExperimentalWarning + "\nNo profile found for this game: ", stdout.ToString(), StringComparison.Ordinal);
         foreach (string step in (string[])["[1/5] Libraries: fakelib/", "[2/5] Writing ampr_emu.index", "[3/5] Packing", "[4/5] Copying loose files", "[5/5] Verifying"])
         {
             Assert.Contains(step + "\n", stdout.ToString(), StringComparison.Ordinal);
         }
+
+        string toml = dir.File("rules.toml", "[pack]\ndefault_action = \"loose\"\n");
+        stdout.GetStringBuilder().Clear();
+        exit = MkPFSCli.Run(["ampr", "game", "--root", game, "--output", Path.Combine(dir.Path, "out3"), "--fakelib", Path.Combine(dir.Path, "libs"), "--config", toml], ctx);
+        Assert.True(exit == 0, stdout.ToString() + stderr.ToString());
+        Assert.Contains($"\nRules: your TOML file {toml} (no built-in profile)\n", stdout.ToString(), StringComparison.Ordinal);
 
         exit = MkPFSCli.Run(["ampr", "game", "--root", game, "--output", Path.Combine(dir.Path, "out2")], ctx);
         Assert.Equal(2, exit);

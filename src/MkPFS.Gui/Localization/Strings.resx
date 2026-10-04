@@ -33,6 +33,13 @@
   <data name="am_section" xml:space="preserve"><value>APR Emu</value></data>
   <data name="am_title" xml:space="preserve"><value>Treat as APR title</value></data>
   <data name="ap_act_game" xml:space="preserve"><value>Build playable game (packs + loose files)</value></data>
+  <data name="ap_rules_found" xml:space="preserve"><value>✓ Profile found: {0} (identified by {1}). {2}</value></data>
+  <data name="ap_rules_packs_unity" xml:space="preserve"><value>Only StreamingAssets is packed.</value></data>
+  <data name="ap_rules_packs_default" xml:space="preserve"><value>Every file but executables, modules and system files is packed.</value></data>
+  <data name="ap_rules_tested" xml:space="preserve"><value>Tested: runs on {0}.</value></data>
+  <data name="ap_rules_untested" xml:space="preserve"><value>Untested: the game may not start on the PS5.</value></data>
+  <data name="ap_rules_none" xml:space="preserve"><value>No profile found for this game: generic rules will be used. {0} They are untested, so the game may not start on the PS5; keep the original.</value></data>
+  <data name="ap_rules_config" xml:space="preserve"><value>Your TOML file decides what is packed; no built-in profile is used.</value></data>
   <data name="ap_experimental" xml:space="preserve"><value>⚠ Experimental: whether a packed game runs depends on how it reads its files, and only a test on the PS5 shows that. Keep the original game until the packed one has been played.</value></data>
   <data name="ap_game_note" xml:space="preserve"><value>Builds a new folder you can copy to the PS5 and play: your libraries in fakelib/, ampr_emu.index, the LZ4 packs, and every file that stays loose. The game folder is only read. Needs AMPR Emu 0.4.2.1 or newer and a game that uses AMPR.</value></data>
   <data name="ap_libs_label" xml:space="preserve"><value>Library Folder (fakelib)</value></data>

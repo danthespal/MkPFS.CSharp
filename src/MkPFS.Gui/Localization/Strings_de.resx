@@ -33,6 +33,13 @@
   <data name="am_section" xml:space="preserve"><value>APR Emu</value></data>
   <data name="am_title" xml:space="preserve"><value>Als APR-Titel behandeln</value></data>
   <data name="ap_act_game" xml:space="preserve"><value>Spielfertigen Ordner erstellen (Packs + lose Dateien)</value></data>
+  <data name="ap_rules_found" xml:space="preserve"><value>✓ Profil gefunden: {0} (erkannt an {1}). {2}</value></data>
+  <data name="ap_rules_packs_unity" xml:space="preserve"><value>Nur StreamingAssets wird gepackt.</value></data>
+  <data name="ap_rules_packs_default" xml:space="preserve"><value>Alle Dateien außer ausführbaren Dateien, Modulen und Systemdateien werden gepackt.</value></data>
+  <data name="ap_rules_tested" xml:space="preserve"><value>Getestet: läuft mit {0}.</value></data>
+  <data name="ap_rules_untested" xml:space="preserve"><value>Ungetestet: das Spiel startet auf der PS5 eventuell nicht.</value></data>
+  <data name="ap_rules_none" xml:space="preserve"><value>Kein Profil für dieses Spiel gefunden: es werden allgemeine Regeln verwendet. {0} Sie sind ungetestet, das Spiel startet auf der PS5 eventuell nicht; behalte das Original.</value></data>
+  <data name="ap_rules_config" xml:space="preserve"><value>Deine TOML-Datei bestimmt, was gepackt wird; kein eingebautes Profil wird verwendet.</value></data>
   <data name="ap_experimental" xml:space="preserve"><value>⚠ Experimentell: Ob ein gepacktes Spiel läuft, hängt davon ab, wie es seine Dateien liest, und das zeigt nur ein Test auf der PS5. Behalte das Originalspiel, bis das gepackte gespielt wurde.</value></data>
   <data name="ap_game_note" xml:space="preserve"><value>Erstellt einen neuen Ordner, den du auf die PS5 kopierst und spielst: deine Bibliotheken in fakelib/, ampr_emu.index, die LZ4-Packs und alle Dateien, die lose bleiben. Der Spielordner wird nur gelesen. Benötigt AMPR Emu 0.4.2.1 oder neuer und ein Spiel, das AMPR nutzt.</value></data>
   <data name="ap_libs_label" xml:space="preserve"><value>Bibliotheksordner (fakelib)</value></data>

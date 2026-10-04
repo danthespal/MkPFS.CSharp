@@ -87,8 +87,27 @@ public sealed class AMPRPresetTests : IDisposable
             "pack", "--root", root, "--ampr-index", Path.Combine(root, AmprIndex.IndexName), "--output", Path.Combine(_dir, "out"), "--preset", "auto");
 
         Assert.Equal(0, exit);
-        Assert.Equal("Rules: unity (Unity game: data/globalgamemanagers; only StreamingAssets is packed)\n" + global::MkPFS.Cli.Commands.AmprCommand.NothingPackedWarning + "\n", stderr);
+        Assert.Equal(
+            "Profile found: unity (data/globalgamemanagers); only StreamingAssets is packed. Tested: runs on God of War Sons of Sparta (PPSA28997).\n"
+                + global::MkPFS.Cli.Commands.AmprCommand.NothingPackedWarning + "\n",
+            stderr);
         Assert.Contains("\"files_packed\": 0,", stdout, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("auto", "No profile found for this game: generic rules (every file but executables, modules and system files is packed). Untested: the game may not start on the PS5; keep the original.")]
+    [InlineData("default", DefaultRulesLine)]
+    [InlineData("unity", "Rules: unity (--preset); only StreamingAssets is packed. Tested: runs on God of War Sons of Sparta (PPSA28997).")]
+    public void Cli_says_when_no_profile_matches_or_the_rules_were_chosen(string preset, string expected)
+    {
+        string root = Game();
+        AmprIndex.Build(root, Path.Combine(root, AmprIndex.IndexName));
+
+        (int exit, _, string stderr) = Run(
+            "pack", "--root", root, "--ampr-index", Path.Combine(root, AmprIndex.IndexName), "--output", Path.Combine(_dir, "out"), "--preset", preset);
+
+        Assert.Equal(0, exit);
+        Assert.StartsWith(expected + "\n", stderr, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -123,6 +142,9 @@ public sealed class AMPRPresetTests : IDisposable
         return (exit, stdout.ToString(), stderr.ToString());
     }
 
+    private const string DefaultRulesLine =
+        "Rules: default (--preset); every file but executables, modules and system files is packed. Untested: the game may not start on the PS5; keep the original.";
+
     [Fact]
     public void Cli_preset_packs_and_the_removal_plan_accepts_it()
     {
@@ -134,7 +156,7 @@ public sealed class AMPRPresetTests : IDisposable
 
         Assert.Equal(0, exit);
         Assert.Contains("\"files_packed\": 1,", stdout, StringComparison.Ordinal);
-        Assert.Empty(stderr);
+        Assert.Equal(DefaultRulesLine + "\n", stderr);
         Assert.Equal(["data/a.dat"], AMPRPackMaintenance.RemovalPlan(Path.Combine(output, "ampr_assets.index"), root).Paths);
     }
 
@@ -168,7 +190,7 @@ public sealed class AMPRPresetTests : IDisposable
             "pack", "--root", root, "--ampr-index", Path.Combine(root, AmprIndex.IndexName), "--output", Path.Combine(_dir, "out"), "--preset", "default");
 
         Assert.Equal(0, exit);
-        Assert.Equal(warns ? global::MkPFS.Cli.Commands.AmprCommand.NoEmulatorWarning + "\n" : string.Empty, stderr);
+        Assert.Equal(DefaultRulesLine + "\n" + (warns ? global::MkPFS.Cli.Commands.AmprCommand.NoEmulatorWarning + "\n" : string.Empty), stderr);
     }
 
     [Fact]

@@ -178,7 +178,7 @@ internal static class AmprCommand
             AMPRPackConfig loaded = (configPath, parse.GetValue(preset)) switch
             {
                 (not null, not null) => throw new AMPRPackException("--config and --preset cannot be used together"),
-                (not null, null) => AMPRPackConfig.Load(Resolve(ctx, configPath)),
+                (not null, null) => Config(ctx, Resolve(ctx, configPath)),
                 (null, var name) => Preset(name ?? "auto", Resolve(ctx, parse.GetValue(root)!), message => ctx.Log.Info(message)),
             };
             if (parse.GetValue(workers) is { } count)
@@ -217,19 +217,39 @@ internal static class AmprCommand
         return command;
     }
 
-    // Built-in rules; auto reports what it found so the choice is visible in the log.
+    // Built-in rules. The log says whether a profile matched the game and whether it was played on a PS5, so the
+    // user can tell how likely the packed game is to run.
     private static AMPRPackConfig Preset(string name, string root, Action<string> report)
     {
-        if (name == "auto")
+        bool auto = name == "auto";
+        string? marker = null;
+        if (auto)
         {
-            (string detected, string? marker) = AMPRPackConfig.DetectPreset(root);
-            report(marker is null
-                ? "Rules: default (no Unity files found)"
-                : $"Rules: unity (Unity game: {marker}; only StreamingAssets is packed)");
-            name = detected;
+            (name, marker) = AMPRPackConfig.DetectPreset(root);
         }
 
+        report(RulesReport(name, marker, auto));
         return AMPRPackConfig.LoadPreset(name);
+    }
+
+    private static string RulesReport(string preset, string? marker, bool auto)
+    {
+        (string packs, string? testedOn) = AMPRPackConfig.PresetInfo(preset);
+        string tested = testedOn is null
+            ? "Untested: the game may not start on the PS5; keep the original."
+            : $"Tested: runs on {testedOn}.";
+        return (preset, marker, auto) switch
+        {
+            (_, not null, _) => $"Profile found: {preset} ({marker}); {packs}. {tested}",
+            ("default", null, true) => $"No profile found for this game: generic rules ({packs}). {tested}",
+            _ => $"Rules: {preset} (--preset); {packs}. {tested}",
+        };
+    }
+
+    private static AMPRPackConfig Config(CliContext ctx, string path)
+    {
+        ctx.Log.Info($"Rules: your TOML file {path} (no built-in profile)");
+        return AMPRPackConfig.Load(path);
     }
 
     private static Command Unpack(CliContext ctx)

@@ -305,7 +305,16 @@ that every packed byte decodes to the original, but that proves the packs are co
 reads them in a supported way.
 
 The built-in rules come from these tests, and `ampr game` picks them from the game itself (`--preset
-auto`, the default; the log line `Rules: ...` says which and why):
+auto`, the default). Before anything is built, the log and the AMPR Packs page say whether a profile
+matched the game, which one, the file that identified it, and whether it has run on a PS5:
+
+```
+Profile found: unity (Media/globalgamemanagers); only StreamingAssets is packed. Tested: runs on God of War Sons of Sparta (PPSA28997).
+No profile found for this game: generic rules (every file but executables, modules and system files is packed). Untested: the game may not start on the PS5; keep the original.
+```
+
+A found, tested profile is the best sign that the packed game will run; with no profile, treat the
+build as a test. With `--config`, the log says `Rules: your TOML file ...` instead.
 
 - **Unity games** (a `globalgamemanagers`, `data.unity3d` or `global-metadata.dat` in the game): only
   `StreamingAssets/` is packed (asset bundles, audio banks, videos). Unity's own data files
@@ -336,7 +345,8 @@ auto`, the default; the log line `Rules: ...` says which and why):
 
 ##### Reporting a game
 
-Whether it works or not, please report: the game title, ID and version, the `Rules:` line from the build
+Whether it works or not, please report: the game title, ID and version, the `Profile found` or `No profile
+found` line from the build
 log, what happened on the console, and for a game that fails, the ShadowMountPlus log
 (`/data/shadowmount/debug.log`) and the console log around the crash. A failing game can often still be
 packed with a TOML file that leaves more files loose (see the TOML format below); a report with the result
@@ -377,7 +387,7 @@ volume from one build together; the `.crc` sidecar is only for `verify` and `unp
 | `--config <toml>` | none | Pack rules. Without a config or preset every file stays loose, and `pack` prints a warning on standard error. |
 | `--preset default` | none | Built-in rules instead of `--config` (not in `ampr_pack.py`): compress every file but keep loose everything `remove-sources` protects (`eboot.bin`, `*.prx`/`*.sprx`/`*.elf`/`*.self`, `sce_sys/`, `sce_module/`, `fakelib/`, `fakelib2/`, `mods/`, `save/`, `system/`, `param.sfo`, `nptitle.dat`, `ampr_emu.index`) and Unity IL2CPP `global-metadata.dat`, which is memory-mapped. |
 | `--preset unity` | none | For Unity games: compress only `StreamingAssets/` (Addressables bundles, FMOD banks, videos) and keep Unity's own data files (`level*`, `sharedassets*`, `globalgamemanagers`, `.resS`) loose. Packing those made a Unity title abort at startup on the console, while packing only `StreamingAssets` ran normally. |
-| `--preset auto` | none | `unity` for Unity games (a `globalgamemanagers`, `data.unity3d` or `global-metadata.dat` within four folder levels), else `default`; prints the choice on standard error. The default for `ampr game` and the AMPR Packs page. |
+| `--preset auto` | none | `unity` for Unity games (a `globalgamemanagers`, `data.unity3d` or `global-metadata.dat` within four folder levels), else `default`; prints the profile found (or that none was) on standard error. The default for `ampr game` and the AMPR Packs page. |
 | `--include <glob>`, `--exclude <glob>` | none; repeatable | Narrow the rule selection; `--exclude` forces files loose. |
 | `--include-from <file>`, `--exclude-from <file>` | none | Glob lists, one per line, `#` comments. |
 | `--workers <n>` | config, else min(8, cores) | Compression threads (1 to 256). |
@@ -406,8 +416,8 @@ mkpfs ampr game --root PPSA12345-app --output PPSA12345-packed --fakelib ampr-em
    in this index.
 3. **Packs.** Packs from the game folder with `--config`, `--preset`, or by default `--preset auto`, which
    picks the rules from the game: `unity` when a Unity file (`globalgamemanagers`, `data.unity3d`,
-   `global-metadata.dat`) is within four folder levels, else `default`. The log names the rules and the
-   file that decided them.
+   `global-metadata.dat`) is within four folder levels, else `default`. The log says whether a profile
+   was found, the file that identified it and whether the profile has run on a PS5.
 4. **Loose files.** Copies every file that stays loose, keeping its modification time, and every folder,
    including empty ones. This runs after packing because the packer only then decides which large,
    incompressible files to leave loose.

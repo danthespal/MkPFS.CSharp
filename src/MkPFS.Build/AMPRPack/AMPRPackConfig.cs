@@ -315,6 +315,20 @@ public sealed class AMPRPackConfig
     }
 
     /// <summary>
+    /// What a built-in rule set packs and the games it was played with on a PS5, so a log can say whether the rules
+    /// are known to work. <c>default</c> is the fallback for games no profile matches and has run no game yet.
+    /// </summary>
+    /// <param name="name">Preset name (<c>default</c> or <c>unity</c>).</param>
+    /// <returns>Short description of what is packed, and the tested games (<see langword="null"/> when untested).</returns>
+    /// <exception cref="AMPRPackException">The preset does not exist.</exception>
+    public static (string Packs, string? TestedOn) PresetInfo(string name) => name switch
+    {
+        "default" => ("every file but executables, modules and system files is packed", null),
+        "unity" => ("only StreamingAssets is packed", "God of War Sons of Sparta (PPSA28997)"),
+        _ => throw new AMPRPackException($"unknown preset: {name}"),
+    };
+
+    /// <summary>
     /// The <c>default</c> preset: compress every file, but keep loose everything <c>remove-sources</c> protects
     /// (executables, modules, system and save folders, indexes) and Unity IL2CPP <c>global-metadata.dat</c>, which
     /// IL2CPP memory-maps (ampr_emu does not intercept mmap). <c>*</c> also matches <c>/</c>, so <c>*.prx</c> covers

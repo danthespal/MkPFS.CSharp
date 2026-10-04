@@ -142,6 +142,35 @@ public sealed class AmprPackPanelTests
         Assert.Equal(action == "game", panel.ShowExfatPath);
     }
 
+    [Fact]
+    public void Page_says_which_profile_matches_the_game_folder()
+    {
+        using TempDir dir = new();
+        string game = Directory.CreateDirectory(Path.Combine(dir.Path, "game")).FullName;
+        AmprPackPanelViewModel panel = Panel("game");
+        Assert.False(panel.ShowRulesFound || panel.ShowRulesNone || panel.ShowRulesConfig);
+
+        panel.Root = game;
+        Assert.True(panel.ShowRulesNone);
+        Assert.False(panel.ShowRulesFound);
+        Assert.Contains("No profile found", panel.RulesNoneText, StringComparison.Ordinal);
+
+        dir.File("game/Media/globalgamemanagers", "unity");
+        panel.Root = game + Path.DirectorySeparatorChar;
+        Assert.True(panel.ShowRulesFound);
+        Assert.False(panel.ShowRulesNone);
+        Assert.Equal(
+            "✓ Profile found: unity (identified by Media/globalgamemanagers). Only StreamingAssets is packed. Tested: runs on God of War Sons of Sparta (PPSA28997).",
+            panel.RulesFoundText);
+
+        panel.Config = "rules.toml";
+        Assert.False(panel.ShowRulesFound);
+        Assert.True(panel.ShowRulesConfig);
+
+        panel.Action = panel.Actions.Single(a => a.Value == "verify");
+        Assert.False(panel.ShowRulesFound || panel.ShowRulesNone || panel.ShowRulesConfig);
+    }
+
     [AvaloniaFact]
     public async Task Page_without_a_toml_packs_with_the_default_rules_and_logs_cli_progress()
     {
