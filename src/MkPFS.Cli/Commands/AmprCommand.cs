@@ -56,7 +56,7 @@ internal static class AmprCommand
         Option<string> amprIndex = Required("--ampr-index", "AMPRIDX3 file");
         Option<string> output = Required("--output", "output directory");
         Option<string?> config = new("--config") { Description = "TOML pack configuration" };
-        Option<string?> preset = new("--preset") { Description = "built-in rules instead of --config: default compresses every file and keeps executables, modules and system files loose; unity compresses only StreamingAssets; auto picks unity for Unity games, else default" };
+        Option<string?> preset = new("--preset") { Description = "built-in rules instead of --config: default compresses every file and keeps executables, modules and system files loose; unity compresses only StreamingAssets; insomniac compresses only the d/ archives but boot, movie and audio ones; auto picks insomniac or unity from the game, else default" };
         preset.AcceptOnlyFromAmong([.. AMPRPackConfig.PresetNames]);
         Option<string[]> include = Repeated("--include", "additional include glob");
         Option<string[]> exclude = Repeated("--exclude", "force-loose glob");
@@ -160,7 +160,7 @@ internal static class AmprCommand
         Option<string> output = Required("--output", "new or empty folder for the playable game");
         Option<string?> fakelib = new("--fakelib") { Description = "folder with AMPR Emu 0.4.2.1+ libSceAmpr.sprx and other fakelib libraries to add" };
         Option<string?> config = new("--config") { Description = "TOML pack configuration (default: --preset auto)" };
-        Option<string?> preset = new("--preset") { Description = "built-in rules instead of --config: auto (unity for Unity games, else default), default (every file but executables, modules and system files) or unity (only StreamingAssets); default: auto" };
+        Option<string?> preset = new("--preset") { Description = "built-in rules instead of --config: auto (insomniac or unity from the game, else default), default (every file but executables, modules and system files), insomniac (the d/ archives but boot, movie and audio ones) or unity (only StreamingAssets); default: auto" };
         preset.AcceptOnlyFromAmong([.. AMPRPackConfig.PresetNames]);
         Option<int?> workers = new("--workers") { Description = "compression workers" };
         Option<bool> selfContained = new("--self-contained") { Description = "do not auto-loose explicitly packed files; store incompressible blocks RAW" };

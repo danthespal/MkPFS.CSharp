@@ -288,9 +288,9 @@ public sealed class AMPRPackConfig
 
     /// <summary>
     /// Built-in rule sets for <see cref="LoadPreset(string, string?)"/> (an extension; ampr_pack has none). <c>auto</c>
-    /// picks <c>unity</c> or <c>default</c> from the game folder (<see cref="DetectPreset"/>).
+    /// picks <c>insomniac</c>, <c>unity</c> or <c>default</c> from the game folder (<see cref="DetectPreset"/>).
     /// </summary>
-    public static IReadOnlyList<string> PresetNames { get; } = ["auto", "default", "unity"];
+    public static IReadOnlyList<string> PresetNames { get; } = ["auto", "default", "insomniac", "unity"];
 
     // Files only Unity players ship; depth-limited so a scan of a large game stays cheap.
     private static readonly HashSet<string> UnityMarkers = new(StringComparer.OrdinalIgnoreCase)
@@ -299,18 +299,27 @@ public sealed class AMPRPackConfig
     };
 
     /// <summary>
-    /// The built-in rules for the game in <paramref name="root"/>: <c>unity</c> when a Unity marker file
-    /// (<c>globalgamemanagers</c>, <c>data.unity3d</c>, <c>global-metadata.dat</c>) is within four folder levels,
-    /// else <c>default</c>.
+    /// The built-in rules for the game in <paramref name="root"/>: <c>insomniac</c> when the folder has Insomniac's
+    /// layout (<c>toc</c> and <c>dag</c> files and a <c>d</c> folder at the top), <c>unity</c> when a Unity marker file
+    /// (<c>globalgamemanagers</c>, <c>data.unity3d</c>, <c>global-metadata.dat</c>) is within four folder levels, else
+    /// <c>default</c>.
     /// </summary>
     /// <param name="root">Game folder.</param>
-    /// <returns>Preset name and the marker that decided it (relative, <c>/</c> separators), if any.</returns>
+    /// <returns>Preset name and what decided it (relative, <c>/</c> separators), if anything.</returns>
     public static (string Preset, string? Marker) DetectPreset(string root)
     {
+        if (!Directory.Exists(root))
+        {
+            return ("default", null);
+        }
+
+        if (File.Exists(Path.Combine(root, "toc")) && File.Exists(Path.Combine(root, "dag")) && Directory.Exists(Path.Combine(root, "d")))
+        {
+            return ("insomniac", "toc, dag, d/");
+        }
+
         EnumerationOptions options = new() { RecurseSubdirectories = true, MaxRecursionDepth = 3, IgnoreInaccessible = true };
-        string? marker = Directory.Exists(root)
-            ? Directory.EnumerateFiles(root, "*", options).FirstOrDefault(f => UnityMarkers.Contains(Path.GetFileName(f)))
-            : null;
+        string? marker = Directory.EnumerateFiles(root, "*", options).FirstOrDefault(f => UnityMarkers.Contains(Path.GetFileName(f)));
         return marker is null ? ("default", null) : ("unity", Path.GetRelativePath(root, marker).Replace('\\', '/'));
     }
 
@@ -318,12 +327,13 @@ public sealed class AMPRPackConfig
     /// What a built-in rule set packs and the games it was played with on a PS5, so a log can say whether the rules
     /// are known to work. <c>default</c> is the fallback for games no profile matches and has run no game yet.
     /// </summary>
-    /// <param name="name">Preset name (<c>default</c> or <c>unity</c>).</param>
+    /// <param name="name">Preset name (<c>default</c>, <c>insomniac</c> or <c>unity</c>).</param>
     /// <returns>Short description of what is packed, and the tested games (<see langword="null"/> when untested).</returns>
     /// <exception cref="AMPRPackException">The preset does not exist.</exception>
     public static (string Packs, string? TestedOn) PresetInfo(string name) => name switch
     {
         "default" => ("every file but executables, modules and system files is packed", null),
+        "insomniac" => ("only the d/ archives are packed, without boot, movie and audio files", "PPSA03671 (01.001.005)"),
         "unity" => ("only StreamingAssets is packed", "God of War Sons of Sparta (PPSA28997)"),
         _ => throw new AMPRPackException($"unknown preset: {name}"),
     };
@@ -370,6 +380,37 @@ public sealed class AMPRPackConfig
         ]
         """;
 
+    /// <summary>
+    /// The <c>insomniac</c> preset, for Insomniac Games titles (<c>toc</c>, <c>dag</c> and the <c>d/</c> archives at
+    /// the top): compress only the <c>d/</c> archives, but keep the boot, movie, sound bank and streamed audio
+    /// (<c>wem</c>) archives loose, like Lazy_AMPR's Spider-Man profile. Packing every file crashed such a title at
+    /// startup; these rules ran it.
+    /// </summary>
+    public const string InsomniacPresetToml = """
+        [pack]
+        default_action = "loose"
+        default_block_size = "128KiB"
+
+        [[rule]]
+        action = "compress"
+        include = ["d/*"]
+        block_size = "128KiB"
+
+        [[rule]]
+        action = "loose"
+        include = [
+          "d/*/bootload*", "d/*/critbootload*", "d/*/movie*", "d/*/soundbank*", "d/*/wem*",
+          "toc", "dag", "commandline.txt", "pkg_settings.set", "known_islands.dat",
+        ]
+
+        [[rule]]
+        action = "loose"
+        include = [
+          "eboot.bin", "*/eboot.bin", "*.prx", "*.sprx", "*.elf", "*.self",
+          "sce_sys/*", "sce_module/*", "fakelib/*", "fakelib2/*", "_DUPLEX_/*",
+        ]
+        """;
+
     /// <summary>Load a built-in preset.</summary>
     /// <param name="name">Preset name (see <see cref="PresetNames"/>).</param>
     /// <param name="root">Game folder, required for <c>auto</c>.</param>
@@ -379,6 +420,7 @@ public sealed class AMPRPackConfig
     {
         "auto" => LoadPreset(DetectPreset(root ?? throw new AMPRPackException("preset auto needs the game folder")).Preset),
         "default" => FromTable(AMPRToml.Parse(DefaultPresetToml, "preset default"), Directory.GetCurrentDirectory()),
+        "insomniac" => FromTable(AMPRToml.Parse(InsomniacPresetToml, "preset insomniac"), Directory.GetCurrentDirectory()),
         "unity" => FromTable(AMPRToml.Parse(UnityPresetToml, "preset unity"), Directory.GetCurrentDirectory()),
         _ => throw new AMPRPackException($"unknown preset: {name}"),
     };

@@ -57,6 +57,37 @@ public sealed class AMPRPresetTests : IDisposable
     }
 
     [Theory]
+    [InlineData("d/0/texture", "compress")]
+    [InlineData("d/1/zonelightbin_12", "compress")]
+    [InlineData("d/0/bootload", "loose")]
+    [InlineData("d/0/critbootload", "loose")]
+    [InlineData("d/1/movie_intro", "loose")]
+    [InlineData("d/0/soundbank", "loose")]
+    [InlineData("d/1/wem.3", "loose")]
+    [InlineData("toc", "loose")]
+    [InlineData("dag", "loose")]
+    [InlineData("known_islands.dat", "loose")]
+    [InlineData("libcohtml.Prospero.prx", "loose")]
+    [InlineData("eboot.bin", "loose")]
+    [InlineData("fakelib/libSceAmpr.sprx", "loose")]
+    [InlineData("_DUPLEX_/x", "loose")]
+    public void Insomniac_preset_packs_only_the_d_archives(string relative, string action) =>
+        Assert.Equal(action, AMPRPackConfig.LoadPreset("insomniac").SelectRule(relative).Action);
+
+    [Fact]
+    public void Auto_picks_insomniac_rules_from_the_top_level_layout()
+    {
+        string root = Path.Combine(_dir, "game");
+        Directory.CreateDirectory(Path.Combine(root, "d", "0"));
+        File.WriteAllText(Path.Combine(root, "toc"), "x");
+        Assert.Equal(("default", null), AMPRPackConfig.DetectPreset(root));
+
+        File.WriteAllText(Path.Combine(root, "dag"), "x");
+        Assert.Equal(("insomniac", "toc, dag, d/"), AMPRPackConfig.DetectPreset(root));
+        Assert.Equal("compress", AMPRPackConfig.LoadPreset("auto", root).SelectRule("d/0/texture").Action);
+    }
+
+    [Theory]
     [InlineData("Media/globalgamemanagers", "unity")]
     [InlineData("Game_Data/data.unity3d", "unity")]
     [InlineData("Media/Metadata/global-metadata.dat", "unity")]

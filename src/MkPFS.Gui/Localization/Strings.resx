@@ -34,6 +34,7 @@
   <data name="am_title" xml:space="preserve"><value>Treat as APR title</value></data>
   <data name="ap_act_game" xml:space="preserve"><value>Build playable game (packs + loose files)</value></data>
   <data name="ap_rules_found" xml:space="preserve"><value>✓ Profile found: {0} (identified by {1}). {2}</value></data>
+  <data name="ap_rules_packs_insomniac" xml:space="preserve"><value>Only the d/ archives are packed; boot, movie and audio archives stay loose.</value></data>
   <data name="ap_rules_packs_unity" xml:space="preserve"><value>Only StreamingAssets is packed.</value></data>
   <data name="ap_rules_packs_default" xml:space="preserve"><value>Every file but executables, modules and system files is packed.</value></data>
   <data name="ap_rules_tested" xml:space="preserve"><value>Tested: runs on {0}.</value></data>

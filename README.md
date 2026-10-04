@@ -320,8 +320,12 @@ build as a test. With `--config`, the log says `Rules: your TOML file ...` inste
   `StreamingAssets/` is packed (asset bundles, audio banks, videos). Unity's own data files
   (`level*`, `sharedassets*`, `globalgamemanagers`, `.resS`) stay loose, because packing them made a
   Unity game abort at startup.
-- **Other games**: every file except executables, modules and system files is packed. No game of this
-  kind has been confirmed on the console yet, and one crashed at startup (see the table), so expect to
+- **Insomniac Games titles** (`toc` and `dag` files and a `d/` folder at the top of the game): only the
+  `d/` archives are packed. The boot (`bootload*`, `critbootload*`), movie, sound bank and streamed audio
+  (`wem*`) archives stay loose, as do `toc`, `dag` and the other top-level files. Packing every file made
+  such a game crash at startup.
+- **Other games** (no profile found): every file except executables, modules and system files is
+  packed. No game has run with these rules yet, and both games above failed with them, so expect to
   need a TOML that leaves more files loose.
 
 **Tested games.** Results on a PS5 with ShadowMountPlus 1.7 beta 4 and AMPR Emu 0.4.2.1:
@@ -330,7 +334,8 @@ build as a test. With `--config`, the log says `Rules: your TOML file ...` inste
 |---|---|---|---|---|
 | God of War Sons of Sparta (PPSA28997) | 01.008.001 | Unity (IL2CPP) | `unity` (auto) | Runs: menu, saves, gameplay. |
 | God of War Sons of Sparta (PPSA28997) | 01.008.001 | Unity (IL2CPP) | `default` | Aborts at startup (`SYSTEM_ABNORMAL_TERMINATION_REQUEST`). |
-| PPSA03671 | 01.001.005 | Not Unity (Coherent UI) | `default` (auto) | Crashes 2 s after start (`SIGSEGV`, null read in `eboot.bin`); the unpacked game starts. |
+| PPSA03671 | 01.001.005 | Insomniac | `insomniac` (auto) | Runs. |
+| PPSA03671 | 01.001.005 | Insomniac | `default` | Crashes 2 s after start (`SIGSEGV`, null read in `eboot.bin`). |
 
 **Recommended steps.**
 
@@ -387,7 +392,8 @@ volume from one build together; the `.crc` sidecar is only for `verify` and `unp
 | `--config <toml>` | none | Pack rules. Without a config or preset every file stays loose, and `pack` prints a warning on standard error. |
 | `--preset default` | none | Built-in rules instead of `--config` (not in `ampr_pack.py`): compress every file but keep loose everything `remove-sources` protects (`eboot.bin`, `*.prx`/`*.sprx`/`*.elf`/`*.self`, `sce_sys/`, `sce_module/`, `fakelib/`, `fakelib2/`, `mods/`, `save/`, `system/`, `param.sfo`, `nptitle.dat`, `ampr_emu.index`) and Unity IL2CPP `global-metadata.dat`, which is memory-mapped. |
 | `--preset unity` | none | For Unity games: compress only `StreamingAssets/` (Addressables bundles, FMOD banks, videos) and keep Unity's own data files (`level*`, `sharedassets*`, `globalgamemanagers`, `.resS`) loose. Packing those made a Unity title abort at startup on the console, while packing only `StreamingAssets` ran normally. |
-| `--preset auto` | none | `unity` for Unity games (a `globalgamemanagers`, `data.unity3d` or `global-metadata.dat` within four folder levels), else `default`; prints the profile found (or that none was) on standard error. The default for `ampr game` and the AMPR Packs page. |
+| `--preset insomniac` | none | For Insomniac Games titles: compress only the `d/` archives (128 KiB blocks) and keep the boot, movie, sound bank and `wem*` archives, `toc`, `dag` and the other top-level files loose. Packing every file made such a title crash at startup, while these rules ran it. |
+| `--preset auto` | none | `insomniac` when `toc`, `dag` and `d/` are at the top of the game, `unity` for Unity games (a `globalgamemanagers`, `data.unity3d` or `global-metadata.dat` within four folder levels), else `default`; prints the profile found (or that none was) on standard error. The default for `ampr game` and the AMPR Packs page. |
 | `--include <glob>`, `--exclude <glob>` | none; repeatable | Narrow the rule selection; `--exclude` forces files loose. |
 | `--include-from <file>`, `--exclude-from <file>` | none | Glob lists, one per line, `#` comments. |
 | `--workers <n>` | config, else min(8, cores) | Compression threads (1 to 256). |
@@ -415,8 +421,9 @@ mkpfs ampr game --root PPSA12345-app --output PPSA12345-packed --fakelib ampr-em
    their real sizes. This must come before packing, because the manifest addresses files by their row
    in this index.
 3. **Packs.** Packs from the game folder with `--config`, `--preset`, or by default `--preset auto`, which
-   picks the rules from the game: `unity` when a Unity file (`globalgamemanagers`, `data.unity3d`,
-   `global-metadata.dat`) is within four folder levels, else `default`. The log says whether a profile
+   picks the rules from the game: `insomniac` when `toc`, `dag` and `d/` are at the top, `unity` when a
+   Unity file (`globalgamemanagers`, `data.unity3d`, `global-metadata.dat`) is within four folder levels,
+   else `default`. The log says whether a profile
    was found, the file that identified it and whether the profile has run on a PS5.
 4. **Loose files.** Copies every file that stays loose, keeping its modification time, and every folder,
    including empty ones. This runs after packing because the packer only then decides which large,

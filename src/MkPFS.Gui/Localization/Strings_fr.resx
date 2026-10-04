@@ -34,6 +34,7 @@
   <data name="am_title" xml:space="preserve"><value>Traiter comme un titre APR</value></data>
   <data name="ap_act_game" xml:space="preserve"><value>Créer le jeu prêt à lancer (packs + fichiers libres)</value></data>
   <data name="ap_rules_found" xml:space="preserve"><value>✓ Profil trouvé : {0} (identifié par {1}). {2}</value></data>
+  <data name="ap_rules_packs_insomniac" xml:space="preserve"><value>Seules les archives de d/ sont empaquetées ; celles de démarrage, vidéo et audio restent à part.</value></data>
   <data name="ap_rules_packs_unity" xml:space="preserve"><value>Seul StreamingAssets est empaqueté.</value></data>
   <data name="ap_rules_packs_default" xml:space="preserve"><value>Tous les fichiers sont empaquetés, sauf les exécutables, les modules et les fichiers système.</value></data>
   <data name="ap_rules_tested" xml:space="preserve"><value>Testé : fonctionne avec {0}.</value></data>

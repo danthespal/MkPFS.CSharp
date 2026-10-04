@@ -34,6 +34,7 @@
   <data name="am_title" xml:space="preserve"><value>Tratează ca titlu APR</value></data>
   <data name="ap_act_game" xml:space="preserve"><value>Creează jocul gata de rulat (pack-uri + fișiere libere)</value></data>
   <data name="ap_rules_found" xml:space="preserve"><value>✓ Profil găsit: {0} (identificat după {1}). {2}</value></data>
+  <data name="ap_rules_packs_insomniac" xml:space="preserve"><value>Se împachetează doar arhivele din d/; cele de pornire, video și audio rămân separate.</value></data>
   <data name="ap_rules_packs_unity" xml:space="preserve"><value>Se împachetează doar StreamingAssets.</value></data>
   <data name="ap_rules_packs_default" xml:space="preserve"><value>Se împachetează toate fișierele, mai puțin executabilele, modulele și fișierele de sistem.</value></data>
   <data name="ap_rules_tested" xml:space="preserve"><value>Testat: rulează pe {0}.</value></data>
