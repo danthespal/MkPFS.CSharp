@@ -312,7 +312,8 @@ auto`, the default; the log line `Rules: ...` says which and why):
   (`level*`, `sharedassets*`, `globalgamemanagers`, `.resS`) stay loose, because packing them made a
   Unity game abort at startup.
 - **Other games**: every file except executables, modules and system files is packed. No game of this
-  kind has been confirmed on the console yet.
+  kind has been confirmed on the console yet, and one crashed at startup (see the table), so expect to
+  need a TOML that leaves more files loose.
 
 **Tested games.** Results on a PS5 with ShadowMountPlus 1.7 beta 4 and AMPR Emu 0.4.2.1:
 
@@ -320,6 +321,7 @@ auto`, the default; the log line `Rules: ...` says which and why):
 |---|---|---|---|---|
 | God of War Sons of Sparta (PPSA28997) | 01.008.001 | Unity (IL2CPP) | `unity` (auto) | Runs: menu, saves, gameplay. |
 | God of War Sons of Sparta (PPSA28997) | 01.008.001 | Unity (IL2CPP) | `default` | Aborts at startup (`SYSTEM_ABNORMAL_TERMINATION_REQUEST`). |
+| PPSA03671 | 01.001.005 | Not Unity (Coherent UI) | `default` (auto) | Crashes 2 s after start (`SIGSEGV`, null read in `eboot.bin`); the unpacked game starts. |
 
 **Recommended steps.**
 
