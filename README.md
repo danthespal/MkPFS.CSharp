@@ -10,6 +10,12 @@ MkPFS.CSharp is a .NET 10 port of the Python [MkPFS](https://github.com/PSBrew/M
 as a native executable (no Python needed), writes the same images as the original, and adds an
 offline PFSC block repair ported from PS5 Game Compressor.
 
+> [!WARNING]
+> **AMPR packing (`ampr`, the AMPR Packs page) is experimental.** It can shrink a game a lot, but whether
+> the packed game runs depends on how that game reads its files, and only a test on the PS5 shows that.
+> Keep the original game until the packed one has been played. See
+> [AMPR packing: what it is and why it is experimental](#ampr-packing-what-it-is-and-why-it-is-experimental).
+
 ## Features
 
 - **Pack**: a game folder, an exFAT image, or any single file into a compressed `.ffpfsc` (PFSC, zlib),
@@ -22,7 +28,8 @@ offline PFSC block repair ported from PS5 Game Compressor.
 - **APR Emu**: copies your AMPR Emu libraries into `fakelib/` of APR titles (`--ampr-libs`) and builds
   `ampr_emu.index` when `pack folder`, `pack exfat`, or `batch` packs a game that has them.
 - **AMPR packs (experimental)**: `ampr` builds, checks, and extracts AMPR Emu seekable LZ4 asset packs, byte for byte
-  like ampr_emu's `ampr_pack.py`.
+  like ampr_emu's `ampr_pack.py`, and `ampr game` turns a game folder into a smaller one that runs from
+  them ([what it is and its limits](#ampr-packing-what-it-is-and-why-it-is-experimental)).
 - **GUI**: `mkpfs-gui` with a page per command, cover and metadata preview, batch queue, and a PFSC
   block map; English, Português (BR), Español, Română, Deutsch, and Français.
 
@@ -264,22 +271,81 @@ rebuild a missing index from the remaining files, with the same result.
 
 ### `ampr` (asset packs)
 
-> **Experimental.** Whether a packed game runs depends on how it reads its files, and only a test on the
-> console shows that. Only a few games have been tested so far. Keep the original, unpacked game until the
-> packed one has been played on the PS5, and report games that do not start, together with the
-> ShadowMountPlus log.
+#### AMPR packing: what it is and why it is experimental
 
-AMPR Emu (`libSceAmpr.sprx`) can serve selected `/app0` files from seekable LZ4 packs: the pack
-manifest `ampr_assets.index`, data volumes `ampr_assets-*.pak`, and an offline CRC sidecar
-`ampr_assets.index.crc`. The packs sit next to the game files inside a normal image; the PS5 kernel never
-sees LZ4. `mkpfs ampr` is a port of ampr_emu's `tools/ampr_pack.py` (tool version 4.0): the same options,
-the same JSON on standard output, and byte-identical packs.
+> [!WARNING]
+> Experimental. Only a few games have been tested. Keep the original, unpacked game until the packed one
+> has been played on the PS5, and report the games you try (see [Reporting a game](#reporting-a-game)).
 
-The released emulator (0.4.2.1, its PackedStdio build) serves packed files to AMPR reads and to the
-game's ordinary `open`/`read`/`pread` and asynchronous reads, so Unity games work too. It only loads in
-titles that use libSceAmpr, so `pack` warns when `--root` has no `fakelib/libSceAmpr.sprx` or
-`fakelib2/libSceAmpr.sprx`. Memory-mapped files (`mmap`) and files opened for writing are not served and
-must stay loose, so keep the source files until the packed game is tested.
+**What it does.** Most of a game's size is data files: levels, textures, audio, video. `ampr` compresses
+selected data files with LZ4 into a few large pack files (`ampr_assets-*.pak`) plus a manifest
+(`ampr_assets.index`). On the PS5, Drakmor's [AMPR Emu](https://github.com/drakmor/ampr_emu) (the
+`libSceAmpr.sprx` in the game's `fakelib/`) sits between the game and the file system: when the game
+opens a packed file, AMPR Emu reads the matching blocks from the packs and decompresses them, so the game
+sees the original bytes. Nothing else changes: `eboot.bin`, modules and `sce_sys` stay as they are, and
+the PS5 kernel never sees LZ4. Packed files are not stored a second time, which is where the space goes.
+
+**What a game needs.**
+
+- A jailbroken PS5 running [ShadowMountPlus](https://github.com/drakmor/ShadowMountPlus), which mounts
+  the game's `fakelib/` (or `fakelib2/`) into the running game.
+- A game that loads `libSceAmpr` (AMPR/APR titles; these carry `fakelib/libSceAmpr.sprx` once set up for
+  AMPR Emu). AMPR Emu is only loaded by such games, so packs in any other game are never read.
+- AMPR Emu **0.4.2.1 or newer**: the first release that reads packs. `ampr game` checks the library and
+  refuses older ones.
+- The image or folder mounted read-only (ShadowMountPlus `mount_read_only=1`, the default), so AMPR Emu
+  never rebuilds `ampr_emu.index`.
+
+**Why it is experimental.** AMPR Emu serves packed files only to the ways of reading files it intercepts:
+AMPR reads, `open`/`sceKernelOpen`, `read`/`pread`, `stat`/`fstat`, directory listing, and asynchronous
+reads. A game that reads a file any other way, most likely by memory-mapping it (`mmap`), gets nothing
+back and usually stops at startup. Which files a game reads which way cannot be seen from the files on a
+PC, so the only real check is to start the packed game on the console. `ampr game` verifies on the PC
+that every packed byte decodes to the original, but that proves the packs are correct, not that the game
+reads them in a supported way.
+
+The built-in rules come from these tests, and `ampr game` picks them from the game itself (`--preset
+auto`, the default; the log line `Rules: ...` says which and why):
+
+- **Unity games** (a `globalgamemanagers`, `data.unity3d` or `global-metadata.dat` in the game): only
+  `StreamingAssets/` is packed (asset bundles, audio banks, videos). Unity's own data files
+  (`level*`, `sharedassets*`, `globalgamemanagers`, `.resS`) stay loose, because packing them made a
+  Unity game abort at startup.
+- **Other games**: every file except executables, modules and system files is packed. No game of this
+  kind has been confirmed on the console yet.
+
+**Tested games.** Results on a PS5 with ShadowMountPlus 1.7 beta 4 and AMPR Emu 0.4.2.1:
+
+| Game | Version | Engine | Rules | Result |
+|---|---|---|---|---|
+| God of War Sons of Sparta (PPSA28997) | 01.008.001 | Unity (IL2CPP) | `unity` (auto) | Runs: menu, saves, gameplay. |
+| God of War Sons of Sparta (PPSA28997) | 01.008.001 | Unity (IL2CPP) | `default` | Aborts at startup (`SYSTEM_ABNORMAL_TERMINATION_REQUEST`). |
+
+**Recommended steps.**
+
+1. Make sure the unpacked game runs with AMPR Emu 0.4.2.1 in its `fakelib/`.
+2. On the AMPR Packs page, choose **Build playable game** (the default), pick the game folder, a new
+   output folder and the folder with AMPR Emu's `libSceAmpr.sprx`, and leave the TOML field empty.
+   Optionally tick the exFAT image box. On the command line:
+   `mkpfs ampr game --root <game> --output <new folder> --fakelib <AMPR Emu folder> --exfat .`
+3. Copy the output folder or the `.exfat` image to the PS5 and start the game. Play past the menu and load
+   a save or a level: some files are only read later.
+4. Delete the original only after that.
+
+##### Reporting a game
+
+Whether it works or not, please report: the game title, ID and version, the `Rules:` line from the build
+log, what happened on the console, and for a game that fails, the ShadowMountPlus log
+(`/data/shadowmount/debug.log`) and the console log around the crash. A failing game can often still be
+packed with a TOML file that leaves more files loose (see the TOML format below); a report with the result
+of such a test lets the built-in rules learn that game.
+
+#### How the packs are made
+
+`mkpfs ampr` is a port of ampr_emu's `tools/ampr_pack.py` (tool version 4.0): the same options, the same
+JSON on standard output, and byte-identical packs. A pack set is the manifest `ampr_assets.index`, data
+volumes `ampr_assets-*.pak`, optional runtime settings `ampr_assets.index.runtime`, and an offline CRC
+sidecar `ampr_assets.index.crc`.
 
 `pack` writes only the pack set (`ampr_assets.index`, `.pak` volumes, `.crc`) into `--output`, exactly
 like `ampr_pack.py`. For a folder to copy to the PS5, use [`ampr game`](#ampr-game-a-folder-to-copy-to-the-ps5).
@@ -288,6 +354,8 @@ The default emulator build loads at most 2,000,000 files, 16,000,000 chunks, and
 rejects the whole set beyond that; `pack` warns on standard error when a set exceeds a limit (larger
 blocks or more loose files bring it down). Deploy `ampr_emu.index`, the manifest, its `.runtime`, and every
 volume from one build together; the `.crc` sidecar is only for `verify` and `unpack`.
+
+#### Command reference
 
 | Subcommand | Required options | Purpose |
 |---|---|---|
