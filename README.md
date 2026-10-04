@@ -21,6 +21,8 @@ offline PFSC block repair ported from PS5 Game Compressor.
 - **Repair**: find and fix compressed blocks the PS5 may decode wrongly (images made with ISA-L).
 - **APR Emu**: copies your AMPR Emu libraries into `fakelib/` of APR titles (`--ampr-libs`) and builds
   `ampr_emu.index` when `pack folder`, `pack exfat`, or `batch` packs a game that has them.
+- **AMPR packs**: `ampr` builds, checks, and extracts AMPR Emu seekable LZ4 asset packs, byte for byte
+  like ampr_emu's `ampr_pack.py`.
 - **GUI**: `mkpfs-gui` with a page per command, cover and metadata preview, batch queue, and a PFSC
   block map; English, Português (BR), Español, Română, Deutsch, and Français.
 
@@ -62,6 +64,7 @@ for the parser's built-in help.
 | `tree <image_file>` | folder or image path | outer tree | List files and directories. |
 | `unpack <image_file> <output_dir>` | image path, destination directory | — | Extract an image. |
 | `repair <image_file>` | single-file `.ffpfsc` path | repairs risky blocks | Repair PFSC blocks that a PS5 may decode incorrectly. |
+| `ampr <subcommand>` | see [`ampr`](#ampr-asset-packs) | JSON on standard output | Build and manage AMPR Emu LZ4 asset packs. |
 
 ### Common examples
 
@@ -240,6 +243,10 @@ and sizes (paths compared case-insensitively, modification times ignored) and re
 turns this on when the chosen folder already has an index. `--no-ampr-index` packs the existing index
 untouched, even when it no longer matches.
 
+A folder that also holds AMPR packs (`ampr_assets.index`, see [`ampr`](#ampr-asset-packs)) always keeps its
+`ampr_emu.index`, with a warning: the packs address files by their row in that index, and a rebuilt index
+renumbers the rows so the emulator fails every packed read. `--ampr-force-regen` still rebuilds it.
+
 | Option | Default | Meaning |
 |---|---|---|
 | `--ampr-libs <dir>` | none | Folder holding `libSceAmpr.sprx` (required) and `libScePlayGo.sprx` (optional) to copy into `fakelib/`. |
@@ -247,6 +254,56 @@ untouched, even when it no longer matches.
 | `--no-ampr-index` | off | Do not create `ampr_emu.index` when `fakelib/libSceAmpr.sprx` is present. |
 | `--ampr-skip-regen-if-exists` | off | Keep an existing index while it lists exactly the folder's files and sizes; rebuild it otherwise. |
 | `--ampr-force-regen` | off | Regenerate an existing AMPR index. |
+
+### `ampr` (asset packs)
+
+AMPR Emu (`libSceAmpr.sprx`) can serve selected `/app0` files from seekable LZ4 packs: the pack
+manifest `ampr_assets.index`, data volumes `ampr_assets-*.pak`, and an offline CRC sidecar
+`ampr_assets.index.crc`. The packs sit next to the game files inside a normal image; the PS5 kernel never
+sees LZ4. `mkpfs ampr` is a port of ampr_emu's `tools/ampr_pack.py` (tool version 4.0): the same options,
+the same JSON on standard output, and byte-identical packs.
+
+The released emulator only serves files the game reads through AMPR. Files read another way (for
+example `mmap`) must stay loose, so keep the source files until the packed game is tested, and remove
+them only after that with `remove-sources --confirm`.
+
+| Subcommand | Required options | Purpose |
+|---|---|---|
+| `pack` | `--root <app0> --ampr-index <ampr_emu.index> --output <dir>` | Build the manifest, volumes, CRC sidecar, and optional runtime settings. |
+| `verify` | `--index <manifest>` | Decode every chunk and check its CRC; `--root <app0>` also compares every byte with the source. |
+| `unpack` | `--index <manifest> --output <dir>` | Extract packed files (`--file <glob>`, `--overwrite`, `--no-preserve-mtime`). |
+| `list` | `--index <manifest>` | One line per file (`--json` for details). |
+| `inspect` | `--index <manifest>` | Manifest summary, volumes, and runtime settings. |
+| `runtime-config` | `--index <manifest> --config <toml>` | Replace `<manifest>.runtime` from a `[runtime]` section without repacking. |
+| `remove-sources` | `--index <manifest> --root <app0>` | Show which sources the packs replace; with `--confirm`, verify everything and delete them. Also `remove-packed-sources`. |
+
+`pack` options:
+
+| Option | Default | Meaning |
+|---|---|---|
+| `--config <toml>` | none | Pack rules. Without a config or preset every file stays loose, and `pack` prints a warning on standard error. |
+| `--preset default` | none | Built-in rules instead of `--config` (not in `ampr_pack.py`): compress every file but keep loose everything `remove-sources` protects (`eboot.bin`, `*.prx`/`*.sprx`/`*.elf`/`*.self`, `sce_sys/`, `sce_module/`, `fakelib/`, `mods/`, `save/`, `system/`, `param.sfo`, `nptitle.dat`, `ampr_emu.index`) and Unity IL2CPP `global-metadata.dat`, which is memory-mapped. |
+| `--include <glob>`, `--exclude <glob>` | none; repeatable | Narrow the rule selection; `--exclude` forces files loose. |
+| `--include-from <file>`, `--exclude-from <file>` | none | Glob lists, one per line, `#` comments. |
+| `--workers <n>` | config, else min(8, cores) | Compression threads (1 to 256). |
+| `--self-contained` | off | Never auto-loose selected files; incompressible blocks are stored uncompressed. |
+| `--require-packed <glob>` | none; repeatable | Fail if a matching file would stay loose. |
+| `--allow-missing` | off | Leave selected files that are missing from `--root` loose. |
+| `--no-progress` | off | Hide progress on standard error. |
+
+The TOML format is ampr_emu's (see its `tools/ampr_pack.example.toml`). A minimal config:
+
+```toml
+[pack]
+default_action = "compress"   # LZ4 HC level 12, 64 KiB blocks
+
+[[rule]]                       # last match wins: keep modules and system files loose
+action = "loose"
+include = ["eboot.bin", "**/*.prx", "**/*.sprx", "sce_sys/**", "sce_module/**", "fakelib/**"]
+```
+
+`ampr_pack.py` has no built-in exclusions, so a config without that last rule packs `eboot.bin` and
+modules too; `remove-sources` then refuses to run. Errors print `error: <message>` and exit with code 2.
 
 ### Reading and extracting images
 
@@ -313,6 +370,8 @@ dotnet run --project src/MkPFS.Gui -c Release
   settings for the zlib level, CPU cores, block size, and when to keep blocks uncompressed.
 - The Repair page scans an image and draws a block map (zlib, raw, risky); click a cell for its
   offset, stored size, and largest back-reference distance.
+- The AMPR Packs page runs every `ampr` subcommand and shows only the fields the chosen action needs.
+  Packing without a TOML uses `--preset default`.
 
 ## Differences from Python MkPFS
 
@@ -371,7 +430,7 @@ Studio Installer folder (`C:\Program Files (x86)\Microsoft Visual Studio\Install
 | `src/MkPFS.Repair` | PFSC repair (Game Compressor port) |
 | `src/MkPFS.Cli` | `mkpfs` command line |
 | `src/MkPFS.Gui` | `mkpfs-gui` desktop app (Avalonia) |
-| `native/` | zlib 1.3.1 and the `mkpfs_zlib` shim |
+| `native/` | zlib 1.3.1, lz4 1.9.4, and the `mkpfs_zlib` shim |
 | `tests/MkPFS.Tests` | Unit tests |
 | `tests/MkPFS.Parity` | Byte-for-byte tests against the Python oracle corpus |
 | `tests/MkPFS.Gui.Tests` | GUI view model and headless UI tests |
@@ -384,6 +443,13 @@ out at `../MkPFS` and `uv` installed:
 
 ```bash
 uv run --project ../MkPFS python tools/oracle/build_goldens.py --check
+```
+
+The `ampr` tests use a second corpus made by ampr_emu's `ampr_pack.py` (checked out at `../ampr_emu`;
+needs python-lz4 4.4.5):
+
+```bash
+python tools/oracle/build_ampr_goldens.py --check
 ```
 
 ### Releases
@@ -404,12 +470,15 @@ git push origin v2.0.0
 
 - [MkPFS](https://github.com/PSBrew/MkPFS) by PSBrew: the Python original this port follows.
 - PS5 Game Compressor by Juma Sayeh: the PFSC repair logic.
-- Drakmor's [APR Emu](https://github.com/drakmor/ampr_emu): the `ampr_emu.index` format.
+- Drakmor's [APR Emu](https://github.com/drakmor/ampr_emu): the `ampr_emu.index` format and the asset-pack
+  format and tools that `ampr` ports.
 - Drakmor's [PlayGo stub](https://github.com/drakmor/pgo_stub): `libScePlayGo.sprx`.
 
 Third-party components:
 
 - [zlib](https://zlib.net) 1.3.1 (zlib license)
+- [LZ4](https://github.com/lz4/lz4) 1.9.4 (BSD-2-Clause)
+- [Tomlyn](https://github.com/xoofx/Tomlyn) (BSD-2-Clause)
 - [Avalonia](https://avaloniaui.net), [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet),
   [System.CommandLine](https://github.com/dotnet/command-line-api), and
   [Spectre.Console](https://spectreconsole.net) (MIT)

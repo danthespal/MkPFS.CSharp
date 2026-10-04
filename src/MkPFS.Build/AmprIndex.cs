@@ -100,6 +100,20 @@ public static class AmprIndex
             return null;
         }
 
+        // An AMPR pack set addresses files by their row in this index; rebuilding renumbers the rows (the new
+        // ampr_assets-*.pak files sort first) and the emulator then fails every packed read (not in Python MkPFS).
+        bool packSet = File.Exists(indexPath) && File.Exists(Path.Combine(sourceRoot, AMPRPack.AMPRPackConfig.DefaultIndexName));
+        if (packSet && !forceRegen)
+        {
+            log.Warning($"{IndexName} kept: the AMPR packs in this folder (ampr_assets.index) are bound to it; --ampr-force-regen rebuilds it and breaks them");
+            return null;
+        }
+
+        if (packSet)
+        {
+            log.Warning($"Rebuilding {IndexName} although ampr_assets.index is present; the AMPR packs will stop working until they are rebuilt");
+        }
+
         if (createIfMissing && !forceRegen && (File.Exists(indexPath) || Directory.Exists(indexPath)))
         {
             if (Validate(indexPath, sourceRoot))

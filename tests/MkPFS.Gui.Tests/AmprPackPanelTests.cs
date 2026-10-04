@@ -1,0 +1,160 @@
+using Avalonia.Headless.XUnit;
+using Avalonia.Media;
+using MkPFS.Build;
+using MkPFS.Gui.Jobs;
+using MkPFS.Gui.ViewModels;
+
+namespace MkPFS.Gui.Tests;
+
+[Collection(GuiCollection.Name)]
+public sealed class AmprPackPanelTests
+{
+    private static JobRunner Sync() => new(action => action());
+
+    private static AmprPackPanelViewModel Panel(string action)
+    {
+        AmprPackPanelViewModel panel = new(Colors.YellowGreen, Sync());
+        panel.Action = panel.Actions.Single(a => a.Value == action);
+        return panel;
+    }
+
+    [Fact]
+    public void Pack_builds_arguments_and_validates()
+    {
+        AmprPackPanelViewModel panel = Panel("pack");
+        Assert.Null(panel.BuildArguments(out string? error));
+        Assert.Equal("✗ Game folder and output folder are both required.", error);
+
+        panel.Root = "D:/game";
+        panel.Output = "D:/out";
+        Assert.Equal(Path.Combine("D:/out", "ampr_assets.index"), panel.Manifest);
+        Assert.Equal(
+            ["ampr", "pack", "--root", "D:/game", "--ampr-index", Path.Combine("D:/game", "ampr_emu.index"), "--output", "D:/out", "--preset", "default"],
+            panel.BuildArguments(out _));
+
+        panel.AmprIndex = "D:/idx/ampr_emu.index";
+        panel.Config = "D:/rules.toml";
+        panel.Workers = "4";
+        panel.SelfContained = true;
+        panel.AllowMissing = true;
+        Assert.Equal(
+            ["ampr", "pack", "--root", "D:/game", "--ampr-index", "D:/idx/ampr_emu.index", "--output", "D:/out", "--config", "D:/rules.toml",
+                "--workers", "4", "--self-contained", "--allow-missing"],
+            panel.BuildArguments(out _));
+
+        panel.Workers = "0";
+        Assert.Null(panel.BuildArguments(out error));
+        Assert.Equal("✗ Workers must be a whole number from 1 to 256.", error);
+    }
+
+    [Fact]
+    public void Other_actions_build_arguments_and_validate()
+    {
+        AmprPackPanelViewModel verify = Panel("verify");
+        Assert.Null(verify.BuildArguments(out string? error));
+        Assert.Equal("✗ Pack manifest is required.", error);
+        verify.Manifest = "D:/out/ampr_assets.index";
+        Assert.Equal(["ampr", "verify", "--index", "D:/out/ampr_assets.index"], verify.BuildArguments(out _));
+        verify.Root = "D:/game";
+        Assert.Equal(["ampr", "verify", "--index", "D:/out/ampr_assets.index", "--root", "D:/game"], verify.BuildArguments(out _));
+
+        AmprPackPanelViewModel unpack = Panel("unpack");
+        unpack.Manifest = "m.index";
+        Assert.Null(unpack.BuildArguments(out error));
+        Assert.Equal("✗ Pack manifest and output folder are both required.", error);
+        unpack.Output = "D:/x";
+        unpack.Overwrite = true;
+        Assert.Equal(["ampr", "unpack", "--index", "m.index", "--output", "D:/x", "--overwrite"], unpack.BuildArguments(out _));
+
+        AmprPackPanelViewModel list = Panel("list");
+        list.Manifest = "m.index";
+        list.Json = true;
+        Assert.Equal(["ampr", "list", "--index", "m.index", "--json"], list.BuildArguments(out _));
+        Assert.Equal(["ampr", "inspect", "--index", "m.index"], Panel("inspect") is var inspect && (inspect.Manifest = "m.index") is not null ? inspect.BuildArguments(out _) : null);
+
+        AmprPackPanelViewModel runtime = Panel("runtime-config");
+        runtime.Manifest = "m.index";
+        Assert.Null(runtime.BuildArguments(out error));
+        Assert.Equal("✗ Pack manifest and TOML configuration are both required.", error);
+        runtime.Config = "r.toml";
+        Assert.Equal(["ampr", "runtime-config", "--index", "m.index", "--config", "r.toml"], runtime.BuildArguments(out _));
+
+        AmprPackPanelViewModel remove = Panel("remove-sources");
+        remove.Manifest = "m.index";
+        Assert.Null(remove.BuildArguments(out error));
+        Assert.Equal("✗ Pack manifest and game folder are both required.", error);
+        remove.Root = "D:/game";
+        Assert.Equal(["ampr", "remove-sources", "--index", "m.index", "--root", "D:/game"], remove.BuildArguments(out _));
+        remove.Confirm = true;
+        Assert.Equal(["ampr", "remove-sources", "--index", "m.index", "--root", "D:/game", "--confirm"], remove.BuildArguments(out _));
+    }
+
+    [Theory]
+    [InlineData("pack", true, true, true, false, true, true, false, false, false)]
+    [InlineData("verify", true, false, false, true, false, false, false, false, false)]
+    [InlineData("unpack", false, false, true, true, false, false, true, false, false)]
+    [InlineData("list", false, false, false, true, false, false, false, true, false)]
+    [InlineData("inspect", false, false, false, true, false, false, false, false, false)]
+    [InlineData("runtime-config", false, false, false, true, true, false, false, false, false)]
+    [InlineData("remove-sources", true, false, false, true, false, false, false, false, true)]
+    public void Each_action_shows_only_its_fields(
+        string action, bool root, bool packPaths, bool output, bool manifest, bool config, bool packOptions, bool overwrite, bool json, bool confirm)
+    {
+        AmprPackPanelViewModel panel = Panel(action);
+        Assert.Equal(
+            (root, packPaths, output, manifest, config, packOptions, overwrite, json, confirm),
+            (panel.ShowRoot, panel.ShowPackPaths, panel.ShowOutput, panel.ShowManifest, panel.ShowConfig, panel.ShowPackOptions,
+                panel.ShowOverwrite, panel.ShowJson, panel.ShowConfirm));
+    }
+
+    [AvaloniaFact]
+    public async Task Page_without_a_toml_packs_with_the_default_rules_and_logs_cli_progress()
+    {
+        using TempDir dir = new();
+        string game = BuildPanelTests.Game(dir);
+        dir.File("PPSA01234-app/data/level.dat", string.Concat(Enumerable.Repeat("terrain mesh texture ", 20_000)));
+        dir.File("PPSA01234-app/sce_module/libc.prx", "module");
+        AmprIndex.Build(game, Path.Combine(game, AmprIndex.IndexName));
+
+        AmprPackPanelViewModel panel = Panel("pack");
+        panel.Root = game;
+        panel.Output = Path.Combine(dir.Path, "packs");
+        await panel.RunCommand.ExecuteAsync(null);
+
+        Assert.Equal("✓ Completed successfully.", panel.Job.Lines[^1].Text);
+        Assert.Contains(panel.Job.Lines, l => l.Text.Contains("\"files_packed\": 1", StringComparison.Ordinal));
+        Assert.Contains(panel.Job.Lines, l => l.Text.StartsWith("[pack 100%] complete: ", StringComparison.Ordinal));
+        // One overall phase: no per-phase "✓ planning: N%" lines that look like finished steps.
+        Assert.DoesNotContain(panel.Job.Lines, l => l.Text.StartsWith("✓ planning", StringComparison.Ordinal) || l.Text.StartsWith("✓ packing", StringComparison.Ordinal));
+    }
+
+    [AvaloniaFact]
+    public async Task Page_packs_verifies_and_plans_removal_for_a_real_folder()
+    {
+        using TempDir dir = new();
+        string game = BuildPanelTests.Game(dir);
+        dir.File("PPSA01234-app/data/level.dat", string.Concat(Enumerable.Repeat("terrain mesh texture ", 20_000)));
+        AmprIndex.Build(game, Path.Combine(game, AmprIndex.IndexName));
+        string config = dir.File("rules.toml", "[pack]\ndefault_action = \"loose\"\n[[rule]]\ninclude = \"data/**\"\n");
+
+        AmprPackPanelViewModel panel = Panel("pack");
+        panel.Root = game;
+        panel.Output = Path.Combine(dir.Path, "packs");
+        panel.Config = config;
+        await panel.RunCommand.ExecuteAsync(null);
+        Assert.Equal("✓ Completed successfully.", panel.Job.Lines[^1].Text);
+        Assert.Contains(panel.Job.Lines, l => l.Text.Contains("\"files_packed\": 1", StringComparison.Ordinal));
+        Assert.True(File.Exists(panel.Manifest));
+
+        panel.Action = panel.Actions.Single(a => a.Value == "verify");
+        await panel.RunCommand.ExecuteAsync(null);
+        Assert.Equal("✓ Completed successfully.", panel.Job.Lines[^1].Text);
+        Assert.Contains(panel.Job.Lines, l => l.Text.Contains("\"source_compare\"", StringComparison.Ordinal));
+
+        panel.Action = panel.Actions.Single(a => a.Value == "remove-sources");
+        await panel.RunCommand.ExecuteAsync(null);
+        Assert.Equal("✓ Completed successfully.", panel.Job.Lines[^1].Text);
+        Assert.Contains(panel.Job.Lines, l => l.Text.Contains("\"dry_run\": true", StringComparison.Ordinal));
+        Assert.True(File.Exists(Path.Combine(game, "data", "level.dat")));
+    }
+}

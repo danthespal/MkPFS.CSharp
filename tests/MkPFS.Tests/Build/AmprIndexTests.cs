@@ -159,6 +159,30 @@ public sealed class AmprIndexTests
     }
 
     [Fact]
+    public void An_ampr_pack_set_keeps_its_index_unless_regeneration_is_forced()
+    {
+        using TempDir dir = new();
+        string source = AmprTree(dir);
+        AmprIndex.Ensure(source, new ListLog());
+        string index = Path.Combine(source, AmprIndex.IndexName);
+        byte[] original = File.ReadAllBytes(index);
+        dir.File("src/ampr_assets.index", "manifest");
+        dir.File("src/ampr_assets-000.pak", "volume");
+
+        // Default and create-if-missing both keep the index the packs were built against.
+        ListLog kept = new();
+        Assert.Null(AmprIndex.Ensure(source, kept));
+        Assert.Null(AmprIndex.Ensure(source, kept, createIfMissing: true));
+        Assert.Equal(original, File.ReadAllBytes(index));
+        Assert.All(kept.Lines, line => Assert.StartsWith("Warning: ampr_emu.index kept: the AMPR packs in this folder", line, StringComparison.Ordinal));
+
+        ListLog forced = new();
+        Assert.NotNull(AmprIndex.Ensure(source, forced, forceRegen: true));
+        Assert.StartsWith("Warning: Rebuilding ampr_emu.index although ampr_assets.index is present", forced.Lines[0], StringComparison.Ordinal);
+        Assert.Equal(6, AmprIndex.ReadRows(File.ReadAllBytes(index)).Count);
+    }
+
+    [Fact]
     public void Pack_folder_writes_the_index_into_the_image_unless_disabled()
     {
         using TempDir dir = new();

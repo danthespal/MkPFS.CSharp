@@ -56,7 +56,7 @@ public sealed record NavSection(string TitleKey, IReadOnlyList<NavItem> Items)
 /// <summary>Main window state: sidebar sections, the current page, and the language picker.</summary>
 public sealed partial class MainWindowViewModel : ObservableObject
 {
-    // Python theme.py neon palette; Repair is new and takes the error red.
+    // Python theme.py neon palette; Repair is new and takes the error red, AMPR Packs a new lime.
     private static readonly Color Teal = Color.Parse("#00E5A0");
     private static readonly Color Blue = Color.Parse("#00C8FF");
     private static readonly Color Orange = Color.Parse("#FF6B3D");
@@ -66,6 +66,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private static readonly Color Purple = Color.Parse("#B560FF");
     private static readonly Color Amber = Color.Parse("#FFB800");
     private static readonly Color Pink = Color.Parse("#FF5CAA");
+    private static readonly Color Lime = Color.Parse("#C6FF3D");
 
     /// <summary>Create the main window state with every page.</summary>
     public MainWindowViewModel()
@@ -78,6 +79,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
                 Item("pack_folder", "nav_pack_folder", Icons.PackFolder, new PackFolderPanelViewModel(Blue)),
                 Item("pack_exfat", "nav_pack_exfat", Icons.PackExfat, new PackExfatPanelViewModel(Orange)),
                 Item("pack_file", "nav_pack_file", Icons.PackFile, new PackFilePanelViewModel(Cyan)),
+                Item("ampr", "nav_ampr", Icons.AmprPack, new AmprPackPanelViewModel(Lime)),
             ]),
             new("section_check",
             [

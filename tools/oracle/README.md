@@ -11,6 +11,7 @@ Python MkPFS (`D:\TOOLS\PS5\MkPFS`, expected at `../MkPFS`) stays the oracle unt
 | `make_fixtures.py` | Generates deterministic source trees (seeded data, mtimes pinned to 1600000000) |
 | `build_goldens.py` | Builds 33 cases, captures inspect/tree/verify output, writes `manifest.json` and zlib vectors |
 | `bench.py` | Python baseline timings on a ~330 MiB tree |
+| `build_ampr_goldens.py` | AMPR asset-pack corpus from ampr_emu's `ampr_pack.py` (second oracle, see the last section) |
 
 ## Run
 
@@ -123,3 +124,57 @@ Images are platform independent.
 21. **Bug:** the directory walks recurse once per level, so a crafted image nested about 1000 levels deep stops
     with `RecursionError`. Port: walks PFS trees without recursion and reports directories nested deeper than
     1024 levels (PFS and exFAT) as errors instead of ending the process.
+
+## AMPR asset-pack oracle (`build_ampr_goldens.py`)
+
+Second oracle for `docs/AMPR_PACK_PLAN.md`: ampr_emu `tools/ampr_pack.py` (tool version 4.0) at commit
+`cfa85df379f6eeeb165d7badf9b648e266fe77b7`, checked out clean at `../ampr_emu`. It needs python-lz4
+4.4.5 (bundles liblz4 1.9.4), which the `../MkPFS` environment lacks, so run it with a Python that has it:
+
+```bash
+python tools/oracle/build_ampr_goldens.py --check
+```
+
+```bash
+uv run --no-project --python 3.11 --with lz4==4.4.5 python tools/oracle/build_ampr_goldens.py --check
+```
+
+The script refuses another ampr_emu commit and fails on another python-lz4 unless `--allow-lz4-version`.
+
+Output (`tests/fixtures/generated/ampr/`, about 180 MB):
+- `trees/ampr_assets/`: fixture `/app0` (edge sizes, incompressible data, duplicate files, 3 MiB archives,
+  a movie, 20 scripts, modules; mtimes 1600000000).
+- `goldens/<case>/`: `config.toml` (+ `list.txt`, `runtime_alt.toml`), `ampr_emu.index` (oracle index,
+  input for the C# tests), `out/` (manifest, `.pak` volumes, `.crc`, `.runtime`), `config.canonical.json`
+  (`_canonical_config_bytes`, the build-id input), and logs for `index`, `pack`, `verify --root`, `list`,
+  `list --json`, `inspect`, `unpack`, `remove-packed-sources` (plan), `runtime-config`. Unpacked files are
+  checked against the source and hashed, then deleted with the `app0` copy. Rebuild `app0` from
+  `trees/ampr_assets` plus the case's `remove_before_pack` and `touch_after_index`.
+- `goldens/manifest.json`: versions (ampr_emu commit, tool version, Python, python-lz4, liblz4), per-case
+  argv, exit codes, sha256 of every output.
+- `vectors/lz4_vectors.bin`: `L4VEC001`, u32 count, then per entry u8 mode (0 fast, 1 hc), 3 zero bytes,
+  u32 param (acceleration or level), u32 raw_len, u32 comp_len, raw, comp (81 entries: fast 1/2/8 and HC
+  1–12 on five small blocks, fast 1 and HC 9/12 on two 1 MiB blocks).
+
+Cases (34): default, no config, upstream example TOML, fast (accel 1, 8), HC 9, 16 KiB random hot, 1 MiB,
+streaming, store, dedup off/group/streaming, lanes balanced/hash/round-robin, striping with 1 MiB volume
+rollover, auto-loose, `--self-contained`, `[runtime]` + `runtime-config`, 4 KiB I/O page, mtime preserved
+vs not, CLI `--include`/`--exclude`, `include_from`, `--allow-missing`, `--workers 1` vs `8` (must match),
+an unsafe default without the system loose rule, and five error cases.
+
+Results (2026-10-04, Python 3.11.9, python-lz4 4.4.5, liblz4 1.9.4): 34/34 as expected, two builds
+byte-identical, `--workers 1` and `8` produce identical packs. Build time about 2 minutes per pass.
+
+### Findings to carry into the port
+
+1. `--include`/`--exclude` only narrow the rule result; with no TOML `default_action` is `loose`, so
+   packing needs at least `[pack] default_action = "compress"`.
+2. The packer has no hard exclusions: `default_action = "compress"` packs `eboot.bin`, PRX/SPRX and
+   `sce_sys`. Only `remove-packed-sources` refuses them ("manifest marks a protected game/runtime file as
+   packed"). Every golden config except `unsafe_default` ends with a `loose` rule for those paths.
+3. `load_config` reads keys with `dict.get` and ignores unknown keys (only `[runtime]` checks its key
+   set). A misspelled key silently takes the default.
+4. `validate_index_metadata` compares only sizes, not mtimes. `preserve_mtime = true` stores the disk
+   mtime, `false` the AMPRIDX3 mtime (`mtime_preserved` vs `no_preserve_mtime`).
+5. MkPFS's `ampr_emu.index` and ampr_emu's `build_ampr_index.py` produce the same bytes for the same tree
+   (checked on the `ampr` tree; only mtimes differ when the copy does not keep them).

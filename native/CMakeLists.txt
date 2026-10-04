@@ -19,8 +19,13 @@ add_library(mkpfs_zlib SHARED
   zlib/trees.c
   zlib/uncompr.c
   zlib/zutil.c
+  mkpfs_lz4.c
+  lz4/lz4.c
+  lz4/lz4hc.c
 )
-target_include_directories(mkpfs_zlib PRIVATE zlib)
+target_include_directories(mkpfs_zlib PRIVATE zlib lz4)
+# lz4.h marks its API visibility("default") on GCC/Clang; keep it hidden like zlib.
+target_compile_definitions(mkpfs_zlib PRIVATE LZ4LIB_VISIBILITY=)
 
 if(MSVC)
   target_compile_definitions(mkpfs_zlib PRIVATE _CRT_SECURE_NO_DEPRECATE _CRT_NONSTDC_NO_DEPRECATE)

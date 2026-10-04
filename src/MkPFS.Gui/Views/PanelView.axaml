@@ -30,6 +30,7 @@
               <DataTemplate DataType="vm:InspectPanelViewModel"><panels:InspectForm /></DataTemplate>
               <DataTemplate DataType="vm:TreePanelViewModel"><panels:TreeForm /></DataTemplate>
               <DataTemplate DataType="vm:UnpackPanelViewModel"><panels:UnpackForm /></DataTemplate>
+              <DataTemplate DataType="vm:AmprPackPanelViewModel"><panels:AmprPackForm /></DataTemplate>
             </ContentControl.DataTemplates>
           </ContentControl>
         </Border>

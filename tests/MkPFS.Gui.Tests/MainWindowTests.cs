@@ -41,7 +41,7 @@ public sealed class MainWindowTests
 
         Assert.Equal(["section_build", "section_check", "section_read"], model.Sections.Select(s => s.TitleKey));
         Assert.Equal(
-            ["batch", "pack_folder", "pack_exfat", "pack_file", "verify", "repair", "inspect", "tree", "unpack"],
+            ["batch", "pack_folder", "pack_exfat", "pack_file", "ampr", "verify", "repair", "inspect", "tree", "unpack"],
             NavButtons(window).Select(AutomationProperties.GetName));
         Assert.True(Nav(window, "batch").IsChecked);
         Assert.Equal("Batch Convert", PageTitle(window));

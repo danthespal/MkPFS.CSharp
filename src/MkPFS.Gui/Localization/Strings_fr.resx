@@ -32,6 +32,39 @@
   <data name="am_libs_ph" xml:space="preserve"><value>Dossier contenant libSceAmpr.sprx…</value></data>
   <data name="am_section" xml:space="preserve"><value>APR Emu</value></data>
   <data name="am_title" xml:space="preserve"><value>Traiter comme un titre APR</value></data>
+  <data name="ap_act_inspect" xml:space="preserve"><value>Inspecter le manifeste</value></data>
+  <data name="ap_act_list" xml:space="preserve"><value>Lister les fichiers</value></data>
+  <data name="ap_act_pack" xml:space="preserve"><value>Empaqueter les fichiers du jeu</value></data>
+  <data name="ap_act_remove" xml:space="preserve"><value>Supprimer les sources empaquetées</value></data>
+  <data name="ap_act_runtime" xml:space="preserve"><value>Mettre à jour les réglages d’exécution</value></data>
+  <data name="ap_act_unpack" xml:space="preserve"><value>Extraire les fichiers empaquetés</value></data>
+  <data name="ap_act_verify" xml:space="preserve"><value>Vérifier les paquets</value></data>
+  <data name="ap_action" xml:space="preserve"><value>Action</value></data>
+  <data name="ap_allow_missing" xml:space="preserve"><value>Laisser libres les fichiers sources manquants</value></data>
+  <data name="ap_config_label" xml:space="preserve"><value>Configuration TOML</value></data>
+  <data name="ap_config_ph" xml:space="preserve"><value>Vide : règles par défaut (tout compresser, laisser libres exécutables et fichiers système)…</value></data>
+  <data name="ap_confirm" xml:space="preserve"><value>Supprimer les fichiers sources empaquetés (irréversible ; décoché, affiche seulement le plan)</value></data>
+  <data name="ap_err_manifest" xml:space="preserve"><value>✗ Le manifeste du paquet est requis.</value></data>
+  <data name="ap_err_pack" xml:space="preserve"><value>✗ Le dossier du jeu et le dossier de sortie sont tous deux requis.</value></data>
+  <data name="ap_err_remove" xml:space="preserve"><value>✗ Le manifeste du paquet et le dossier du jeu sont tous deux requis.</value></data>
+  <data name="ap_err_runtime" xml:space="preserve"><value>✗ Le manifeste du paquet et la configuration TOML sont tous deux requis.</value></data>
+  <data name="ap_err_unpack" xml:space="preserve"><value>✗ Le manifeste du paquet et le dossier de sortie sont tous deux requis.</value></data>
+  <data name="ap_err_workers" xml:space="preserve"><value>✗ Les threads doivent être un entier de 1 à 256.</value></data>
+  <data name="ap_index_label" xml:space="preserve"><value>Index AMPR (facultatif)</value></data>
+  <data name="ap_index_ph" xml:space="preserve"><value>Par défaut : ampr_emu.index dans le dossier du jeu</value></data>
+  <data name="ap_json" xml:space="preserve"><value>Sortie JSON</value></data>
+  <data name="ap_manifest_label" xml:space="preserve"><value>Manifeste du paquet</value></data>
+  <data name="ap_manifest_ph" xml:space="preserve"><value>Sélectionner ampr_assets.index…</value></data>
+  <data name="ap_note" xml:space="preserve"><value>Les paquets ne servent que les fichiers que le jeu lit via AMPR. Les fichiers lus autrement (par exemple via mmap) doivent rester libres ; conservez les fichiers sources jusqu’à ce que le jeu empaqueté soit testé.</value></data>
+  <data name="ap_out_label" xml:space="preserve"><value>Dossier de sortie</value></data>
+  <data name="ap_out_ph" xml:space="preserve"><value>Dossier du manifeste et des volumes .pak…</value></data>
+  <data name="ap_overwrite" xml:space="preserve"><value>Écraser les fichiers existants</value></data>
+  <data name="ap_root_label" xml:space="preserve"><value>Dossier du jeu (/app0)</value></data>
+  <data name="ap_root_ph" xml:space="preserve"><value>Dossier contenant eboot.bin et sce_sys…</value></data>
+  <data name="ap_self_contained" xml:space="preserve"><value>Ne jamais laisser libres les fichiers sélectionnés (stocker non compressés les blocs incompressibles)</value></data>
+  <data name="ap_subtitle" xml:space="preserve"><value>Créer et vérifier les paquets de ressources LZ4 d’AMPR Emu pour un dossier de jeu</value></data>
+  <data name="ap_title" xml:space="preserve"><value>Paquets AMPR</value></data>
+  <data name="ap_workers" xml:space="preserve"><value>Threads (vide = selon la configuration)</value></data>
   <data name="app_subtitle" xml:space="preserve"><value>PlayStation File System</value></data>
   <data name="browse" xml:space="preserve"><value>Parcourir</value></data>
   <data name="browse_file" xml:space="preserve"><value>Fichier</value></data>
@@ -105,6 +138,7 @@ La sortie partiellement écrite est supprimée ; une réparation sur place termi
   <data name="i_title" xml:space="preserve"><value>Inspecter</value></data>
   <data name="lang_label" xml:space="preserve"><value>Langue</value></data>
   <data name="meta_import" xml:space="preserve"><value>Aperçu de l'import</value></data>
+  <data name="nav_ampr" xml:space="preserve"><value>Paquets AMPR</value></data>
   <data name="nav_batch" xml:space="preserve"><value>Lot</value></data>
   <data name="nav_inspect" xml:space="preserve"><value>Inspecter</value></data>
   <data name="nav_pack_exfat" xml:space="preserve"><value>Empaqueter exFAT</value></data>
