@@ -52,7 +52,7 @@ internal static class AmprCommand
         Option<string> amprIndex = Required("--ampr-index", "AMPRIDX3 file");
         Option<string> output = Required("--output", "output directory");
         Option<string?> config = new("--config") { Description = "TOML pack configuration" };
-        Option<string?> preset = new("--preset") { Description = "built-in rules instead of --config: default compresses every file and keeps executables, modules and system files loose" };
+        Option<string?> preset = new("--preset") { Description = "built-in rules instead of --config: default compresses every file and keeps executables, modules and system files loose; unity compresses only StreamingAssets" };
         preset.AcceptOnlyFromAmong([.. AMPRPackConfig.PresetNames]);
         Option<string[]> include = Repeated("--include", "additional include glob");
         Option<string[]> exclude = Repeated("--exclude", "force-loose glob");
@@ -156,7 +156,7 @@ internal static class AmprCommand
         Option<string> output = Required("--output", "new or empty folder for the playable game");
         Option<string?> fakelib = new("--fakelib") { Description = "folder with AMPR Emu 0.4.2.1+ libSceAmpr.sprx and other fakelib libraries to add" };
         Option<string?> config = new("--config") { Description = "TOML pack configuration (default: --preset default)" };
-        Option<string?> preset = new("--preset") { Description = "built-in rules instead of --config (default: default)" };
+        Option<string?> preset = new("--preset") { Description = "built-in rules instead of --config: default (every file but executables, modules and system files) or unity (only StreamingAssets); default: default" };
         preset.AcceptOnlyFromAmong([.. AMPRPackConfig.PresetNames]);
         Option<int?> workers = new("--workers") { Description = "compression workers" };
         Option<bool> selfContained = new("--self-contained") { Description = "do not auto-loose explicitly packed files; store incompressible blocks RAW" };

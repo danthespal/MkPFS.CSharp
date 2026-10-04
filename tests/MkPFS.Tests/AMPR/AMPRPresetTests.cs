@@ -38,6 +38,24 @@ public sealed class AMPRPresetTests : IDisposable
         Assert.False(action == "compress" && AMPRPackMaintenance.IsProtected(relative));
     }
 
+    [Theory]
+    [InlineData("Media/StreamingAssets/aa/PS5/level.bundle", "compress")]
+    [InlineData("Media/StreamingAssets/Dialogue.assets.bank", "compress")]
+    [InlineData("StreamingAssets/movie.mp4", "compress")]
+    [InlineData("Media/sharedassets3.assets.resS", "loose")]
+    [InlineData("Media/globalgamemanagers", "loose")]
+    [InlineData("Media/level158", "loose")]
+    [InlineData("Media/Metadata/global-metadata.dat", "loose")]
+    [InlineData("Media/StreamingAssets/Plugins/x.prx", "loose")]
+    [InlineData("eboot.bin", "loose")]
+    [InlineData("fakelib/libSceAmpr.sprx", "loose")]
+    public void Unity_preset_packs_only_streaming_assets(string relative, string action)
+    {
+        AMPRPackConfig preset = AMPRPackConfig.LoadPreset("unity");
+        Assert.Equal(action, preset.SelectRule(relative).Action);
+        Assert.False(action == "compress" && AMPRPackMaintenance.IsProtected(relative));
+    }
+
     [Fact]
     public void Unknown_preset_is_rejected() =>
         Assert.Equal("unknown preset: max", Assert.Throws<AMPRPackException>(() => AMPRPackConfig.LoadPreset("max")).Message);

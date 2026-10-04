@@ -50,7 +50,7 @@
   <data name="ap_action" xml:space="preserve"><value>Ação</value></data>
   <data name="ap_allow_missing" xml:space="preserve"><value>Deixar soltos os arquivos-fonte ausentes</value></data>
   <data name="ap_config_label" xml:space="preserve"><value>Configuração TOML</value></data>
-  <data name="ap_config_ph" xml:space="preserve"><value>Vazio: regras padrão (comprimir tudo, deixar soltos executáveis e arquivos do sistema)…</value></data>
+  <data name="ap_config_ph" xml:space="preserve"><value>Vazio: usar as Regras acima…</value></data>
   <data name="ap_confirm" xml:space="preserve"><value>Excluir os arquivos-fonte empacotados (não pode ser desfeito; desmarcado mostra apenas o plano)</value></data>
   <data name="ap_err_manifest" xml:space="preserve"><value>✗ O manifesto do pacote é obrigatório.</value></data>
   <data name="ap_err_pack" xml:space="preserve"><value>✗ A pasta do jogo e a pasta de saída são obrigatórias.</value></data>
@@ -68,6 +68,9 @@
   <data name="ap_out_label" xml:space="preserve"><value>Pasta de saída</value></data>
   <data name="ap_out_ph" xml:space="preserve"><value>Pasta para o manifesto e os volumes .pak…</value></data>
   <data name="ap_overwrite" xml:space="preserve"><value>Sobrescrever arquivos existentes</value></data>
+  <data name="ap_preset" xml:space="preserve"><value>Regras (quando nenhum TOML é escolhido)</value></data>
+  <data name="ap_preset_default" xml:space="preserve"><value>Padrão: comprimir tudo exceto executáveis, módulos e arquivos de sistema</value></data>
+  <data name="ap_preset_unity" xml:space="preserve"><value>Unity: comprimir apenas StreamingAssets (bundles, bancos de áudio)</value></data>
   <data name="ap_root_label" xml:space="preserve"><value>Pasta do jogo (/app0)</value></data>
   <data name="ap_root_ph" xml:space="preserve"><value>Pasta com eboot.bin e sce_sys…</value></data>
   <data name="ap_self_contained" xml:space="preserve"><value>Nunca deixar soltos os arquivos selecionados (guardar sem compressão os blocos incompressíveis)</value></data>

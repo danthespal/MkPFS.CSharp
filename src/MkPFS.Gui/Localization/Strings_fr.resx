@@ -50,7 +50,7 @@
   <data name="ap_action" xml:space="preserve"><value>Action</value></data>
   <data name="ap_allow_missing" xml:space="preserve"><value>Laisser libres les fichiers sources manquants</value></data>
   <data name="ap_config_label" xml:space="preserve"><value>Configuration TOML</value></data>
-  <data name="ap_config_ph" xml:space="preserve"><value>Vide : règles par défaut (tout compresser, laisser libres exécutables et fichiers système)…</value></data>
+  <data name="ap_config_ph" xml:space="preserve"><value>Vide : utiliser les Règles ci-dessus…</value></data>
   <data name="ap_confirm" xml:space="preserve"><value>Supprimer les fichiers sources empaquetés (irréversible ; décoché, affiche seulement le plan)</value></data>
   <data name="ap_err_manifest" xml:space="preserve"><value>✗ Le manifeste du paquet est requis.</value></data>
   <data name="ap_err_pack" xml:space="preserve"><value>✗ Le dossier du jeu et le dossier de sortie sont tous deux requis.</value></data>
@@ -68,6 +68,9 @@
   <data name="ap_out_label" xml:space="preserve"><value>Dossier de sortie</value></data>
   <data name="ap_out_ph" xml:space="preserve"><value>Dossier du manifeste et des volumes .pak…</value></data>
   <data name="ap_overwrite" xml:space="preserve"><value>Écraser les fichiers existants</value></data>
+  <data name="ap_preset" xml:space="preserve"><value>Règles (si aucun TOML n’est choisi)</value></data>
+  <data name="ap_preset_default" xml:space="preserve"><value>Par défaut : tout compresser sauf les exécutables, modules et fichiers système</value></data>
+  <data name="ap_preset_unity" xml:space="preserve"><value>Unity : compresser seulement StreamingAssets (bundles, banques audio)</value></data>
   <data name="ap_root_label" xml:space="preserve"><value>Dossier du jeu (/app0)</value></data>
   <data name="ap_root_ph" xml:space="preserve"><value>Dossier contenant eboot.bin et sce_sys…</value></data>
   <data name="ap_self_contained" xml:space="preserve"><value>Ne jamais laisser libres les fichiers sélectionnés (stocker non compressés les blocs incompressibles)</value></data>

@@ -50,7 +50,7 @@
   <data name="ap_action" xml:space="preserve"><value>Acción</value></data>
   <data name="ap_allow_missing" xml:space="preserve"><value>Dejar sueltos los archivos fuente que falten</value></data>
   <data name="ap_config_label" xml:space="preserve"><value>Configuración TOML</value></data>
-  <data name="ap_config_ph" xml:space="preserve"><value>Vacío: reglas predeterminadas (comprimir todo, dejar sueltos ejecutables y archivos del sistema)…</value></data>
+  <data name="ap_config_ph" xml:space="preserve"><value>Vacío: usar las Reglas de arriba…</value></data>
   <data name="ap_confirm" xml:space="preserve"><value>Eliminar los archivos fuente empaquetados (no se puede deshacer; sin marcar solo muestra el plan)</value></data>
   <data name="ap_err_manifest" xml:space="preserve"><value>✗ Se requiere el manifiesto del paquete.</value></data>
   <data name="ap_err_pack" xml:space="preserve"><value>✗ Se requieren la carpeta del juego y la carpeta de salida.</value></data>
@@ -68,6 +68,9 @@
   <data name="ap_out_label" xml:space="preserve"><value>Carpeta de salida</value></data>
   <data name="ap_out_ph" xml:space="preserve"><value>Carpeta para el manifiesto y los volúmenes .pak…</value></data>
   <data name="ap_overwrite" xml:space="preserve"><value>Sobrescribir archivos existentes</value></data>
+  <data name="ap_preset" xml:space="preserve"><value>Reglas (si no se elige un TOML)</value></data>
+  <data name="ap_preset_default" xml:space="preserve"><value>Predeterminado: comprimir todo excepto ejecutables, módulos y archivos del sistema</value></data>
+  <data name="ap_preset_unity" xml:space="preserve"><value>Unity: comprimir solo StreamingAssets (bundles, bancos de audio)</value></data>
   <data name="ap_root_label" xml:space="preserve"><value>Carpeta del juego (/app0)</value></data>
   <data name="ap_root_ph" xml:space="preserve"><value>Carpeta con eboot.bin y sce_sys…</value></data>
   <data name="ap_self_contained" xml:space="preserve"><value>No dejar nunca sueltos los archivos seleccionados (guardar sin comprimir los bloques incompresibles)</value></data>

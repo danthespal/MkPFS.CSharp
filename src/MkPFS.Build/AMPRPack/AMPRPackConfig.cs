@@ -287,7 +287,7 @@ public sealed class AMPRPackConfig
     }
 
     /// <summary>Built-in rule sets for <see cref="LoadPreset"/> (an extension; ampr_pack has none).</summary>
-    public static IReadOnlyList<string> PresetNames { get; } = ["default"];
+    public static IReadOnlyList<string> PresetNames { get; } = ["default", "unity"];
 
     /// <summary>
     /// The <c>default</c> preset: compress every file, but keep loose everything <c>remove-sources</c> protects
@@ -309,6 +309,28 @@ public sealed class AMPRPackConfig
         ]
         """;
 
+    /// <summary>
+    /// The <c>unity</c> preset: compress only <c>StreamingAssets</c> (Addressables bundles, FMOD banks, videos), which
+    /// Unity reads with ordinary file reads that AMPR Emu serves. Unity's own data files next to it (<c>level*</c>,
+    /// <c>sharedassets*</c>, <c>globalgamemanagers</c>, <c>.resS</c>) stay loose: packing them made a Unity title abort
+    /// at startup on the console, consistent with Unity reading them through a path AMPR Emu does not intercept.
+    /// </summary>
+    public const string UnityPresetToml = """
+        [pack]
+        default_action = "loose"
+
+        [[rule]]
+        action = "compress"
+        include = ["StreamingAssets/*", "*/StreamingAssets/*"]
+
+        [[rule]]
+        action = "loose"
+        include = [
+          "eboot.bin", "*/eboot.bin", "*.prx", "*.sprx", "*.elf", "*.self",
+          "sce_sys/*", "sce_module/*", "fakelib/*", "fakelib2/*", "*/global-metadata.dat",
+        ]
+        """;
+
     /// <summary>Load a built-in preset.</summary>
     /// <param name="name">Preset name (see <see cref="PresetNames"/>).</param>
     /// <returns>Configuration.</returns>
@@ -316,6 +338,7 @@ public sealed class AMPRPackConfig
     public static AMPRPackConfig LoadPreset(string name) => name switch
     {
         "default" => FromTable(AMPRToml.Parse(DefaultPresetToml, "preset default"), Directory.GetCurrentDirectory()),
+        "unity" => FromTable(AMPRToml.Parse(UnityPresetToml, "preset unity"), Directory.GetCurrentDirectory()),
         _ => throw new AMPRPackException($"unknown preset: {name}"),
     };
 
