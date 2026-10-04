@@ -26,15 +26,6 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
         new("remove-sources", "ap_act_remove"),
     ];
 
-    private static readonly Choice[] PresetChoices = [new("default", "ap_preset_default"), new("unity", "ap_preset_unity")];
-
-    /// <summary>Built-in rule sets (<c>--preset</c>), used when no TOML is chosen.</summary>
-    public IReadOnlyList<Choice> Presets => PresetChoices;
-
-    /// <summary>Selected built-in rules.</summary>
-    [ObservableProperty]
-    public partial Choice Preset { get; set; } = PresetChoices[0];
-
     /// <summary>Actions, in menu order; values are the CLI subcommands.</summary>
     public IReadOnlyList<Choice> Actions => ActionChoices;
 
@@ -42,7 +33,7 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowRoot), nameof(ShowPackPaths), nameof(ShowOutput), nameof(ShowManifest), nameof(ShowConfig))]
     [NotifyPropertyChangedFor(nameof(ShowPackOptions), nameof(ShowOverwrite), nameof(ShowJson), nameof(ShowConfirm))]
-    [NotifyPropertyChangedFor(nameof(ShowGameOptions), nameof(ShowAllowMissing), nameof(ShowExfatPath), nameof(ShowPackNote), nameof(ShowPreset))]
+    [NotifyPropertyChangedFor(nameof(ShowGameOptions), nameof(ShowAllowMissing), nameof(ShowExfatPath), nameof(ShowPackNote))]
     public partial Choice Action { get; set; } = ActionChoices[0];
 
     /// <summary><c>--fakelib</c> (game): folder with AMPR Emu and other libraries to add.</summary>
@@ -124,9 +115,6 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
     /// <summary>Workers and self-contained (game, pack).</summary>
     public bool ShowPackOptions => Action.Value is "game" or "pack";
 
-    /// <summary>Built-in rules picker (game, pack).</summary>
-    public bool ShowPreset => Action.Value is "game" or "pack";
-
     /// <summary>Allow-missing (pack).</summary>
     public bool ShowAllowMissing => Action.Value == "pack";
 
@@ -181,7 +169,8 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
             case "game":
                 args.AddRange(["--root", root, "--output", output]);
                 AddOption(args, "--fakelib", Libs);
-                args.AddRange(config.Length > 0 ? ["--config", config] : Preset.Value == "default" ? [] : ["--preset", Preset.Value]);
+                // Without a TOML, ampr game picks the rules from the game (Unity or not).
+                AddOption(args, "--config", config);
                 AddOption(args, "--workers", Workers);
                 AddFlag(args, SelfContained, "--self-contained");
                 AddFlag(args, !VerifyGame, "--skip-verify");
@@ -195,7 +184,7 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
             case "pack":
                 args.AddRange(["--root", root, "--ampr-index", AmprIndex.Trim() is { Length: > 0 } index ? index : Path.Combine(root, "ampr_emu.index"), "--output", output]);
                 // Without a TOML every file would stay loose; the page uses the built-in rules instead.
-                args.AddRange(config.Length > 0 ? ["--config", config] : ["--preset", Preset.Value]);
+                args.AddRange(config.Length > 0 ? ["--config", config] : ["--preset", "auto"]);
                 AddOption(args, "--workers", Workers);
                 AddFlag(args, SelfContained, "--self-contained");
                 AddFlag(args, AllowMissing, "--allow-missing");

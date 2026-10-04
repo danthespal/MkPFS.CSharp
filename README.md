@@ -302,6 +302,7 @@ volume from one build together; the `.crc` sidecar is only for `verify` and `unp
 | `--config <toml>` | none | Pack rules. Without a config or preset every file stays loose, and `pack` prints a warning on standard error. |
 | `--preset default` | none | Built-in rules instead of `--config` (not in `ampr_pack.py`): compress every file but keep loose everything `remove-sources` protects (`eboot.bin`, `*.prx`/`*.sprx`/`*.elf`/`*.self`, `sce_sys/`, `sce_module/`, `fakelib/`, `fakelib2/`, `mods/`, `save/`, `system/`, `param.sfo`, `nptitle.dat`, `ampr_emu.index`) and Unity IL2CPP `global-metadata.dat`, which is memory-mapped. |
 | `--preset unity` | none | For Unity games: compress only `StreamingAssets/` (Addressables bundles, FMOD banks, videos) and keep Unity's own data files (`level*`, `sharedassets*`, `globalgamemanagers`, `.resS`) loose. Packing those made a Unity title abort at startup on the console, while packing only `StreamingAssets` ran normally. |
+| `--preset auto` | none | `unity` for Unity games (a `globalgamemanagers`, `data.unity3d` or `global-metadata.dat` within four folder levels), else `default`; prints the choice on standard error. The default for `ampr game` and the AMPR Packs page. |
 | `--include <glob>`, `--exclude <glob>` | none; repeatable | Narrow the rule selection; `--exclude` forces files loose. |
 | `--include-from <file>`, `--exclude-from <file>` | none | Glob lists, one per line, `#` comments. |
 | `--workers <n>` | config, else min(8, cores) | Compression threads (1 to 256). |
@@ -328,9 +329,10 @@ mkpfs ampr game --root PPSA12345-app --output PPSA12345-packed --fakelib ampr-em
 2. **Index.** Writes `ampr_emu.index` for the final tree: the game's files plus the new libraries with
    their real sizes. This must come before packing, because the manifest addresses files by their row
    in this index.
-3. **Packs.** Packs from the game folder with `--config`, `--preset`, or by default `--preset default`. Use
-   `--preset unity` (GUI: Rules > Unity) for Unity games, which have a `Media/` or `*_Data/` folder with
-   `StreamingAssets`, `globalgamemanagers` and `Il2CppUserAssemblies.prx`.
+3. **Packs.** Packs from the game folder with `--config`, `--preset`, or by default `--preset auto`, which
+   picks the rules from the game: `unity` when a Unity file (`globalgamemanagers`, `data.unity3d`,
+   `global-metadata.dat`) is within four folder levels, else `default`. The log names the rules and the
+   file that decided them.
 4. **Loose files.** Copies every file that stays loose, keeping its modification time, and every folder,
    including empty ones. This runs after packing because the packer only then decides which large,
    incompressible files to leave loose.
@@ -425,6 +427,7 @@ dotnet run --project src/MkPFS.Gui -c Release
   offset, stored size, and largest back-reference distance.
 - The AMPR Packs page runs every `ampr` subcommand and shows only the fields the chosen action needs. Its
   default action, Build playable game, runs `ampr game` with a library folder and an optional exFAT image.
+  Without a TOML file, the rules are picked from the game (Unity or not), so there is nothing to choose.
   Packing without a TOML uses `--preset default`.
 
 ## Differences from Python MkPFS

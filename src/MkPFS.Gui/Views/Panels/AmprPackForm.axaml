@@ -24,14 +24,6 @@
     <c:PathField Label="{l:Tr ap_manifest_label}" Placeholder="{l:Tr ap_manifest_ph}" Mode="Open" Filters="Pack manifest:*.index|All files:*.*" Text="{Binding Manifest}" IsVisible="{Binding ShowManifest}" />
     <c:PathField Label="{l:Tr ap_out_label}" Placeholder="{l:Tr ap_out_ph}" Mode="Folder" Text="{Binding Output}" IsVisible="{Binding ShowOutput}" />
     <c:PathField Label="{l:Tr ap_libs_label}" Placeholder="{l:Tr ap_libs_ph}" Mode="Folder" Text="{Binding Libs}" IsVisible="{Binding ShowGameOptions}" />
-    <StackPanel Spacing="3" IsVisible="{Binding ShowPreset}">
-      <TextBlock Text="{l:Tr ap_preset}" Classes="fieldlabel" />
-      <ComboBox Name="PresetPicker" ItemsSource="{Binding Presets}" SelectedItem="{Binding Preset}" HorizontalAlignment="Stretch">
-        <ComboBox.ItemTemplate>
-          <DataTemplate x:DataType="vm:Choice"><TextBlock Text="{Binding Label}" /></DataTemplate>
-        </ComboBox.ItemTemplate>
-      </ComboBox>
-    </StackPanel>
     <c:PathField Label="{l:Tr ap_config_label}" Placeholder="{l:Tr ap_config_ph}" Mode="Open" Filters="TOML:*.toml|All files:*.*" Text="{Binding Config}" IsVisible="{Binding ShowConfig}" />
     <Rectangle Classes="separator" />
     <TextBlock Text="{l:Tr options}" Classes="section" Foreground="{Binding Accent}" />

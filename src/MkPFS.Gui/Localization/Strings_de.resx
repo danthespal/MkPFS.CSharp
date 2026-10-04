@@ -50,7 +50,7 @@
   <data name="ap_action" xml:space="preserve"><value>Aktion</value></data>
   <data name="ap_allow_missing" xml:space="preserve"><value>Fehlende Quelldateien lose lassen</value></data>
   <data name="ap_config_label" xml:space="preserve"><value>TOML-Konfiguration</value></data>
-  <data name="ap_config_ph" xml:space="preserve"><value>Leer: die Regeln oben verwenden…</value></data>
+  <data name="ap_config_ph" xml:space="preserve"><value>Leer: Regeln nach Spiel (Unity-Spiele packen nur StreamingAssets)…</value></data>
   <data name="ap_confirm" xml:space="preserve"><value>Gepackte Quelldateien löschen (nicht rückgängig zu machen; sonst nur den Plan anzeigen)</value></data>
   <data name="ap_err_manifest" xml:space="preserve"><value>✗ Paket-Manifest ist erforderlich.</value></data>
   <data name="ap_err_pack" xml:space="preserve"><value>✗ Spielordner und Ausgabeordner sind beide erforderlich.</value></data>
@@ -68,9 +68,6 @@
   <data name="ap_out_label" xml:space="preserve"><value>Ausgabeordner</value></data>
   <data name="ap_out_ph" xml:space="preserve"><value>Ordner für Manifest und .pak-Volumes…</value></data>
   <data name="ap_overwrite" xml:space="preserve"><value>Vorhandene Dateien überschreiben</value></data>
-  <data name="ap_preset" xml:space="preserve"><value>Regeln (wenn keine TOML gewählt ist)</value></data>
-  <data name="ap_preset_default" xml:space="preserve"><value>Standard: alles komprimieren außer ausführbaren Dateien, Modulen und Systemdateien</value></data>
-  <data name="ap_preset_unity" xml:space="preserve"><value>Unity: nur StreamingAssets komprimieren (Bundles, Audio-Banks)</value></data>
   <data name="ap_root_label" xml:space="preserve"><value>Spielordner (/app0)</value></data>
   <data name="ap_root_ph" xml:space="preserve"><value>Ordner mit eboot.bin und sce_sys…</value></data>
   <data name="ap_self_contained" xml:space="preserve"><value>Ausgewählte Dateien nie lose lassen (nicht komprimierbare Blöcke unkomprimiert speichern)</value></data>

@@ -56,6 +56,41 @@ public sealed class AMPRPresetTests : IDisposable
         Assert.False(action == "compress" && AMPRPackMaintenance.IsProtected(relative));
     }
 
+    [Theory]
+    [InlineData("Media/globalgamemanagers", "unity")]
+    [InlineData("Game_Data/data.unity3d", "unity")]
+    [InlineData("Media/Metadata/global-metadata.dat", "unity")]
+    [InlineData("data/level.dat", "default")]
+    public void Auto_picks_unity_rules_only_for_unity_games(string file, string expected)
+    {
+        string root = Path.Combine(_dir, "game");
+        string full = Path.Combine(root, file);
+        Directory.CreateDirectory(Path.GetDirectoryName(full)!);
+        File.WriteAllText(full, "x");
+
+        (string preset, string? marker) = AMPRPackConfig.DetectPreset(root);
+
+        Assert.Equal(expected, preset);
+        Assert.Equal(expected == "unity" ? file : null, marker);
+        AMPRPackConfig auto = AMPRPackConfig.LoadPreset("auto", root);
+        Assert.Equal(expected == "unity" ? "loose" : "compress", auto.SelectRule("Media/level158").Action);
+    }
+
+    [Fact]
+    public void Cli_auto_reports_the_rules_it_picked()
+    {
+        string root = Game();
+        File.WriteAllText(Path.Combine(root, "data", "globalgamemanagers"), "unity");
+        AmprIndex.Build(root, Path.Combine(root, AmprIndex.IndexName));
+
+        (int exit, string stdout, string stderr) = Run(
+            "pack", "--root", root, "--ampr-index", Path.Combine(root, AmprIndex.IndexName), "--output", Path.Combine(_dir, "out"), "--preset", "auto");
+
+        Assert.Equal(0, exit);
+        Assert.Equal("Rules: unity (Unity game: data/globalgamemanagers; only StreamingAssets is packed)\n" + global::MkPFS.Cli.Commands.AmprCommand.NothingPackedWarning + "\n", stderr);
+        Assert.Contains("\"files_packed\": 0,", stdout, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void Unknown_preset_is_rejected() =>
         Assert.Equal("unknown preset: max", Assert.Throws<AMPRPackException>(() => AMPRPackConfig.LoadPreset("max")).Message);

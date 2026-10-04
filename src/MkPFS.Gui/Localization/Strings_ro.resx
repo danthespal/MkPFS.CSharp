@@ -50,7 +50,7 @@
   <data name="ap_action" xml:space="preserve"><value>Acțiune</value></data>
   <data name="ap_allow_missing" xml:space="preserve"><value>Lasă libere fișierele sursă lipsă</value></data>
   <data name="ap_config_label" xml:space="preserve"><value>Configurație TOML</value></data>
-  <data name="ap_config_ph" xml:space="preserve"><value>Gol: folosește Regulile de mai sus…</value></data>
+  <data name="ap_config_ph" xml:space="preserve"><value>Gol: reguli alese după joc (jocurile Unity împachetează doar StreamingAssets)…</value></data>
   <data name="ap_confirm" xml:space="preserve"><value>Șterge fișierele sursă împachetate (ireversibil; nebifat arată doar planul)</value></data>
   <data name="ap_err_manifest" xml:space="preserve"><value>✗ Manifestul pachetului este necesar.</value></data>
   <data name="ap_err_pack" xml:space="preserve"><value>✗ Folderul jocului și folderul de ieșire sunt ambele necesare.</value></data>
@@ -68,9 +68,6 @@
   <data name="ap_out_label" xml:space="preserve"><value>Folder de ieșire</value></data>
   <data name="ap_out_ph" xml:space="preserve"><value>Folder pentru manifest și volumele .pak…</value></data>
   <data name="ap_overwrite" xml:space="preserve"><value>Suprascrie fișierele existente</value></data>
-  <data name="ap_preset" xml:space="preserve"><value>Reguli (când nu este ales un TOML)</value></data>
-  <data name="ap_preset_default" xml:space="preserve"><value>Implicit: comprimă tot în afară de executabile, module și fișiere de sistem</value></data>
-  <data name="ap_preset_unity" xml:space="preserve"><value>Unity: comprimă doar StreamingAssets (bundle-uri, bănci audio)</value></data>
   <data name="ap_root_label" xml:space="preserve"><value>Folderul jocului (/app0)</value></data>
   <data name="ap_root_ph" xml:space="preserve"><value>Folder cu eboot.bin și sce_sys…</value></data>
   <data name="ap_self_contained" xml:space="preserve"><value>Nu lăsa niciodată libere fișierele selectate (stochează necomprimate blocurile necompresibile)</value></data>

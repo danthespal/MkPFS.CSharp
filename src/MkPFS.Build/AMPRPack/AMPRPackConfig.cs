@@ -286,8 +286,33 @@ public sealed class AMPRPackConfig
         return FromTable(raw, configDir);
     }
 
-    /// <summary>Built-in rule sets for <see cref="LoadPreset"/> (an extension; ampr_pack has none).</summary>
-    public static IReadOnlyList<string> PresetNames { get; } = ["default", "unity"];
+    /// <summary>
+    /// Built-in rule sets for <see cref="LoadPreset(string, string?)"/> (an extension; ampr_pack has none). <c>auto</c>
+    /// picks <c>unity</c> or <c>default</c> from the game folder (<see cref="DetectPreset"/>).
+    /// </summary>
+    public static IReadOnlyList<string> PresetNames { get; } = ["auto", "default", "unity"];
+
+    // Files only Unity players ship; depth-limited so a scan of a large game stays cheap.
+    private static readonly HashSet<string> UnityMarkers = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "globalgamemanagers", "data.unity3d", "global-metadata.dat",
+    };
+
+    /// <summary>
+    /// The built-in rules for the game in <paramref name="root"/>: <c>unity</c> when a Unity marker file
+    /// (<c>globalgamemanagers</c>, <c>data.unity3d</c>, <c>global-metadata.dat</c>) is within four folder levels,
+    /// else <c>default</c>.
+    /// </summary>
+    /// <param name="root">Game folder.</param>
+    /// <returns>Preset name and the marker that decided it (relative, <c>/</c> separators), if any.</returns>
+    public static (string Preset, string? Marker) DetectPreset(string root)
+    {
+        EnumerationOptions options = new() { RecurseSubdirectories = true, MaxRecursionDepth = 3, IgnoreInaccessible = true };
+        string? marker = Directory.Exists(root)
+            ? Directory.EnumerateFiles(root, "*", options).FirstOrDefault(f => UnityMarkers.Contains(Path.GetFileName(f)))
+            : null;
+        return marker is null ? ("default", null) : ("unity", Path.GetRelativePath(root, marker).Replace('\\', '/'));
+    }
 
     /// <summary>
     /// The <c>default</c> preset: compress every file, but keep loose everything <c>remove-sources</c> protects
@@ -333,10 +358,12 @@ public sealed class AMPRPackConfig
 
     /// <summary>Load a built-in preset.</summary>
     /// <param name="name">Preset name (see <see cref="PresetNames"/>).</param>
+    /// <param name="root">Game folder, required for <c>auto</c>.</param>
     /// <returns>Configuration.</returns>
     /// <exception cref="AMPRPackException">The preset does not exist.</exception>
-    public static AMPRPackConfig LoadPreset(string name) => name switch
+    public static AMPRPackConfig LoadPreset(string name, string? root = null) => name switch
     {
+        "auto" => LoadPreset(DetectPreset(root ?? throw new AMPRPackException("preset auto needs the game folder")).Preset),
         "default" => FromTable(AMPRToml.Parse(DefaultPresetToml, "preset default"), Directory.GetCurrentDirectory()),
         "unity" => FromTable(AMPRToml.Parse(UnityPresetToml, "preset unity"), Directory.GetCurrentDirectory()),
         _ => throw new AMPRPackException($"unknown preset: {name}"),

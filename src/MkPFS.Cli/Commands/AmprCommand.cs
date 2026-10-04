@@ -52,7 +52,7 @@ internal static class AmprCommand
         Option<string> amprIndex = Required("--ampr-index", "AMPRIDX3 file");
         Option<string> output = Required("--output", "output directory");
         Option<string?> config = new("--config") { Description = "TOML pack configuration" };
-        Option<string?> preset = new("--preset") { Description = "built-in rules instead of --config: default compresses every file and keeps executables, modules and system files loose; unity compresses only StreamingAssets" };
+        Option<string?> preset = new("--preset") { Description = "built-in rules instead of --config: default compresses every file and keeps executables, modules and system files loose; unity compresses only StreamingAssets; auto picks unity for Unity games, else default" };
         preset.AcceptOnlyFromAmong([.. AMPRPackConfig.PresetNames]);
         Option<string[]> include = Repeated("--include", "additional include glob");
         Option<string[]> exclude = Repeated("--exclude", "force-loose glob");
@@ -74,7 +74,7 @@ internal static class AmprCommand
             AMPRPackConfig loaded = (configPath, presetName) switch
             {
                 (not null, not null) => throw new AMPRPackException("--config and --preset cannot be used together"),
-                (null, not null) => AMPRPackConfig.LoadPreset(presetName),
+                (null, not null) => Preset(presetName, Resolve(ctx, parse.GetValue(root)!), ctx.Err.WriteLine),
                 _ => AMPRPackConfig.Load(configPath is null ? null : Resolve(ctx, configPath)),
             };
             if (parse.GetValue(workers) is { } count)
@@ -155,8 +155,8 @@ internal static class AmprCommand
         Option<string> root = Required("--root", "unpacked game folder (/app0); only read");
         Option<string> output = Required("--output", "new or empty folder for the playable game");
         Option<string?> fakelib = new("--fakelib") { Description = "folder with AMPR Emu 0.4.2.1+ libSceAmpr.sprx and other fakelib libraries to add" };
-        Option<string?> config = new("--config") { Description = "TOML pack configuration (default: --preset default)" };
-        Option<string?> preset = new("--preset") { Description = "built-in rules instead of --config: default (every file but executables, modules and system files) or unity (only StreamingAssets); default: default" };
+        Option<string?> config = new("--config") { Description = "TOML pack configuration (default: --preset auto)" };
+        Option<string?> preset = new("--preset") { Description = "built-in rules instead of --config: auto (unity for Unity games, else default), default (every file but executables, modules and system files) or unity (only StreamingAssets); default: auto" };
         preset.AcceptOnlyFromAmong([.. AMPRPackConfig.PresetNames]);
         Option<int?> workers = new("--workers") { Description = "compression workers" };
         Option<bool> selfContained = new("--self-contained") { Description = "do not auto-loose explicitly packed files; store incompressible blocks RAW" };
@@ -174,7 +174,7 @@ internal static class AmprCommand
             {
                 (not null, not null) => throw new AMPRPackException("--config and --preset cannot be used together"),
                 (not null, null) => AMPRPackConfig.Load(Resolve(ctx, configPath)),
-                (null, var name) => AMPRPackConfig.LoadPreset(name ?? "default"),
+                (null, var name) => Preset(name ?? "auto", Resolve(ctx, parse.GetValue(root)!), message => ctx.Log.Info(message)),
             };
             if (parse.GetValue(workers) is { } count)
             {
@@ -210,6 +210,21 @@ internal static class AmprCommand
             }
         }));
         return command;
+    }
+
+    // Built-in rules; auto reports what it found so the choice is visible in the log.
+    private static AMPRPackConfig Preset(string name, string root, Action<string> report)
+    {
+        if (name == "auto")
+        {
+            (string detected, string? marker) = AMPRPackConfig.DetectPreset(root);
+            report(marker is null
+                ? "Rules: default (no Unity files found)"
+                : $"Rules: unity (Unity game: {marker}; only StreamingAssets is packed)");
+            name = detected;
+        }
+
+        return AMPRPackConfig.LoadPreset(name);
     }
 
     private static Command Unpack(CliContext ctx)

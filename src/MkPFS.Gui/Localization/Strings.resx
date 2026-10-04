@@ -50,7 +50,7 @@
   <data name="ap_action" xml:space="preserve"><value>Action</value></data>
   <data name="ap_allow_missing" xml:space="preserve"><value>Leave missing source files loose</value></data>
   <data name="ap_config_label" xml:space="preserve"><value>TOML Configuration</value></data>
-  <data name="ap_config_ph" xml:space="preserve"><value>Empty: use the Rules above…</value></data>
+  <data name="ap_config_ph" xml:space="preserve"><value>Empty: rules chosen from the game (Unity games pack only StreamingAssets)…</value></data>
   <data name="ap_confirm" xml:space="preserve"><value>Delete the packed source files (cannot be undone; unchecked shows the plan only)</value></data>
   <data name="ap_err_manifest" xml:space="preserve"><value>✗ Pack manifest is required.</value></data>
   <data name="ap_err_pack" xml:space="preserve"><value>✗ Game folder and output folder are both required.</value></data>
@@ -68,9 +68,6 @@
   <data name="ap_out_label" xml:space="preserve"><value>Output Folder</value></data>
   <data name="ap_out_ph" xml:space="preserve"><value>Folder for the manifest and .pak volumes…</value></data>
   <data name="ap_overwrite" xml:space="preserve"><value>Overwrite existing files</value></data>
-  <data name="ap_preset" xml:space="preserve"><value>Rules (when no TOML is chosen)</value></data>
-  <data name="ap_preset_default" xml:space="preserve"><value>Default: compress everything except executables, modules and system files</value></data>
-  <data name="ap_preset_unity" xml:space="preserve"><value>Unity: compress only StreamingAssets (bundles, audio banks)</value></data>
   <data name="ap_root_label" xml:space="preserve"><value>Game Folder (/app0)</value></data>
   <data name="ap_root_ph" xml:space="preserve"><value>Folder with eboot.bin and sce_sys…</value></data>
   <data name="ap_self_contained" xml:space="preserve"><value>Never leave selected files loose (store incompressible blocks uncompressed)</value></data>

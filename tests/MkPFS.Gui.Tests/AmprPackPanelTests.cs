@@ -29,7 +29,7 @@ public sealed class AmprPackPanelTests
         panel.Output = "D:/out";
         Assert.Equal(Path.Combine("D:/out", "ampr_assets.index"), panel.Manifest);
         Assert.Equal(
-            ["ampr", "pack", "--root", "D:/game", "--ampr-index", Path.Combine("D:/game", "ampr_emu.index"), "--output", "D:/out", "--preset", "default"],
+            ["ampr", "pack", "--root", "D:/game", "--ampr-index", Path.Combine("D:/game", "ampr_emu.index"), "--output", "D:/out", "--preset", "auto"],
             panel.BuildArguments(out _));
 
         panel.AmprIndex = "D:/idx/ampr_emu.index";
@@ -59,10 +59,6 @@ public sealed class AmprPackPanelTests
         panel.Output = "D:/games/out";
         Assert.Equal(Path.Combine("D:/games/out", "ampr_assets.index"), panel.Manifest);
         Assert.Equal(["ampr", "game", "--root", "D:/game", "--output", "D:/games/out"], panel.BuildArguments(out _));
-
-        panel.Preset = panel.Presets.Single(p => p.Value == "unity");
-        Assert.Equal(["ampr", "game", "--root", "D:/game", "--output", "D:/games/out", "--preset", "unity"], panel.BuildArguments(out _));
-        panel.Preset = panel.Presets[0];
 
         panel.Libs = "D:/emu";
         panel.Config = "D:/rules.toml";
@@ -141,7 +137,6 @@ public sealed class AmprPackPanelTests
         Assert.Equal(action == "game", panel.ShowGameOptions);
         Assert.Equal(action == "pack", panel.ShowAllowMissing);
         Assert.Equal(action == "pack", panel.ShowPackNote);
-        Assert.Equal(action is "game" or "pack", panel.ShowPreset);
         Assert.False(panel.ShowExfatPath);
         panel.Exfat = true;
         Assert.Equal(action == "game", panel.ShowExfatPath);
