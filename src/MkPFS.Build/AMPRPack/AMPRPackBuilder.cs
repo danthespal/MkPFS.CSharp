@@ -109,7 +109,7 @@ public static class AMPRPackBuilder
             PublishTransaction(layout, tempIndex, indexPath, tempCrc, tempRuntime);
             tempIndex = tempCrc = tempRuntime = null;
             packing.Report("complete");
-            return new AMPRBuildResult(indexPath, stats, warnings);
+            return new AMPRBuildResult(indexPath, stats, warnings, finalRecords.Count);
         }
         catch
         {

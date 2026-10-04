@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Text;
+using MkPFS.Core.AMPR;
 using MkPFS.Core.Diagnostics;
 using MkPFS.Core.Util;
 
@@ -17,6 +18,26 @@ public static class AmprIndex
 
     /// <summary>Marker that signals an emulation build (relative to the source root).</summary>
     public const string FakelibMarker = "fakelib/libSceAmpr.sprx";
+
+    /// <summary>
+    /// The AMPR Emu marker present in <paramref name="sourceRoot"/>: <see cref="FakelibMarker"/>, else
+    /// <c>fakelib2/libSceAmpr.sprx</c> (ShadowMountPlus's exclusive overlay; Python MkPFS only checks <c>fakelib/</c>).
+    /// </summary>
+    /// <param name="sourceRoot">Game folder.</param>
+    /// <returns>The marker, relative with <c>/</c>, or <see langword="null"/>.</returns>
+    public static string? FindMarker(string sourceRoot)
+    {
+        foreach (string marker in (string[])[FakelibMarker, "fakelib2/libSceAmpr.sprx"])
+        {
+            string path = Path.Combine(sourceRoot, marker);
+            if (File.Exists(path) || Directory.Exists(path))
+            {
+                return marker;
+            }
+        }
+
+        return null;
+    }
 
     /// <summary>Header size (<c>&lt;8sIIQQQII</c>).</summary>
     public const int HeaderSize = 48;
@@ -37,20 +58,36 @@ public static class AmprIndex
     /// <param name="Path"><c>/app0/&lt;rel&gt;</c>.</param>
     public readonly record struct Row(long Size, long MTime, string Path);
 
-    /// <summary>Hash and collision key: forward slashes, lower case (Python <c>ampr_key_for</c>).</summary>
+    /// <summary>
+    /// Sort and collision key: forward slashes, only ASCII <c>A..Z</c> folded (ampr_emu <c>build_ampr_index.py</c>
+    /// <c>key_for</c>). Python MkPFS lower-cases every letter, which the console resolver does not do.
+    /// </summary>
     /// <param name="path">Path.</param>
     /// <returns>Key.</returns>
-    public static string KeyFor(string path) => path.Replace('\\', '/').ToLowerInvariant();
+    public static string KeyFor(string path) =>
+        string.Create(path.Length, path, static (span, source) =>
+        {
+            for (int i = 0; i < source.Length; i++)
+            {
+                char c = source[i];
+                span[i] = c == '\\' ? '/' : c is >= 'A' and <= 'Z' ? (char)(c + 0x20) : c;
+            }
+        });
 
-    /// <summary>FNV-1a 64 over the key's code points; 0 becomes 1 so empty slots stay distinct.</summary>
+    /// <summary>
+    /// FNV-1a 64 over the UTF-8 bytes of <see cref="KeyFor"/>; 0 becomes 1 so empty slots stay distinct. This is the
+    /// hash the ampr_emu resolver computes for a lookup; Python MkPFS hashes lower-cased code points instead, so a
+    /// non-ASCII path in its index is never found on the console. The offset basis is ampr_emu's
+    /// <c>1469598103934665603</c>, not the standard FNV one that the pack manifest uses.
+    /// </summary>
     /// <param name="path">Path.</param>
     /// <returns>Hash.</returns>
     public static ulong PathHash(string path)
     {
         ulong hash = 1469598103934665603UL;
-        foreach (Rune rune in KeyFor(path).EnumerateRunes())
+        foreach (byte b in AMPRAssetPath.AsciiFoldPathBytes(path))
         {
-            hash ^= (ulong)rune.Value;
+            hash ^= b;
             hash = unchecked(hash * 1099511628211UL);
         }
 
@@ -94,8 +131,7 @@ public static class AmprIndex
         }
 
         string indexPath = Path.Combine(sourceRoot, IndexName);
-        string marker = Path.Combine(sourceRoot, "fakelib", "libSceAmpr.sprx");
-        if (!File.Exists(marker) && !Directory.Exists(marker))
+        if (FindMarker(sourceRoot) is not { } marker)
         {
             return null;
         }
@@ -125,7 +161,7 @@ public static class AmprIndex
             log.Warning($"{IndexName} failed validation; regenerating...");
         }
 
-        log.Info($"Detected {FakelibMarker}; generating {IndexName}...");
+        log.Info($"Detected {marker}; generating {IndexName}...");
         int count;
         try
         {
@@ -320,7 +356,8 @@ public static class AmprIndex
             live.All(row => indexed.TryGetValue(KeyFor(row.Path), out long size) && size == row.Size);
     }
 
-    // Files the index lists, in walk order: the index and its temp file skipped, case-insensitive duplicates
+    // Files the index lists, in walk order: the index and its temp file, the emulator's trace and log, and paths with
+    // tabs or line breaks skipped (as build_ampr_index.py and the runtime scan do); case-insensitive duplicates
     // dropped (first wins).
     private static List<Row> ScanRows(string root, string indexPath)
     {
@@ -337,7 +374,8 @@ public static class AmprIndex
 
             string indexed = "/app0/" + Path.GetRelativePath(root, file).Replace('\\', '/');
             string key = KeyFor(indexed);
-            if (key == $"/app0/{IndexName}" || key == $"/app0/{IndexName}.tmp" || !seen.Add(key))
+            if (key == $"/app0/{IndexName}" || key == $"/app0/{IndexName}.tmp" || SkippedRootFiles.Contains(key) ||
+                indexed.AsSpan().IndexOfAny('\t', '\n', '\r') >= 0 || !seen.Add(key))
             {
                 continue;
             }
@@ -348,6 +386,9 @@ public static class AmprIndex
 
         return rows;
     }
+
+    // Written into /app0 by debug emulator builds; never indexed.
+    private static readonly HashSet<string> SkippedRootFiles = new(StringComparer.Ordinal) { "/app0/ampr_commands.bin", "/app0/apr_emu.log" };
 
     private static StringComparison PathComparison => OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
 
@@ -384,7 +425,7 @@ public static class AmprIndex
         }
     });
 
-    // Python os.walk top-down with directories and files sorted by name.lower(): ignored names skipped,
+    // Python os.walk top-down with directories and files sorted by key_for(name): ignored names skipped,
     // directory links listed but not descended, file links kept when their target is a file.
     private static IEnumerable<string> WalkFiles(string root)
     {
@@ -396,7 +437,7 @@ public static class AmprIndex
             string dir = pending.Pop();
             List<FileSystemInfo> entries = [.. new DirectoryInfo(dir).EnumerateFileSystemInfos("*", options)
                 .Where(e => !NameRules.IsIgnoredName(e.Name))];
-            foreach (FileSystemInfo file in entries.Where(e => e is FileInfo).OrderBy(e => e.Name.ToLowerInvariant(), CodePointOrder))
+            foreach (FileSystemInfo file in entries.Where(e => e is FileInfo).OrderBy(e => KeyFor(e.Name), CodePointOrder))
             {
                 if (file.LinkTarget is null || file.ResolveLinkTarget(returnFinalTarget: true) is FileInfo { Exists: true })
                 {
@@ -406,7 +447,7 @@ public static class AmprIndex
 
             // Push in reverse so subdirectories are visited in sorted order.
             foreach (FileSystemInfo sub in entries.Where(e => e is DirectoryInfo && e.LinkTarget is null)
-                         .OrderByDescending(e => e.Name.ToLowerInvariant(), CodePointOrder))
+                         .OrderByDescending(e => KeyFor(e.Name), CodePointOrder))
             {
                 pending.Push(sub.FullName);
             }

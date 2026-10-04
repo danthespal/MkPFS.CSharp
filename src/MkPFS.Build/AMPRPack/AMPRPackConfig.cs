@@ -304,7 +304,7 @@ public sealed class AMPRPackConfig
         include = [
           "eboot.bin", "*/eboot.bin", "param.sfo", "*/param.sfo", "nptitle.dat", "*/nptitle.dat",
           "ampr_emu.index", "*/ampr_emu.index", "*.prx", "*.sprx", "*.elf", "*.self",
-          "sce_sys/*", "sce_module/*", "fakelib/*", "mods/*", "save/*", "system/*",
+          "sce_sys/*", "sce_module/*", "fakelib/*", "fakelib2/*", "mods/*", "save/*", "system/*",
           "*/global-metadata.dat",
         ]
         """;

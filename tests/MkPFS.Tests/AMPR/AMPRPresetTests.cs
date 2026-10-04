@@ -22,6 +22,7 @@ public sealed class AMPRPresetTests : IDisposable
     [InlineData("bin/eboot.bin", "loose")]
     [InlineData("libcohtml.Prospero.prx", "loose")]
     [InlineData("fakelib/libSceAmpr.sprx", "loose")]
+    [InlineData("fakelib2/libSceAmpr.sprx", "loose")]
     [InlineData("sce_sys/param.json", "loose")]
     [InlineData("sce_module/libc.prx", "loose")]
     [InlineData("tools/run.elf", "loose")]
@@ -41,10 +42,16 @@ public sealed class AMPRPresetTests : IDisposable
     public void Unknown_preset_is_rejected() =>
         Assert.Equal("unknown preset: max", Assert.Throws<AMPRPackException>(() => AMPRPackConfig.LoadPreset("max")).Message);
 
-    private string Game()
+    private string Game(string? emulator = "fakelib")
     {
         string root = Path.Combine(_dir, "app0");
-        foreach ((string path, string text) in new[] { ("eboot.bin", "eboot"), ("sce_sys/param.json", "{}"), ("lib.prx", "prx"), ("data/a.dat", new string('a', 50_000)) })
+        List<(string, string)> files = [("eboot.bin", "eboot"), ("sce_sys/param.json", "{}"), ("lib.prx", "prx"), ("data/a.dat", new string('a', 50_000))];
+        if (emulator is not null)
+        {
+            files.Add(($"{emulator}/libSceAmpr.sprx", "sprx"));
+        }
+
+        foreach ((string path, string text) in files)
         {
             string full = Path.Combine(root, path);
             Directory.CreateDirectory(Path.GetDirectoryName(full)!);
@@ -94,5 +101,34 @@ public sealed class AMPRPresetTests : IDisposable
         File.WriteAllText(config, "[pack]\n");
         (exit, stdout, stderr) = Run("pack", "--root", root, "--ampr-index", index, "--output", output, "--config", config, "--preset", "default");
         Assert.Equal((2, string.Empty, "error: --config and --preset cannot be used together\n"), (exit, stdout, stderr));
+    }
+
+    [Theory]
+    [InlineData(null, true)]
+    [InlineData("fakelib", false)]
+    [InlineData("fakelib2", false)]
+    public void Cli_warns_when_packs_are_built_for_a_folder_without_ampr_emu(string? emulator, bool warns)
+    {
+        string root = Game(emulator);
+
+        (int exit, _, string stderr) = Run(
+            "pack", "--root", root, "--ampr-index", Path.Combine(root, AmprIndex.IndexName), "--output", Path.Combine(_dir, "out"), "--preset", "default");
+
+        Assert.Equal(0, exit);
+        Assert.Equal(warns ? global::MkPFS.Cli.Commands.AmprCommand.NoEmulatorWarning + "\n" : string.Empty, stderr);
+    }
+
+    [Fact]
+    public void Runtime_limits_of_the_default_emulator_build_are_reported()
+    {
+        AMPRBuildStats stats = new() { FilesTotal = AMPRBuildResult.RuntimeMaxFiles, Chunks = AMPRBuildResult.RuntimeMaxChunks };
+        Assert.Empty(new AMPRBuildResult("i", stats, [], AMPRBuildResult.RuntimeMaxVolumes).RuntimeLimitWarnings());
+
+        stats = new() { FilesTotal = AMPRBuildResult.RuntimeMaxFiles + 1, Chunks = AMPRBuildResult.RuntimeMaxChunks + 1 };
+        IReadOnlyList<string> warnings = new AMPRBuildResult("i", stats, [], AMPRBuildResult.RuntimeMaxVolumes + 1).RuntimeLimitWarnings();
+        Assert.Equal(3, warnings.Count);
+        Assert.StartsWith("2000001 files exceed", warnings[0], StringComparison.Ordinal);
+        Assert.StartsWith("16000001 chunks exceed", warnings[1], StringComparison.Ordinal);
+        Assert.StartsWith("1025 pack volumes exceed", warnings[2], StringComparison.Ordinal);
     }
 }

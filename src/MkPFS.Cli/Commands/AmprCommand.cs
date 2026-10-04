@@ -1,6 +1,7 @@
 using System.CommandLine;
 using System.Diagnostics;
 using System.Globalization;
+using MkPFS.Build;
 using MkPFS.Build.AMPRPack;
 using MkPFS.Cli.Output;
 using MkPFS.Core.AMPR;
@@ -19,6 +20,11 @@ internal static class AmprCommand
     /// <summary>Printed to stderr when a pack run packs nothing (an addition to the oracle output).</summary>
     internal const string NothingPackedWarning =
         "warning: no files were packed; without --config or --preset default every file stays loose";
+
+    /// <summary>Printed to stderr when files were packed but the root has no AMPR Emu (an addition to the oracle output).</summary>
+    internal const string NoEmulatorWarning =
+        "warning: --root has no fakelib/libSceAmpr.sprx or fakelib2/libSceAmpr.sprx; only AMPR Emu reads these packs, " +
+        "and only in titles that load libSceAmpr. Keep the original files until the game runs from the packs";
 
     public static Command Create(CliContext ctx)
     {
@@ -125,6 +131,18 @@ internal static class AmprCommand
             {
                 // Not in ampr_pack.py: a run without rules leaves every file loose and is easy to start by mistake.
                 ctx.Err.WriteLine(NothingPackedWarning);
+            }
+
+            // Not in ampr_pack.py: sets the console cannot load, and packs in a folder without AMPR Emu.
+            foreach (string message in result.RuntimeLimitWarnings())
+            {
+                ctx.Err.WriteLine($"warning: {message}");
+            }
+
+            string rootDir = Resolve(ctx, parse.GetValue(root)!);
+            if (stats.FilesPacked > 0 && !AmprLibs.HasEmulator(rootDir))
+            {
+                ctx.Err.WriteLine(NoEmulatorWarning);
             }
         }));
         return command;

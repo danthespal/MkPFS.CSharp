@@ -83,4 +83,41 @@ public sealed record AMPRSelectedFile(
 /// <param name="IndexPath">Published manifest.</param>
 /// <param name="Stats">Counters.</param>
 /// <param name="Warnings">Auto-loose and missing-source notes.</param>
-public sealed record AMPRBuildResult(string IndexPath, AMPRBuildStats Stats, IReadOnlyList<string> Warnings);
+/// <param name="Volumes">Pack volumes named by the manifest.</param>
+public sealed record AMPRBuildResult(string IndexPath, AMPRBuildStats Stats, IReadOnlyList<string> Warnings, int Volumes = 0)
+{
+    /// <summary>ampr_emu <c>AMPR_EMU_PACK_MAX_FILES</c>: manifest file records the runtime loads.</summary>
+    public const long RuntimeMaxFiles = 2_000_000;
+
+    /// <summary>ampr_emu <c>AMPR_EMU_PACK_MAX_CHUNKS</c>: chunk records the runtime loads.</summary>
+    public const long RuntimeMaxChunks = 16_000_000;
+
+    /// <summary>ampr_emu <c>AMPR_EMU_PACK_MAX_PACKS</c>: pack volumes the runtime loads.</summary>
+    public const int RuntimeMaxVolumes = 1024;
+
+    /// <summary>
+    /// Limits of the default ampr_emu build that this set exceeds; the runtime then rejects the whole manifest
+    /// (<c>apr.pack.index.invalid</c>). ampr_pack.py only checks the format limits, so it publishes such sets.
+    /// </summary>
+    /// <returns>One message per exceeded limit.</returns>
+    public IReadOnlyList<string> RuntimeLimitWarnings()
+    {
+        List<string> messages = [];
+        if (Stats.FilesTotal > RuntimeMaxFiles)
+        {
+            messages.Add($"{Stats.FilesTotal} files exceed the AMPR Emu limit of {RuntimeMaxFiles}; the console will reject this pack set");
+        }
+
+        if (Stats.Chunks > RuntimeMaxChunks)
+        {
+            messages.Add($"{Stats.Chunks} chunks exceed the AMPR Emu limit of {RuntimeMaxChunks}; use larger blocks or leave some files loose");
+        }
+
+        if (Volumes > RuntimeMaxVolumes)
+        {
+            messages.Add($"{Volumes} pack volumes exceed the AMPR Emu limit of {RuntimeMaxVolumes}; raise max_pack_size or lower pack_count");
+        }
+
+        return messages;
+    }
+}

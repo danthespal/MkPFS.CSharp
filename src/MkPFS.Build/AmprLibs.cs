@@ -34,6 +34,14 @@ public static class AmprLibs
     /// <summary>Libraries copied when present, in copy order.</summary>
     public static IReadOnlyList<string> LibraryNames { get; } = [AmprLibrary, "libScePlayGo.sprx"];
 
+    /// <summary>
+    /// <see langword="true"/> when <paramref name="sourceRoot"/> carries AMPR Emu in <c>fakelib/</c> or in
+    /// <c>fakelib2/</c>, which ShadowMountPlus mounts instead of <c>fakelib/</c> when both exist.
+    /// </summary>
+    /// <param name="sourceRoot">Game folder.</param>
+    /// <returns>Whether the emulator library is present.</returns>
+    public static bool HasEmulator(string sourceRoot) => AmprIndex.FindMarker(sourceRoot) is not null;
+
     /// <summary><see langword="true"/> when <c>sce_sys</c> holds a PlayGo chunk file (APR title).</summary>
     /// <param name="sourceRoot">Game folder.</param>
     /// <returns>Whether the title uses PlayGo.</returns>
@@ -57,6 +65,12 @@ public static class AmprLibs
         }
 
         string fakelib = Path.Combine(sourceRoot, "fakelib");
+        if (Directory.Exists(Path.Combine(sourceRoot, "fakelib2")))
+        {
+            // ShadowMountPlus mounts fakelib2 alone when it exists, so libraries in fakelib would never load.
+            log.Warning("fakelib2/ exists and ShadowMountPlus mounts it instead of fakelib/; put the AMPR Emu libraries in fakelib2/ yourself");
+        }
+
         int copied = 0;
         try
         {
@@ -100,7 +114,7 @@ public static class AmprLibs
     public static void Prepare(string sourceRoot, AmprOptions options, IMkPFSLog log)
     {
         bool apr = options.ForceAprTitle || IsAprTitle(sourceRoot);
-        bool hasLibrary = File.Exists(Path.Combine(sourceRoot, AmprIndex.FakelibMarker));
+        bool hasLibrary = HasEmulator(sourceRoot);
         if (options.LibsDir is { } libs)
         {
             if (apr)

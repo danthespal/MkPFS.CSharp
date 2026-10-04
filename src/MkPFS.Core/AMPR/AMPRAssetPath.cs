@@ -5,7 +5,7 @@ namespace MkPFS.Core.AMPR;
 
 /// <summary>
 /// <c>/app0</c> path rules shared by the pack manifest and AMPRIDX3 (ampr_pack_format.py:170-240).
-/// Unlike <c>MkPFS.Build.AmprIndex.PathHash</c> (lower-cased code points), the pack manifest hashes the
+/// Like <c>MkPFS.Build.AmprIndex.PathHash</c> and the ampr_emu runtime, the pack manifest hashes the
 /// UTF-8 bytes and folds only ASCII <c>A..Z</c>.
 /// </summary>
 public static class AMPRAssetPath

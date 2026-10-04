@@ -232,7 +232,12 @@ Before packing a game folder, `pack folder`, `pack exfat`, and `batch` (folder i
 1. With `--ampr-libs`, copy the libraries into `<game>/fakelib/` when the game is an APR title
    (`sce_sys/playgo-chunk.dat` exists) or `--ampr-title` is given. Identical files are left alone;
    changed ones are replaced.
-2. When `fakelib/libSceAmpr.sprx` exists, write `ampr_emu.index` into the game folder.
+2. When `fakelib/libSceAmpr.sprx` or `fakelib2/libSceAmpr.sprx` exists, write `ampr_emu.index` into the
+   game folder. Paths are hashed and sorted the way the emulator looks them up (only ASCII letters fold
+   case), so names with accents resolve on the console.
+
+ShadowMountPlus mounts `fakelib2/` instead of `fakelib/` when both exist, so `--ampr-libs` warns and leaves
+a `fakelib2/` folder for you to update.
 
 Both steps change the source folder, so the image includes them. An APR title without
 `fakelib/libSceAmpr.sprx` and without `--ampr-libs` gets a warning and no index.
@@ -245,7 +250,9 @@ untouched, even when it no longer matches.
 
 A folder that also holds AMPR packs (`ampr_assets.index`, see [`ampr`](#ampr-asset-packs)) always keeps its
 `ampr_emu.index`, with a warning: the packs address files by their row in that index, and a rebuilt index
-renumbers the rows so the emulator fails every packed read. `--ampr-force-regen` still rebuilds it.
+renumbers the rows so the emulator fails every packed read. `--ampr-force-regen` still rebuilds it. Keep
+ShadowMountPlus's `mount_read_only=1` (its default) for such images: on a writable mount the emulator can
+rebuild a missing index from the remaining files, with the same result.
 
 | Option | Default | Meaning |
 |---|---|---|
@@ -263,9 +270,16 @@ manifest `ampr_assets.index`, data volumes `ampr_assets-*.pak`, and an offline C
 sees LZ4. `mkpfs ampr` is a port of ampr_emu's `tools/ampr_pack.py` (tool version 4.0): the same options,
 the same JSON on standard output, and byte-identical packs.
 
-The released emulator only serves files the game reads through AMPR. Files read another way (for
-example `mmap`) must stay loose, so keep the source files until the packed game is tested, and remove
-them only after that with `remove-sources --confirm`.
+The released emulator only serves files the game reads through AMPR, and it only loads in titles that
+use libSceAmpr. Packs for other titles (for example Unity games, which read files directly) are never
+read, and `pack` warns when `--root` has no `fakelib/libSceAmpr.sprx` or `fakelib2/libSceAmpr.sprx`.
+Files read another way (for example `mmap`) must stay loose, so keep the source files until the packed
+game is tested, and remove them only after that with `remove-sources --confirm`.
+
+The default emulator build loads at most 2,000,000 files, 16,000,000 chunks, and 1,024 volumes, and
+rejects the whole set beyond that; `pack` warns on standard error when a set exceeds a limit (larger
+blocks or more loose files bring it down). Deploy `ampr_emu.index`, the manifest, its `.runtime`, and every
+volume from one build together; the `.crc` sidecar is only for `verify` and `unpack`.
 
 | Subcommand | Required options | Purpose |
 |---|---|---|
@@ -282,7 +296,7 @@ them only after that with `remove-sources --confirm`.
 | Option | Default | Meaning |
 |---|---|---|
 | `--config <toml>` | none | Pack rules. Without a config or preset every file stays loose, and `pack` prints a warning on standard error. |
-| `--preset default` | none | Built-in rules instead of `--config` (not in `ampr_pack.py`): compress every file but keep loose everything `remove-sources` protects (`eboot.bin`, `*.prx`/`*.sprx`/`*.elf`/`*.self`, `sce_sys/`, `sce_module/`, `fakelib/`, `mods/`, `save/`, `system/`, `param.sfo`, `nptitle.dat`, `ampr_emu.index`) and Unity IL2CPP `global-metadata.dat`, which is memory-mapped. |
+| `--preset default` | none | Built-in rules instead of `--config` (not in `ampr_pack.py`): compress every file but keep loose everything `remove-sources` protects (`eboot.bin`, `*.prx`/`*.sprx`/`*.elf`/`*.self`, `sce_sys/`, `sce_module/`, `fakelib/`, `fakelib2/`, `mods/`, `save/`, `system/`, `param.sfo`, `nptitle.dat`, `ampr_emu.index`) and Unity IL2CPP `global-metadata.dat`, which is memory-mapped. |
 | `--include <glob>`, `--exclude <glob>` | none; repeatable | Narrow the rule selection; `--exclude` forces files loose. |
 | `--include-from <file>`, `--exclude-from <file>` | none | Glob lists, one per line, `#` comments. |
 | `--workers <n>` | config, else min(8, cores) | Compression threads (1 to 256). |
@@ -383,6 +397,10 @@ dotnet run --project src/MkPFS.Gui -c Release
 - `pack exfat` and `batch` also build `ampr_emu.index` (Python only does it in `pack folder`), and
   `--ampr-libs`/`--ampr-title` are new. `--ampr-skip-regen-if-exists` checks every path and size, not
   just the file count.
+- `ampr_emu.index` matches ampr_emu's `build_ampr_index.py` and the console lookup: Python MkPFS folds
+  every letter and hashes code points, so on the console it cannot find files with non-ASCII names. The
+  index also skips the emulator's `ampr_commands.bin` and `apr_emu.log`, and `fakelib2/libSceAmpr.sprx`
+  also triggers it. ASCII-only folders give the same index as before.
 - Bugs found in the Python version while porting are listed in
   [tools/oracle/README.md](tools/oracle/README.md); some are fixed here.
 - Switching from Python MkPFS: see [MIGRATION.md](MIGRATION.md).
