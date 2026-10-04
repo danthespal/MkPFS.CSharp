@@ -32,6 +32,14 @@
   <data name="am_libs_ph" xml:space="preserve"><value>Folder cu libSceAmpr.sprx…</value></data>
   <data name="am_section" xml:space="preserve"><value>APR Emu</value></data>
   <data name="am_title" xml:space="preserve"><value>Tratează ca titlu APR</value></data>
+  <data name="ap_act_game" xml:space="preserve"><value>Creează jocul gata de rulat (pack-uri + fișiere libere)</value></data>
+  <data name="ap_game_note" xml:space="preserve"><value>Creează un folder nou pe care îl copiezi pe PS5 și joci: bibliotecile tale în fakelib/, ampr_emu.index, pack-urile LZ4 și toate fișierele care rămân libere. Folderul jocului este doar citit. Necesită AMPR Emu 0.4.2.1 sau mai nou și un joc care folosește AMPR.</value></data>
+  <data name="ap_libs_label" xml:space="preserve"><value>Folder de Biblioteci (fakelib)</value></data>
+  <data name="ap_libs_ph" xml:space="preserve"><value>Folder cu libSceAmpr.sprx și alte biblioteci fakelib (opțional dacă jocul le are deja)…</value></data>
+  <data name="ap_verify_game" xml:space="preserve"><value>Verifică pack-urile și fișierele libere după creare</value></data>
+  <data name="ap_exfat" xml:space="preserve"><value>Creează și o imagine exFAT (clustere de 64 KiB, montare doar citire)</value></data>
+  <data name="ap_exfat_label" xml:space="preserve"><value>Imagine exFAT (opțional)</value></data>
+  <data name="ap_exfat_ph" xml:space="preserve"><value>Implicit: &lt;titleId&gt;.exfat lângă folderul de ieșire</value></data>
   <data name="ap_act_inspect" xml:space="preserve"><value>Inspectează manifestul</value></data>
   <data name="ap_act_list" xml:space="preserve"><value>Listează fișierele</value></data>
   <data name="ap_act_pack" xml:space="preserve"><value>Împachetează fișierele jocului</value></data>

@@ -32,6 +32,14 @@
   <data name="am_libs_ph" xml:space="preserve"><value>Dossier contenant libSceAmpr.sprx…</value></data>
   <data name="am_section" xml:space="preserve"><value>APR Emu</value></data>
   <data name="am_title" xml:space="preserve"><value>Traiter comme un titre APR</value></data>
+  <data name="ap_act_game" xml:space="preserve"><value>Créer le jeu prêt à lancer (packs + fichiers libres)</value></data>
+  <data name="ap_game_note" xml:space="preserve"><value>Crée un nouveau dossier à copier sur la PS5 pour jouer : vos bibliothèques dans fakelib/, ampr_emu.index, les packs LZ4 et tous les fichiers qui restent libres. Le dossier du jeu est seulement lu. Nécessite AMPR Emu 0.4.2.1 ou plus récent et un jeu qui utilise AMPR.</value></data>
+  <data name="ap_libs_label" xml:space="preserve"><value>Dossier des bibliothèques (fakelib)</value></data>
+  <data name="ap_libs_ph" xml:space="preserve"><value>Dossier avec libSceAmpr.sprx et d'autres bibliothèques fakelib (facultatif si le jeu les a déjà)…</value></data>
+  <data name="ap_verify_game" xml:space="preserve"><value>Vérifier les packs et les fichiers libres après la création</value></data>
+  <data name="ap_exfat" xml:space="preserve"><value>Créer aussi une image exFAT (clusters de 64 Kio, montage en lecture seule)</value></data>
+  <data name="ap_exfat_label" xml:space="preserve"><value>Image exFAT (facultatif)</value></data>
+  <data name="ap_exfat_ph" xml:space="preserve"><value>Par défaut : &lt;titleId&gt;.exfat à côté du dossier de sortie</value></data>
   <data name="ap_act_inspect" xml:space="preserve"><value>Inspecter le manifeste</value></data>
   <data name="ap_act_list" xml:space="preserve"><value>Lister les fichiers</value></data>
   <data name="ap_act_pack" xml:space="preserve"><value>Empaqueter les fichiers du jeu</value></data>

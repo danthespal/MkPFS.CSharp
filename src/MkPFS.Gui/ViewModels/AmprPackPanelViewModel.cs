@@ -7,7 +7,7 @@ using MkPFS.Gui.Localization;
 namespace MkPFS.Gui.ViewModels;
 
 /// <summary>
-/// AMPR Packs page: runs <c>mkpfs ampr</c> (pack, verify, unpack, list, inspect, runtime-config, remove-sources).
+/// AMPR Packs page: runs <c>mkpfs ampr</c> (game, pack, verify, unpack, list, inspect, runtime-config, remove-sources).
 /// Only the fields the selected action uses are shown.
 /// </summary>
 /// <param name="accent">Accent color.</param>
@@ -16,6 +16,7 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
 {
     private static readonly Choice[] ActionChoices =
     [
+        new("game", "ap_act_game"),
         new("pack", "ap_act_pack"),
         new("verify", "ap_act_verify"),
         new("unpack", "ap_act_unpack"),
@@ -32,7 +33,25 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowRoot), nameof(ShowPackPaths), nameof(ShowOutput), nameof(ShowManifest), nameof(ShowConfig))]
     [NotifyPropertyChangedFor(nameof(ShowPackOptions), nameof(ShowOverwrite), nameof(ShowJson), nameof(ShowConfirm))]
+    [NotifyPropertyChangedFor(nameof(ShowGameOptions), nameof(ShowAllowMissing), nameof(ShowExfatPath))]
     public partial Choice Action { get; set; } = ActionChoices[0];
+
+    /// <summary><c>--fakelib</c> (game): folder with AMPR Emu and other libraries to add.</summary>
+    [ObservableProperty]
+    public partial string Libs { get; set; } = string.Empty;
+
+    /// <summary>Verify the packs and loose files after a game build (<c>--skip-verify</c> when off).</summary>
+    [ObservableProperty]
+    public partial bool VerifyGame { get; set; } = true;
+
+    /// <summary>Also build an exFAT image of the game folder (<c>--exfat</c>).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowExfatPath))]
+    public partial bool Exfat { get; set; }
+
+    /// <summary>exFAT image path; empty for <c>&lt;titleId&gt;.exfat</c> next to the output folder.</summary>
+    [ObservableProperty]
+    public partial string ExfatPath { get; set; } = string.Empty;
 
     /// <summary><c>--root</c>: the game's <c>/app0</c> folder.</summary>
     [ObservableProperty]
@@ -79,22 +98,31 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
     public partial bool Confirm { get; set; }
 
     /// <summary>Game folder field (pack, verify, remove-sources).</summary>
-    public bool ShowRoot => Action.Value is "pack" or "verify" or "remove-sources";
+    public bool ShowRoot => Action.Value is "game" or "pack" or "verify" or "remove-sources";
 
     /// <summary>AMPR index field (pack).</summary>
     public bool ShowPackPaths => Action.Value == "pack";
 
-    /// <summary>Output folder field (pack, unpack).</summary>
-    public bool ShowOutput => Action.Value is "pack" or "unpack";
+    /// <summary>Output folder field (game, pack, unpack).</summary>
+    public bool ShowOutput => Action.Value is "game" or "pack" or "unpack";
 
-    /// <summary>Pack manifest field (every action but pack).</summary>
-    public bool ShowManifest => Action.Value != "pack";
+    /// <summary>Pack manifest field (every action but game and pack).</summary>
+    public bool ShowManifest => Action.Value is not ("game" or "pack");
 
-    /// <summary>Configuration field (pack, runtime-config).</summary>
-    public bool ShowConfig => Action.Value is "pack" or "runtime-config";
+    /// <summary>Configuration field (game, pack, runtime-config).</summary>
+    public bool ShowConfig => Action.Value is "game" or "pack" or "runtime-config";
 
-    /// <summary>Workers, self-contained and allow-missing (pack).</summary>
-    public bool ShowPackOptions => Action.Value == "pack";
+    /// <summary>Workers and self-contained (game, pack).</summary>
+    public bool ShowPackOptions => Action.Value is "game" or "pack";
+
+    /// <summary>Allow-missing (pack).</summary>
+    public bool ShowAllowMissing => Action.Value == "pack";
+
+    /// <summary>Library folder, verification and exFAT image (game).</summary>
+    public bool ShowGameOptions => Action.Value == "game";
+
+    /// <summary>exFAT image path (game with an image).</summary>
+    public bool ShowExfatPath => ShowGameOptions && Exfat;
 
     /// <summary>Overwrite (unpack).</summary>
     public bool ShowOverwrite => Action.Value == "unpack";
@@ -117,8 +145,9 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
         string config = Config.Trim();
         error = Action.Value switch
         {
+            "game" when root.Length == 0 || output.Length == 0 => Localizer.Instance["ap_err_pack"],
             "pack" when root.Length == 0 || output.Length == 0 => Localizer.Instance["ap_err_pack"],
-            "pack" when Workers.Trim().Length > 0 && !(int.TryParse(Workers.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out int n) && n is >= 1 and <= 256)
+            "game" or "pack" when Workers.Trim().Length > 0 && !(int.TryParse(Workers.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out int n) && n is >= 1 and <= 256)
                 => Localizer.Instance["ap_err_workers"],
             "verify" or "list" or "inspect" when manifest.Length == 0 => Localizer.Instance["ap_err_manifest"],
             "unpack" when manifest.Length == 0 || output.Length == 0 => Localizer.Instance["ap_err_unpack"],
@@ -134,6 +163,20 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
         List<string> args = ["ampr", Action.Value];
         switch (Action.Value)
         {
+            case "game":
+                args.AddRange(["--root", root, "--output", output]);
+                AddOption(args, "--fakelib", Libs);
+                AddOption(args, "--config", config);
+                AddOption(args, "--workers", Workers);
+                AddFlag(args, SelfContained, "--self-contained");
+                AddFlag(args, !VerifyGame, "--skip-verify");
+                if (Exfat)
+                {
+                    // An existing folder receives <titleId>.exfat: by default the folder that holds the output.
+                    args.AddRange(["--exfat", ExfatPath.Trim() is { Length: > 0 } image ? image : Path.GetDirectoryName(Path.GetFullPath(output)) ?? output]);
+                }
+
+                break;
             case "pack":
                 args.AddRange(["--root", root, "--ampr-index", AmprIndex.Trim() is { Length: > 0 } index ? index : Path.Combine(root, "ampr_emu.index"), "--output", output]);
                 // Without a TOML every file would stay loose; the page uses the built-in rules instead.
@@ -172,7 +215,7 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
     /// <summary>The manifest a pack run writes, so the other actions can use it right away.</summary>
     partial void OnOutputChanged(string value)
     {
-        if (Manifest.Length == 0 && value.Trim().Length > 0 && Action.Value == "pack")
+        if (Manifest.Length == 0 && value.Trim().Length > 0 && Action.Value is "game" or "pack")
         {
             Manifest = Path.Combine(value.Trim(), Build.AMPRPack.AMPRPackConfig.DefaultIndexName);
         }

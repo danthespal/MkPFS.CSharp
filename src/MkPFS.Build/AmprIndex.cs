@@ -184,8 +184,12 @@ public static class AmprIndex
     public static int Build(string root, string outputPath)
     {
         outputPath = Path.GetFullPath(outputPath);
+        return Write(ScanRows(root, outputPath), outputPath);
+    }
+
+    private static int Write(List<Row> rows, string outputPath)
+    {
         string tmp = outputPath + ".tmp";
-        List<Row> rows = ScanRows(root, outputPath);
         if (rows.Count == 0)
         {
             return 0;
@@ -204,6 +208,31 @@ public static class AmprIndex
         }
 
         return rows.Count;
+    }
+
+    /// <summary>
+    /// Write the index for the tree a game will have after <paramref name="overlayDirectory"/> (for example
+    /// <c>fakelib</c>) is taken from <paramref name="overlayRoot"/> instead of <paramref name="root"/>: the files under
+    /// that folder are listed with the overlay's sizes and times, everything else with the source's.
+    /// </summary>
+    /// <param name="root">Source tree.</param>
+    /// <param name="overlayRoot">Tree holding the replacement folder.</param>
+    /// <param name="overlayDirectory">Folder name relative to both roots.</param>
+    /// <param name="outputPath">Index path.</param>
+    /// <returns>Records written (0 and no file when there are no files).</returns>
+    public static int BuildWithOverlay(string root, string overlayRoot, string overlayDirectory, string outputPath)
+    {
+        outputPath = Path.GetFullPath(outputPath);
+        string prefix = KeyFor($"/app0/{overlayDirectory}/");
+        List<Row> rows = [.. ScanRows(root, outputPath).Where(r => !KeyFor(r.Path).StartsWith(prefix, StringComparison.Ordinal))];
+        string overlay = Path.Combine(Path.GetFullPath(overlayRoot), overlayDirectory);
+        if (Directory.Exists(overlay))
+        {
+            HashSet<string> seen = [.. rows.Select(r => KeyFor(r.Path))];
+            rows.AddRange(ScanRows(overlayRoot, outputPath, overlay).Where(r => seen.Add(KeyFor(r.Path))));
+        }
+
+        return Write(rows, outputPath);
     }
 
     /// <summary>Serialize rows already in record order.</summary>
@@ -359,13 +388,13 @@ public static class AmprIndex
     // Files the index lists, in walk order: the index and its temp file, the emulator's trace and log, and paths with
     // tabs or line breaks skipped (as build_ampr_index.py and the runtime scan do); case-insensitive duplicates
     // dropped (first wins).
-    private static List<Row> ScanRows(string root, string indexPath)
+    private static List<Row> ScanRows(string root, string indexPath, string? walkFrom = null)
     {
         root = Path.GetFullPath(root);
         string tmp = indexPath + ".tmp";
         List<Row> rows = [];
         HashSet<string> seen = new(StringComparer.Ordinal);
-        foreach (string file in WalkFiles(root))
+        foreach (string file in WalkFiles(walkFrom ?? root))
         {
             if (string.Equals(file, indexPath, PathComparison) || string.Equals(file, tmp, PathComparison))
             {

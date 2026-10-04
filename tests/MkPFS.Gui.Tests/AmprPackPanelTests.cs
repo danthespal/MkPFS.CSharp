@@ -48,6 +48,34 @@ public sealed class AmprPackPanelTests
     }
 
     [Fact]
+    public void Game_is_the_default_action_and_builds_arguments()
+    {
+        AmprPackPanelViewModel panel = new(Colors.YellowGreen, Sync());
+        Assert.Equal("game", panel.Action.Value);
+        Assert.Null(panel.BuildArguments(out string? error));
+        Assert.Equal("✗ Game folder and output folder are both required.", error);
+
+        panel.Root = "D:/game";
+        panel.Output = "D:/games/out";
+        Assert.Equal(Path.Combine("D:/games/out", "ampr_assets.index"), panel.Manifest);
+        Assert.Equal(["ampr", "game", "--root", "D:/game", "--output", "D:/games/out"], panel.BuildArguments(out _));
+
+        panel.Libs = "D:/emu";
+        panel.Config = "D:/rules.toml";
+        panel.Workers = "4";
+        panel.SelfContained = true;
+        panel.VerifyGame = false;
+        panel.Exfat = true;
+        Assert.Equal(
+            ["ampr", "game", "--root", "D:/game", "--output", "D:/games/out", "--fakelib", "D:/emu", "--config", "D:/rules.toml", "--workers", "4",
+                "--self-contained", "--skip-verify", "--exfat", Path.GetDirectoryName(Path.GetFullPath("D:/games/out"))!],
+            panel.BuildArguments(out _));
+
+        panel.ExfatPath = "E:/PPSA01234.exfat";
+        Assert.Equal(["--exfat", "E:/PPSA01234.exfat"], panel.BuildArguments(out _)!.TakeLast(2));
+    }
+
+    [Fact]
     public void Other_actions_build_arguments_and_validate()
     {
         AmprPackPanelViewModel verify = Panel("verify");
@@ -90,6 +118,7 @@ public sealed class AmprPackPanelTests
     }
 
     [Theory]
+    [InlineData("game", true, false, true, false, true, true, false, false, false)]
     [InlineData("pack", true, true, true, false, true, true, false, false, false)]
     [InlineData("verify", true, false, false, true, false, false, false, false, false)]
     [InlineData("unpack", false, false, true, true, false, false, true, false, false)]
@@ -105,6 +134,11 @@ public sealed class AmprPackPanelTests
             (root, packPaths, output, manifest, config, packOptions, overwrite, json, confirm),
             (panel.ShowRoot, panel.ShowPackPaths, panel.ShowOutput, panel.ShowManifest, panel.ShowConfig, panel.ShowPackOptions,
                 panel.ShowOverwrite, panel.ShowJson, panel.ShowConfirm));
+        Assert.Equal(action == "game", panel.ShowGameOptions);
+        Assert.Equal(action == "pack", panel.ShowAllowMissing);
+        Assert.False(panel.ShowExfatPath);
+        panel.Exfat = true;
+        Assert.Equal(action == "game", panel.ShowExfatPath);
     }
 
     [AvaloniaFact]
@@ -126,6 +160,28 @@ public sealed class AmprPackPanelTests
         Assert.Contains(panel.Job.Lines, l => l.Text.StartsWith("[pack 100%] complete: ", StringComparison.Ordinal));
         // One overall phase: no per-phase "✓ planning: N%" lines that look like finished steps.
         Assert.DoesNotContain(panel.Job.Lines, l => l.Text.StartsWith("✓ planning", StringComparison.Ordinal) || l.Text.StartsWith("✓ packing", StringComparison.Ordinal));
+    }
+
+    [AvaloniaFact]
+    public async Task Page_builds_a_playable_game_folder()
+    {
+        using TempDir dir = new();
+        string game = BuildPanelTests.Game(dir);
+        dir.File("PPSA01234-app/data/level.dat", string.Concat(Enumerable.Repeat("terrain mesh texture ", 20_000)));
+        dir.File("emu/libSceAmpr.sprx", "AMPR Emu with AMPRPAK4 support");
+
+        AmprPackPanelViewModel panel = new(Colors.YellowGreen, Sync());
+        panel.Root = game;
+        panel.Output = Path.Combine(dir.Path, "playable");
+        panel.Libs = Path.Combine(dir.Path, "emu");
+        await panel.RunCommand.ExecuteAsync(null);
+
+        Assert.True(panel.Job.Lines[^1].Text == "✓ Completed successfully.", string.Join('\n', panel.Job.Lines.Select(l => l.Text)));
+        Assert.Contains(panel.Job.Lines, l => l.Text == "[5/5] Verifying");
+        Assert.True(File.Exists(Path.Combine(panel.Output, "fakelib", "libSceAmpr.sprx")));
+        Assert.True(File.Exists(Path.Combine(panel.Output, "ampr_emu.index")));
+        Assert.True(File.Exists(panel.Manifest));
+        Assert.False(File.Exists(Path.Combine(panel.Output, "data", "level.dat")));
     }
 
     [AvaloniaFact]

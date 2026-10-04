@@ -14,6 +14,7 @@
         </ComboBox.ItemTemplate>
       </ComboBox>
     </StackPanel>
+    <TextBlock Text="{l:Tr ap_game_note}" TextWrapping="Wrap" IsVisible="{Binding ShowGameOptions}" />
     <TextBlock Text="{l:Tr ap_note}" TextWrapping="Wrap" />
     <Rectangle Classes="separator" />
     <TextBlock Text="{l:Tr paths}" Classes="section" Foreground="{Binding Accent}" />
@@ -21,6 +22,7 @@
     <c:PathField Label="{l:Tr ap_index_label}" Placeholder="{l:Tr ap_index_ph}" Mode="Open" Filters="AMPR index:*.index|All files:*.*" Text="{Binding AmprIndex}" IsVisible="{Binding ShowPackPaths}" />
     <c:PathField Label="{l:Tr ap_manifest_label}" Placeholder="{l:Tr ap_manifest_ph}" Mode="Open" Filters="Pack manifest:*.index|All files:*.*" Text="{Binding Manifest}" IsVisible="{Binding ShowManifest}" />
     <c:PathField Label="{l:Tr ap_out_label}" Placeholder="{l:Tr ap_out_ph}" Mode="Folder" Text="{Binding Output}" IsVisible="{Binding ShowOutput}" />
+    <c:PathField Label="{l:Tr ap_libs_label}" Placeholder="{l:Tr ap_libs_ph}" Mode="Folder" Text="{Binding Libs}" IsVisible="{Binding ShowGameOptions}" />
     <c:PathField Label="{l:Tr ap_config_label}" Placeholder="{l:Tr ap_config_ph}" Mode="Open" Filters="TOML:*.toml|All files:*.*" Text="{Binding Config}" IsVisible="{Binding ShowConfig}" />
     <Rectangle Classes="separator" />
     <TextBlock Text="{l:Tr options}" Classes="section" Foreground="{Binding Accent}" />
@@ -30,7 +32,12 @@
         <TextBox Text="{Binding Workers}" Width="120" HorizontalAlignment="Left" />
       </StackPanel>
       <CheckBox Content="{l:Tr ap_self_contained}" IsChecked="{Binding SelfContained}" />
-      <CheckBox Content="{l:Tr ap_allow_missing}" IsChecked="{Binding AllowMissing}" />
+      <CheckBox Content="{l:Tr ap_allow_missing}" IsChecked="{Binding AllowMissing}" IsVisible="{Binding ShowAllowMissing}" />
+    </StackPanel>
+    <StackPanel Spacing="8" IsVisible="{Binding ShowGameOptions}">
+      <CheckBox Content="{l:Tr ap_verify_game}" IsChecked="{Binding VerifyGame}" />
+      <CheckBox Name="ExfatBox" Content="{l:Tr ap_exfat}" IsChecked="{Binding Exfat}" />
+      <c:PathField Label="{l:Tr ap_exfat_label}" Placeholder="{l:Tr ap_exfat_ph}" Mode="Save" Filters="exFAT image:*.exfat|All files:*.*" Text="{Binding ExfatPath}" IsVisible="{Binding ShowExfatPath}" />
     </StackPanel>
     <CheckBox Content="{l:Tr ap_overwrite}" IsChecked="{Binding Overwrite}" IsVisible="{Binding ShowOverwrite}" />
     <CheckBox Content="{l:Tr ap_json}" IsChecked="{Binding Json}" IsVisible="{Binding ShowJson}" />

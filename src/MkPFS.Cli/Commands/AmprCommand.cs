@@ -2,6 +2,7 @@ using System.CommandLine;
 using System.Diagnostics;
 using System.Globalization;
 using MkPFS.Build;
+using MkPFS.Build.PFS;
 using MkPFS.Build.AMPRPack;
 using MkPFS.Cli.Output;
 using MkPFS.Core.AMPR;
@@ -30,6 +31,7 @@ internal static class AmprCommand
     {
         Command command = new("ampr", "Build and manage AMPR Emu seekable LZ4 asset packs for /app0");
         command.Subcommands.Add(Pack(ctx));
+        command.Subcommands.Add(Game(ctx));
         command.Subcommands.Add(Unpack(ctx));
         command.Subcommands.Add(Verify(ctx));
         command.Subcommands.Add(RemoveSources(ctx));
@@ -143,6 +145,68 @@ internal static class AmprCommand
             if (stats.FilesPacked > 0 && !AmprLibs.HasEmulator(rootDir))
             {
                 ctx.Err.WriteLine(NoEmulatorWarning);
+            }
+        }));
+        return command;
+    }
+
+    private static Command Game(CliContext ctx)
+    {
+        Option<string> root = Required("--root", "unpacked game folder (/app0); only read");
+        Option<string> output = Required("--output", "new or empty folder for the playable game");
+        Option<string?> fakelib = new("--fakelib") { Description = "folder with AMPR Emu 0.4.2.1+ libSceAmpr.sprx and other fakelib libraries to add" };
+        Option<string?> config = new("--config") { Description = "TOML pack configuration (default: --preset default)" };
+        Option<string?> preset = new("--preset") { Description = "built-in rules instead of --config (default: default)" };
+        preset.AcceptOnlyFromAmong([.. AMPRPackConfig.PresetNames]);
+        Option<int?> workers = new("--workers") { Description = "compression workers" };
+        Option<bool> selfContained = new("--self-contained") { Description = "do not auto-loose explicitly packed files; store incompressible blocks RAW" };
+        Option<string?> exfat = new("--exfat") { Description = "also build an exFAT image of the output (file, or folder for <titleId>.exfat)" };
+        Option<bool> skipVerify = new("--skip-verify") { Description = "do not verify the packs and loose files after the build" };
+        Option<bool> noProgress = new("--no-progress") { Description = "suppress progress on stderr" };
+        Command command = new("game", "build a folder that runs from packs as is: libraries, ampr_emu.index, packs and loose files (not in ampr_pack.py)")
+        {
+            root, output, fakelib, config, preset, workers, selfContained, exfat, skipVerify, noProgress,
+        };
+        command.SetAction(parse => Run(ctx, () =>
+        {
+            string? configPath = parse.GetValue(config);
+            AMPRPackConfig loaded = (configPath, parse.GetValue(preset)) switch
+            {
+                (not null, not null) => throw new AMPRPackException("--config and --preset cannot be used together"),
+                (not null, null) => AMPRPackConfig.Load(Resolve(ctx, configPath)),
+                (null, var name) => AMPRPackConfig.LoadPreset(name ?? "default"),
+            };
+            if (parse.GetValue(workers) is { } count)
+            {
+                loaded.Workers = count is >= 1 and <= 256 ? count : throw new AMPRPackException("--workers must be between 1 and 256");
+            }
+
+            if (parse.GetValue(selfContained))
+            {
+                loaded.SelfContained = true;
+            }
+
+            bool progress = !parse.GetValue(noProgress) && ctx.ProgressEnabled;
+            AMPRGameOptions options = new()
+            {
+                Config = loaded,
+                LibsDir = parse.GetValue(fakelib) is { } libs ? Resolve(ctx, libs) : null,
+                Verify = !parse.GetValue(skipVerify),
+                ExfatImage = parse.GetValue(exfat) is { } image ? Resolve(ctx, image) : null,
+            };
+            try
+            {
+                AMPRGameBuilder.Build(
+                    Resolve(ctx, parse.GetValue(root)!),
+                    Resolve(ctx, parse.GetValue(output)!),
+                    options,
+                    ctx.Log,
+                    progress ? ProgressReporter(ctx) : null,
+                    ctx.CreateProgress(progress));
+            }
+            catch (BuildException ex)
+            {
+                throw new AMPRPackException(ex.Message);
             }
         }));
         return command;

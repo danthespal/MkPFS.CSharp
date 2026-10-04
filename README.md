@@ -283,6 +283,7 @@ volume from one build together; the `.crc` sidecar is only for `verify` and `unp
 
 | Subcommand | Required options | Purpose |
 |---|---|---|
+| `game` | `--root <app0> --output <dir>` | Build a folder that runs from packs as is (see below; not in `ampr_pack.py`). |
 | `pack` | `--root <app0> --ampr-index <ampr_emu.index> --output <dir>` | Build the manifest, volumes, CRC sidecar, and optional runtime settings. |
 | `verify` | `--index <manifest>` | Decode every chunk and check its CRC; `--root <app0>` also compares every byte with the source. |
 | `unpack` | `--index <manifest> --output <dir>` | Extract packed files (`--file <glob>`, `--overwrite`, `--no-preserve-mtime`). |
@@ -304,6 +305,38 @@ volume from one build together; the `.crc` sidecar is only for `verify` and `unp
 | `--require-packed <glob>` | none; repeatable | Fail if a matching file would stay loose. |
 | `--allow-missing` | off | Leave selected files that are missing from `--root` loose. |
 | `--no-progress` | off | Hide progress on standard error. |
+
+#### `ampr game`: a folder to copy to the PS5
+
+`ampr game` turns an unpacked game folder into a new folder that runs from the packs as is. The game
+folder is only read, and the output folder must be new or empty:
+
+```bash
+mkpfs ampr game --root PPSA12345-app --output PPSA12345-packed --fakelib ampr-emu-libs --exfat .
+```
+
+1. **Libraries.** Copies the game's `fakelib/` into the output, then every file of `--fakelib` over it.
+   Identical files are left alone, and the log says which ones were added or replaced. If the game has
+   `fakelib2/`, ShadowMountPlus mounts that one instead of `fakelib/`, so the libraries go there. The
+   resulting `libSceAmpr.sprx` must be AMPR Emu 0.4.2.1 or newer (the first release that reads packs; its
+   [release](https://github.com/drakmor/ampr_emu/releases) `libSceAmpr.sprx` does). Older builds are
+   rejected before anything is written.
+2. **Index.** Writes `ampr_emu.index` for the final tree: the game's files plus the new libraries with
+   their real sizes. This must come before packing, because the manifest addresses files by their row
+   in this index.
+3. **Packs.** Packs from the game folder with `--config`, `--preset`, or by default `--preset default`.
+4. **Loose files.** Copies every file that stays loose, keeping its modification time, and every folder,
+   including empty ones. This runs after packing because the packer only then decides which large,
+   incompressible files to leave loose.
+5. **Checks.** Decodes every chunk, compares every packed file with the game folder, and checks that every
+   loose file is in the output with its indexed size (`--skip-verify` skips this).
+
+If a step fails, the output folder is emptied so a retry starts clean. `--exfat <file or folder>` then
+builds an exFAT image of the output (64 KiB clusters, `<titleId>.exfat` in a folder). Use an exFAT
+image or the plain folder, and keep ShadowMountPlus's `mount_read_only=1` (the default) so AMPR Emu
+never rebuilds the index. A `.ffpfsc` would put zlib (about 150–250 MB/s on the PS5) on top of the LZ4
+packs. The output also keeps `ampr_assets.index.crc`: the game never reads it, and `verify` and
+`unpack` need it.
 
 The TOML format is ampr_emu's (see its `tools/ampr_pack.example.toml`). A minimal config:
 
@@ -384,7 +417,8 @@ dotnet run --project src/MkPFS.Gui -c Release
   settings for the zlib level, CPU cores, block size, and when to keep blocks uncompressed.
 - The Repair page scans an image and draws a block map (zlib, raw, risky); click a cell for its
   offset, stored size, and largest back-reference distance.
-- The AMPR Packs page runs every `ampr` subcommand and shows only the fields the chosen action needs.
+- The AMPR Packs page runs every `ampr` subcommand and shows only the fields the chosen action needs. Its
+  default action, Build playable game, runs `ampr game` with a library folder and an optional exFAT image.
   Packing without a TOML uses `--preset default`.
 
 ## Differences from Python MkPFS
