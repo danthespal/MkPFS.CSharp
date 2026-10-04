@@ -270,11 +270,14 @@ manifest `ampr_assets.index`, data volumes `ampr_assets-*.pak`, and an offline C
 sees LZ4. `mkpfs ampr` is a port of ampr_emu's `tools/ampr_pack.py` (tool version 4.0): the same options,
 the same JSON on standard output, and byte-identical packs.
 
-The released emulator only serves files the game reads through AMPR, and it only loads in titles that
-use libSceAmpr. Packs for other titles (for example Unity games, which read files directly) are never
-read, and `pack` warns when `--root` has no `fakelib/libSceAmpr.sprx` or `fakelib2/libSceAmpr.sprx`.
-Files read another way (for example `mmap`) must stay loose, so keep the source files until the packed
-game is tested, and remove them only after that with `remove-sources --confirm`.
+The released emulator (0.4.2.1, its PackedStdio build) serves packed files to AMPR reads and to the
+game's ordinary `open`/`read`/`pread` and asynchronous reads, so Unity games work too. It only loads in
+titles that use libSceAmpr, so `pack` warns when `--root` has no `fakelib/libSceAmpr.sprx` or
+`fakelib2/libSceAmpr.sprx`. Memory-mapped files (`mmap`) and files opened for writing are not served and
+must stay loose, so keep the source files until the packed game is tested.
+
+`pack` writes only the pack set (`ampr_assets.index`, `.pak` volumes, `.crc`) into `--output`, exactly
+like `ampr_pack.py`. For a folder to copy to the PS5, use [`ampr game`](#ampr-game-a-folder-to-copy-to-the-ps5).
 
 The default emulator build loads at most 2,000,000 files, 16,000,000 chunks, and 1,024 volumes, and
 rejects the whole set beyond that; `pack` warns on standard error when a set exceeds a limit (larger

@@ -42,7 +42,7 @@
   <data name="ap_exfat_ph" xml:space="preserve"><value>Standard: &lt;titleId&gt;.exfat neben dem Ausgabeordner</value></data>
   <data name="ap_act_inspect" xml:space="preserve"><value>Manifest untersuchen</value></data>
   <data name="ap_act_list" xml:space="preserve"><value>Dateien auflisten</value></data>
-  <data name="ap_act_pack" xml:space="preserve"><value>Spieldateien packen</value></data>
+  <data name="ap_act_pack" xml:space="preserve"><value>Nur packen (Manifest und .pak-Volumes)</value></data>
   <data name="ap_act_remove" xml:space="preserve"><value>Gepackte Quelldateien entfernen</value></data>
   <data name="ap_act_runtime" xml:space="preserve"><value>Laufzeiteinstellungen aktualisieren</value></data>
   <data name="ap_act_unpack" xml:space="preserve"><value>Gepackte Dateien entpacken</value></data>
@@ -63,7 +63,8 @@
   <data name="ap_json" xml:space="preserve"><value>JSON-Ausgabe</value></data>
   <data name="ap_manifest_label" xml:space="preserve"><value>Paket-Manifest</value></data>
   <data name="ap_manifest_ph" xml:space="preserve"><value>ampr_assets.index auswählen…</value></data>
-  <data name="ap_note" xml:space="preserve"><value>Pakete liefern nur Dateien, die das Spiel über AMPR liest. Auf andere Weise gelesene Dateien (zum Beispiel per mmap) müssen lose bleiben; behalte die Quelldateien, bis das gepackte Spiel getestet ist.</value></data>
+  <data name="ap_pack_note" xml:space="preserve"><value>Schreibt nur ampr_assets.index, die .pak-Volumes und die .crc-Datei in den Ausgabeordner, wie ampr_pack.py. Für einen Ordner, den du auf die PS5 kopierst und spielst, nutze Spielfertigen Ordner erstellen.</value></data>
+  <data name="ap_note" xml:space="preserve"><value>Pakete liefern Dateien, die das Spiel über AMPR und mit normalen Dateizugriffen liest (AMPR Emu 0.4.2.1). Speicherabgebildete Dateien müssen lose bleiben; behalte die Quelldateien, bis das gepackte Spiel getestet ist.</value></data>
   <data name="ap_out_label" xml:space="preserve"><value>Ausgabeordner</value></data>
   <data name="ap_out_ph" xml:space="preserve"><value>Ordner für Manifest und .pak-Volumes…</value></data>
   <data name="ap_overwrite" xml:space="preserve"><value>Vorhandene Dateien überschreiben</value></data>

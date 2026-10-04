@@ -136,6 +136,7 @@ public sealed class AmprPackPanelTests
                 panel.ShowOverwrite, panel.ShowJson, panel.ShowConfirm));
         Assert.Equal(action == "game", panel.ShowGameOptions);
         Assert.Equal(action == "pack", panel.ShowAllowMissing);
+        Assert.Equal(action == "pack", panel.ShowPackNote);
         Assert.False(panel.ShowExfatPath);
         panel.Exfat = true;
         Assert.Equal(action == "game", panel.ShowExfatPath);

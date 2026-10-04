@@ -15,6 +15,7 @@
       </ComboBox>
     </StackPanel>
     <TextBlock Text="{l:Tr ap_game_note}" TextWrapping="Wrap" IsVisible="{Binding ShowGameOptions}" />
+    <TextBlock Text="{l:Tr ap_pack_note}" TextWrapping="Wrap" IsVisible="{Binding ShowPackNote}" />
     <TextBlock Text="{l:Tr ap_note}" TextWrapping="Wrap" />
     <Rectangle Classes="separator" />
     <TextBlock Text="{l:Tr paths}" Classes="section" Foreground="{Binding Accent}" />

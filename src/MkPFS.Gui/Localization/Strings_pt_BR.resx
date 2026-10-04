@@ -42,7 +42,7 @@
   <data name="ap_exfat_ph" xml:space="preserve"><value>Padrão: &lt;titleId&gt;.exfat ao lado da pasta de saída</value></data>
   <data name="ap_act_inspect" xml:space="preserve"><value>Inspecionar manifesto</value></data>
   <data name="ap_act_list" xml:space="preserve"><value>Listar arquivos</value></data>
-  <data name="ap_act_pack" xml:space="preserve"><value>Empacotar arquivos do jogo</value></data>
+  <data name="ap_act_pack" xml:space="preserve"><value>Somente empacotar (manifesto e volumes .pak)</value></data>
   <data name="ap_act_remove" xml:space="preserve"><value>Remover arquivos-fonte empacotados</value></data>
   <data name="ap_act_runtime" xml:space="preserve"><value>Atualizar configurações de execução</value></data>
   <data name="ap_act_unpack" xml:space="preserve"><value>Desempacotar arquivos</value></data>
@@ -63,7 +63,8 @@
   <data name="ap_json" xml:space="preserve"><value>Saída JSON</value></data>
   <data name="ap_manifest_label" xml:space="preserve"><value>Manifesto do pacote</value></data>
   <data name="ap_manifest_ph" xml:space="preserve"><value>Selecione ampr_assets.index…</value></data>
-  <data name="ap_note" xml:space="preserve"><value>Os pacotes só atendem arquivos que o jogo lê pelo AMPR. Arquivos lidos de outra forma (por exemplo, mmap) devem ficar soltos; mantenha os arquivos-fonte até testar o jogo empacotado.</value></data>
+  <data name="ap_pack_note" xml:space="preserve"><value>Grava apenas ampr_assets.index, os volumes .pak e o arquivo .crc na pasta de saída, como o ampr_pack.py. Para uma pasta que você copia para o PS5 e joga, use Criar jogo pronto.</value></data>
+  <data name="ap_note" xml:space="preserve"><value>Os pacotes atendem os arquivos que o jogo lê pelo AMPR e por leituras comuns de arquivo (AMPR Emu 0.4.2.1). Arquivos mapeados em memória devem ficar soltos; mantenha os arquivos-fonte até testar o jogo empacotado.</value></data>
   <data name="ap_out_label" xml:space="preserve"><value>Pasta de saída</value></data>
   <data name="ap_out_ph" xml:space="preserve"><value>Pasta para o manifesto e os volumes .pak…</value></data>
   <data name="ap_overwrite" xml:space="preserve"><value>Sobrescrever arquivos existentes</value></data>

@@ -33,7 +33,7 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowRoot), nameof(ShowPackPaths), nameof(ShowOutput), nameof(ShowManifest), nameof(ShowConfig))]
     [NotifyPropertyChangedFor(nameof(ShowPackOptions), nameof(ShowOverwrite), nameof(ShowJson), nameof(ShowConfirm))]
-    [NotifyPropertyChangedFor(nameof(ShowGameOptions), nameof(ShowAllowMissing), nameof(ShowExfatPath))]
+    [NotifyPropertyChangedFor(nameof(ShowGameOptions), nameof(ShowAllowMissing), nameof(ShowExfatPath), nameof(ShowPackNote))]
     public partial Choice Action { get; set; } = ActionChoices[0];
 
     /// <summary><c>--fakelib</c> (game): folder with AMPR Emu and other libraries to add.</summary>
@@ -117,6 +117,9 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
 
     /// <summary>Allow-missing (pack).</summary>
     public bool ShowAllowMissing => Action.Value == "pack";
+
+    /// <summary>Note that pack writes only the pack set (pack).</summary>
+    public bool ShowPackNote => Action.Value == "pack";
 
     /// <summary>Library folder, verification and exFAT image (game).</summary>
     public bool ShowGameOptions => Action.Value == "game";

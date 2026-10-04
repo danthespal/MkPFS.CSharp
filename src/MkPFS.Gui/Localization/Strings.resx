@@ -42,7 +42,7 @@
   <data name="ap_exfat_ph" xml:space="preserve"><value>Default: &lt;titleId&gt;.exfat next to the output folder</value></data>
   <data name="ap_act_inspect" xml:space="preserve"><value>Inspect manifest</value></data>
   <data name="ap_act_list" xml:space="preserve"><value>List files</value></data>
-  <data name="ap_act_pack" xml:space="preserve"><value>Pack game files</value></data>
+  <data name="ap_act_pack" xml:space="preserve"><value>Pack files only (manifest and .pak volumes)</value></data>
   <data name="ap_act_remove" xml:space="preserve"><value>Remove packed sources</value></data>
   <data name="ap_act_runtime" xml:space="preserve"><value>Update runtime settings</value></data>
   <data name="ap_act_unpack" xml:space="preserve"><value>Unpack packed files</value></data>
@@ -63,7 +63,8 @@
   <data name="ap_json" xml:space="preserve"><value>JSON output</value></data>
   <data name="ap_manifest_label" xml:space="preserve"><value>Pack Manifest</value></data>
   <data name="ap_manifest_ph" xml:space="preserve"><value>Select ampr_assets.index…</value></data>
-  <data name="ap_note" xml:space="preserve"><value>Packs only serve files the game reads through AMPR. Files read another way (for example mmap) must stay loose, so keep the source files until the packed game is tested.</value></data>
+  <data name="ap_pack_note" xml:space="preserve"><value>Writes only ampr_assets.index, the .pak volumes and the .crc file into the output folder, like ampr_pack.py. For a folder you can copy to the PS5 and play, use Build playable game.</value></data>
+  <data name="ap_note" xml:space="preserve"><value>Packs serve files the game reads through AMPR and its ordinary file reads (AMPR Emu 0.4.2.1). Memory-mapped files must stay loose, so keep the source files until the packed game is tested.</value></data>
   <data name="ap_out_label" xml:space="preserve"><value>Output Folder</value></data>
   <data name="ap_out_ph" xml:space="preserve"><value>Folder for the manifest and .pak volumes…</value></data>
   <data name="ap_overwrite" xml:space="preserve"><value>Overwrite existing files</value></data>

@@ -42,7 +42,7 @@
   <data name="ap_exfat_ph" xml:space="preserve"><value>Par défaut : &lt;titleId&gt;.exfat à côté du dossier de sortie</value></data>
   <data name="ap_act_inspect" xml:space="preserve"><value>Inspecter le manifeste</value></data>
   <data name="ap_act_list" xml:space="preserve"><value>Lister les fichiers</value></data>
-  <data name="ap_act_pack" xml:space="preserve"><value>Empaqueter les fichiers du jeu</value></data>
+  <data name="ap_act_pack" xml:space="preserve"><value>Empaqueter seulement (manifeste et volumes .pak)</value></data>
   <data name="ap_act_remove" xml:space="preserve"><value>Supprimer les sources empaquetées</value></data>
   <data name="ap_act_runtime" xml:space="preserve"><value>Mettre à jour les réglages d’exécution</value></data>
   <data name="ap_act_unpack" xml:space="preserve"><value>Extraire les fichiers empaquetés</value></data>
@@ -63,7 +63,8 @@
   <data name="ap_json" xml:space="preserve"><value>Sortie JSON</value></data>
   <data name="ap_manifest_label" xml:space="preserve"><value>Manifeste du paquet</value></data>
   <data name="ap_manifest_ph" xml:space="preserve"><value>Sélectionner ampr_assets.index…</value></data>
-  <data name="ap_note" xml:space="preserve"><value>Les paquets ne servent que les fichiers que le jeu lit via AMPR. Les fichiers lus autrement (par exemple via mmap) doivent rester libres ; conservez les fichiers sources jusqu’à ce que le jeu empaqueté soit testé.</value></data>
+  <data name="ap_pack_note" xml:space="preserve"><value>N’écrit que ampr_assets.index, les volumes .pak et le fichier .crc dans le dossier de sortie, comme ampr_pack.py. Pour un dossier à copier sur la PS5 pour jouer, utilisez Créer le jeu prêt à lancer.</value></data>
+  <data name="ap_note" xml:space="preserve"><value>Les paquets servent les fichiers que le jeu lit via AMPR et par des lectures de fichiers ordinaires (AMPR Emu 0.4.2.1). Les fichiers mappés en mémoire doivent rester libres ; conservez les fichiers sources jusqu’à ce que le jeu empaqueté soit testé.</value></data>
   <data name="ap_out_label" xml:space="preserve"><value>Dossier de sortie</value></data>
   <data name="ap_out_ph" xml:space="preserve"><value>Dossier du manifeste et des volumes .pak…</value></data>
   <data name="ap_overwrite" xml:space="preserve"><value>Écraser les fichiers existants</value></data>

@@ -42,7 +42,7 @@
   <data name="ap_exfat_ph" xml:space="preserve"><value>Implicit: &lt;titleId&gt;.exfat lângă folderul de ieșire</value></data>
   <data name="ap_act_inspect" xml:space="preserve"><value>Inspectează manifestul</value></data>
   <data name="ap_act_list" xml:space="preserve"><value>Listează fișierele</value></data>
-  <data name="ap_act_pack" xml:space="preserve"><value>Împachetează fișierele jocului</value></data>
+  <data name="ap_act_pack" xml:space="preserve"><value>Doar împachetare (manifest și volume .pak)</value></data>
   <data name="ap_act_remove" xml:space="preserve"><value>Șterge sursele împachetate</value></data>
   <data name="ap_act_runtime" xml:space="preserve"><value>Actualizează setările de rulare</value></data>
   <data name="ap_act_unpack" xml:space="preserve"><value>Despachetează fișierele împachetate</value></data>
@@ -63,7 +63,8 @@
   <data name="ap_json" xml:space="preserve"><value>Ieșire JSON</value></data>
   <data name="ap_manifest_label" xml:space="preserve"><value>Manifestul pachetului</value></data>
   <data name="ap_manifest_ph" xml:space="preserve"><value>Selectează ampr_assets.index…</value></data>
-  <data name="ap_note" xml:space="preserve"><value>Pachetele servesc doar fișierele pe care jocul le citește prin AMPR. Fișierele citite altfel (de exemplu prin mmap) trebuie să rămână libere; păstrează fișierele sursă până testezi jocul împachetat.</value></data>
+  <data name="ap_pack_note" xml:space="preserve"><value>Scrie doar ampr_assets.index, volumele .pak și fișierul .crc în folderul de ieșire, ca ampr_pack.py. Pentru un folder pe care îl copiezi pe PS5 și joci, folosește Creează jocul gata de rulat.</value></data>
+  <data name="ap_note" xml:space="preserve"><value>Pachetele servesc fișierele pe care jocul le citește prin AMPR și prin citiri obișnuite de fișiere (AMPR Emu 0.4.2.1). Fișierele mapate în memorie trebuie să rămână libere; păstrează fișierele sursă până testezi jocul împachetat.</value></data>
   <data name="ap_out_label" xml:space="preserve"><value>Folder de ieșire</value></data>
   <data name="ap_out_ph" xml:space="preserve"><value>Folder pentru manifest și volumele .pak…</value></data>
   <data name="ap_overwrite" xml:space="preserve"><value>Suprascrie fișierele existente</value></data>

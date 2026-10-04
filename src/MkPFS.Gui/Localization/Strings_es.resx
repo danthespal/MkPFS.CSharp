@@ -42,7 +42,7 @@
   <data name="ap_exfat_ph" xml:space="preserve"><value>Por defecto: &lt;titleId&gt;.exfat junto a la carpeta de salida</value></data>
   <data name="ap_act_inspect" xml:space="preserve"><value>Inspeccionar manifiesto</value></data>
   <data name="ap_act_list" xml:space="preserve"><value>Listar archivos</value></data>
-  <data name="ap_act_pack" xml:space="preserve"><value>Empaquetar archivos del juego</value></data>
+  <data name="ap_act_pack" xml:space="preserve"><value>Solo empaquetar (manifiesto y volúmenes .pak)</value></data>
   <data name="ap_act_remove" xml:space="preserve"><value>Eliminar archivos fuente empaquetados</value></data>
   <data name="ap_act_runtime" xml:space="preserve"><value>Actualizar ajustes de ejecución</value></data>
   <data name="ap_act_unpack" xml:space="preserve"><value>Desempaquetar archivos</value></data>
@@ -63,7 +63,8 @@
   <data name="ap_json" xml:space="preserve"><value>Salida JSON</value></data>
   <data name="ap_manifest_label" xml:space="preserve"><value>Manifiesto del paquete</value></data>
   <data name="ap_manifest_ph" xml:space="preserve"><value>Selecciona ampr_assets.index…</value></data>
-  <data name="ap_note" xml:space="preserve"><value>Los paquetes solo sirven archivos que el juego lee mediante AMPR. Los archivos leídos de otra forma (por ejemplo, mmap) deben quedar sueltos; conserva los archivos fuente hasta probar el juego empaquetado.</value></data>
+  <data name="ap_pack_note" xml:space="preserve"><value>Escribe solo ampr_assets.index, los volúmenes .pak y el archivo .crc en la carpeta de salida, como ampr_pack.py. Para una carpeta que copias a la PS5 y juegas, usa Crear juego listo.</value></data>
+  <data name="ap_note" xml:space="preserve"><value>Los paquetes sirven los archivos que el juego lee mediante AMPR y con lecturas de archivo normales (AMPR Emu 0.4.2.1). Los archivos mapeados en memoria deben quedar sueltos; conserva los archivos fuente hasta probar el juego empaquetado.</value></data>
   <data name="ap_out_label" xml:space="preserve"><value>Carpeta de salida</value></data>
   <data name="ap_out_ph" xml:space="preserve"><value>Carpeta para el manifiesto y los volúmenes .pak…</value></data>
   <data name="ap_overwrite" xml:space="preserve"><value>Sobrescribir archivos existentes</value></data>
