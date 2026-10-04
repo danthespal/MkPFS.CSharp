@@ -165,7 +165,11 @@ public sealed class AMPRPackBuilderParityTests
         }
         finally
         {
-            Directory.Delete(work, recursive: true);
+            // Absent when a missing fixture skipped the case before the build created it.
+            if (Directory.Exists(work))
+            {
+                Directory.Delete(work, recursive: true);
+            }
         }
     }
 
@@ -186,7 +190,11 @@ public sealed class AMPRPackBuilderParityTests
         }
         finally
         {
-            Directory.Delete(work, recursive: true);
+            // Absent when a missing fixture skipped the case before the build created it.
+            if (Directory.Exists(work))
+            {
+                Directory.Delete(work, recursive: true);
+            }
         }
     }
 
