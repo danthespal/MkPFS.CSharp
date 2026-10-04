@@ -1,4 +1,6 @@
 using System.Buffers.Binary;
+using System.IO.Compression;
+using System.Text.Json;
 using MkPFS.Build;
 using MkPFS.Build.AMPRPack;
 using MkPFS.Cli;
@@ -212,5 +214,72 @@ public sealed class AMPRProfilerTests
         Assert.Equal(2, MkPFSCli.Run(args, ctx));
         Assert.EndsWith($"error: refusing to overwrite existing file: {toml}\n", stderr.ToString(), StringComparison.Ordinal);
         Assert.Equal(0, MkPFSCli.Run([.. args, "--overwrite"], ctx));
+    }
+
+    [Fact]
+    public void Cli_profile_generate_writes_metrics_in_upstream_key_order()
+    {
+        using TempDir dir = new();
+        (_, string traces) = TracedGame(dir);
+        CliContext ctx = new(new StringWriter(), new StringWriter(), useColor: false, utf8: false, progress: false);
+        string metrics = Path.Combine(dir.Path, "m.json");
+
+        Assert.Equal(0, MkPFSCli.Run(["ampr", "profile", "generate", Path.Combine(traces, "startup"), "--output", Path.Combine(dir.Path, "p.toml"),
+            "--metrics", metrics, "--full-metrics"], ctx));
+
+        string text = File.ReadAllText(metrics);
+        Assert.StartsWith("{\n  \"tool_version\": \"4.1\",\n  \"name\": \"startup\",\n  \"traces\": [", text, StringComparison.Ordinal);
+        Assert.EndsWith("}\n", text, StringComparison.Ordinal);
+        using JsonDocument doc = JsonDocument.Parse(text);
+        JsonElement files = doc.RootElement.GetProperty("files");
+        Assert.Equal(["data/level0.dat", "eboot.bin"], files.EnumerateArray().Select(f => f.GetProperty("relative").GetString()));
+        JsonElement first = files[0];
+        Assert.Equal("compress", first.GetProperty("recommendation").GetProperty("action").GetString());
+        Assert.Equal(JsonValueKind.Null, first.GetProperty("recommendation").GetProperty("sampled_ratio").ValueKind);
+        Assert.Equal(["16384", "32768", "65536", "131072", "262144", "524288", "1048576"],
+            first.GetProperty("candidates").EnumerateObject().Select(c => c.Name));
+    }
+
+    [Fact]
+    public void Cli_profile_batch_writes_one_profile_per_run_from_a_folder_or_zip()
+    {
+        using TempDir dir = new();
+        (_, string traces) = TracedGame(dir);
+        foreach (string file in (string[])["ampr_commands.bin", "ampr_emu.index"])
+        {
+            Directory.CreateDirectory(Path.Combine(traces, "level1"));
+            File.Copy(Path.Combine(traces, "startup", file), Path.Combine(traces, "level1", file));
+        }
+
+        StringWriter stdout = new() { NewLine = "\n" };
+        StringWriter stderr = new() { NewLine = "\n" };
+        CliContext ctx = new(stdout, stderr, useColor: false, utf8: false, progress: false);
+        string output = Path.Combine(dir.Path, "profiles");
+
+        Assert.Equal(0, MkPFSCli.Run(["ampr", "profile", "batch", traces, "--output-dir", output, "--batch-jobs", "2"], ctx));
+        Assert.Equal("generated level1.toml\ngenerated startup.toml\n", stdout.ToString());
+        foreach (string name in (string[])["level1", "startup"])
+        {
+            foreach (string extension in (string[])[".toml", ".md", ".json", ".runtime.h"])
+            {
+                Assert.True(File.Exists(Path.Combine(output, name + extension)), name + extension);
+            }
+        }
+
+        using (JsonDocument summary = JsonDocument.Parse(File.ReadAllText(Path.Combine(output, "summary.json"))))
+        {
+            Assert.Equal(["level1", "startup"], summary.RootElement.EnumerateArray().Select(r => r.GetProperty("name").GetString()));
+        }
+
+        // Batch defaults: hybrid patterns, no cache simulation.
+        Assert.Contains("| disabled |", File.ReadAllText(Path.Combine(output, "startup.md")), StringComparison.Ordinal);
+
+        // A support bundle: only the trace files are extracted; an existing profile is not replaced.
+        string zip = Path.Combine(dir.Path, "bundle.zip");
+        ZipFile.CreateFromDirectory(traces, zip);
+        Assert.Equal(2, MkPFSCli.Run(["ampr", "profile", "batch", zip, "--output-dir", output], ctx));
+        Assert.EndsWith($"error: refusing to overwrite existing file: {Path.Combine(output, "level1.toml")}\n", stderr.ToString(), StringComparison.Ordinal);
+        Assert.Equal(0, MkPFSCli.Run(["ampr", "profile", "batch", zip, "--output-dir", Path.Combine(dir.Path, "fromzip")], ctx));
+        Assert.True(File.Exists(Path.Combine(dir.Path, "fromzip", "startup.toml")));
     }
 }

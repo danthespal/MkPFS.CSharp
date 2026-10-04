@@ -1,10 +1,11 @@
-"""Check ``mkpfs ampr profile generate`` against ampr_emu's ``tools/ampr_pack_profile.py`` (the oracle).
+"""Check ``mkpfs ampr profile`` against ampr_emu's ``tools/ampr_pack_profile.py`` (the oracle).
 
 Writes synthetic APR traces (``AMPRCMD1`` journals and their ``AMPRIDX3`` indexes: mixed read patterns, several
 runs, gather/scatter state, corrupt records, an unsafe path, content for LZ4 sampling), runs both tools on the same
 inputs with option sets that reach every branch (budget enforcement, cache-sampling windows, pattern modes, include
-sidecars, sampling, option errors) and compares exit codes, stdout, the last stderr line and every output file
-byte for byte.
+sidecars, sampling, option errors; ``batch`` on folders and ZIP bundles) and compares exit codes, stdout, the last
+stderr line and every output file (TOML, sidecars, report, metrics JSON, runtime header, batch summary) byte for
+byte. Only the random temporary folder of an extracted ZIP is normalized.
 
 Needs ampr_emu at ``ORACLE_COMMIT`` in ``../ampr_emu`` and a Python with python-lz4 4.4.5 for the oracle; build
 MkPFS first. From the repo root:
@@ -15,12 +16,13 @@ MkPFS first. From the repo root:
 from __future__ import annotations
 
 import argparse
-import filecmp
 import random
+import re
 import shutil
 import struct
 import subprocess
 import sys
+import zipfile
 from pathlib import Path
 
 HERE: Path = Path(__file__).resolve().parent
@@ -335,9 +337,37 @@ def build(root: Path) -> None:
     t.save()
 
 
-CASES: list[tuple[str, list[str]]] = [
+
+def build_batch_inputs(root: Path) -> None:
+    """Folders and ZIP bundles for ``batch``: duplicate names, junk members, unsafe and empty archives."""
+    dups = root / "dups"
+    for run in ("x/y", "x-y", "z"):
+        target = dups / run
+        target.mkdir(parents=True, exist_ok=True)
+        for f in ("ampr_commands.bin", "ampr_emu.index"):
+            shutil.copy2(root / "multi" / "run1" / f, target / f)
+    (dups / "orphan").mkdir()
+    (dups / "orphan" / "ampr_commands.bin").write_bytes(b"")
+    with zipfile.ZipFile(root / "bundle.zip", "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("support/", b"")
+        z.writestr("support/logs/decoded.txt", b"x" * 1000)
+        for run in ("run0", "run2"):
+            for f in ("ampr_commands.bin", "ampr_emu.index", "ampr_emu.log"):
+                source = root / "multi" / run / f
+                z.writestr(f"support/{run}/{f}", source.read_bytes() if source.exists() else b"log")
+        z.writestr("./support/./many/ampr_commands.bin", (root / "many" / "ampr_commands.bin").read_bytes())
+        z.writestr("support/many/ampr_emu.index", (root / "many" / "ampr_emu.index").read_bytes())
+    with zipfile.ZipFile(root / "unsafe.zip", "w") as z:
+        z.writestr("ok/readme.txt", b"x")
+        z.writestr("../evil/ampr_commands.bin", b"x")
+    with zipfile.ZipFile(root / "notrace.zip", "w") as z:
+        z.writestr("logs/a.txt", b"x")
+    (root / "notzip.bin").write_bytes(b"PK\x03\x04 not really a zip" * 10)
+    (root / "nothing").mkdir()
+
+GENERATE: list[tuple[str, list[str]]] = [
     ("basic", ["data/basic"]),
-    ("basic-nocache", ["data/basic", "--no-cache-sim", "--name", "x y"]),
+    ("basic-nocache", ["data/basic", "--no-cache-sim", "--name", "x y", "--full-metrics"]),
     ("basic-budget", ["data/basic", "--pack-index-budget", "1MiB", "--strategy", "conservative"]),
     ("basic-aggr", ["data/basic", "--pack-index-budget", "1MiB", "--strategy", "aggressive", "--lanes", "3", "--runtime-workers", "5"]),
     ("basic-touches", ["data/basic", "--cache-max-touches", "5000", "--cache-candidates", "1MiB,4MiB,64MiB,64MiB,300MiB"]),
@@ -354,7 +384,7 @@ CASES: list[tuple[str, list[str]]] = [
     ("big-windows", ["data/big", "--cache-max-touches", "16384"]),
     ("big", ["data/big", "--pattern-mode", "hybrid"]),
     ("many-windows", ["data/many", "--cache-max-touches", "4100"]),
-    ("many", ["data/many"]),
+    ("many", ["data/many", "--full-metrics"]),
     ("many-inline", ["data/many", "--externalize-paths", "0", "--max-rule-files", "70"]),
     ("many-ext10", ["data/many", "--externalize-paths", "10"]),
     ("many-hybrid", ["data/many", "--pattern-mode", "hybrid"]),
@@ -365,7 +395,7 @@ CASES: list[tuple[str, list[str]]] = [
     ("trunchead", ["data/trunchead"]),
     ("empty", ["data/empty"]),
     ("badmagic", ["data/badmagic"]),
-    ("sample", ["data/sample", "--content-root", "data/sample/app0", "--sample-budget", "8MiB"]),
+    ("sample", ["data/sample", "--content-root", "data/sample/app0", "--sample-budget", "8MiB", "--full-metrics"]),
     ("sample-fast", ["data/sample", "--content-root", "data/sample/app0", "--sample-budget", "300KiB", "--sample-mode", "fast",
                      "--sample-blocks-per-file", "1"]),
     ("err-none", []),
@@ -378,24 +408,65 @@ CASES: list[tuple[str, list[str]]] = [
 ]
 
 
+BATCH: list[tuple[str, list[str]]] = [
+    ("batch-multi", ["data/multi", "--batch-jobs", "1"]),
+    ("batch-multi-par", ["data/multi", "--batch-jobs", "3", "--full-metrics"]),
+    ("batch-exact-cache", ["data/multi", "--pattern-mode", "exact", "--cache-sim", "--batch-jobs", "1"]),
+    ("batch-dups", ["data/dups", "--batch-jobs", "1"]),
+    ("batch-single", ["data/many", "--batch-jobs", "1", "--summary", "SUMMARY"]),
+    ("batch-zip", ["data/bundle.zip", "--batch-jobs", "2", "--content-root", "data/sample/app0", "--sample-budget", "1MiB"]),
+    ("batch-err-unsafe", ["data/unsafe.zip"]),
+    ("batch-err-notrace", ["data/notrace.zip"]),
+    ("batch-err-notzip", ["data/notzip.bin"]),
+    ("batch-err-empty", ["data/nothing"]),
+    ("batch-err-missing", ["data/missing-folder"]),
+    ("batch-err-lanes", ["data/many", "--lanes", "99"]),
+]
+
+
 def run(cmd: list[str], cwd: Path) -> tuple[int, str, str]:
     p = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
     return p.returncode, p.stdout, p.stderr
 
 
+def normalized(path: Path) -> bytes:
+    # Batch ZIP inputs are extracted to a random temporary folder that the report and metrics name.
+    return re.sub(rb"ampr-profile-[A-Za-z0-9_]+", b"ampr-profile-TEMP", path.read_bytes())
+
+
+def compare_trees(pdir: Path, cdir: Path) -> list[str]:
+    problems = []
+    pfiles = sorted(str(p.relative_to(pdir)) for p in pdir.rglob("*") if p.is_file())
+    cfiles = sorted(str(p.relative_to(cdir)) for p in cdir.rglob("*") if p.is_file())
+    if pfiles != cfiles:
+        problems.append(f"files {pfiles} vs {cfiles}")
+    for f in sorted(set(pfiles) & set(cfiles)):
+        if normalized(pdir / f) != normalized(cdir / f):
+            diff = subprocess.run(["diff", str(pdir / f), str(cdir / f)], capture_output=True, text=True).stdout
+            problems.append(f"{f} differs:\n{diff[:3000]}")
+    return problems
+
+
 def check(work: Path, python: str, mkpfs: Path, ampr_emu: Path) -> int:
     tool = ampr_emu / "tools" / "ampr_pack_profile.py"
+    cases = [("generate", n, a) for n, a in GENERATE] + [("batch", n, a) for n, a in BATCH]
     failures = 0
-    for name, args in CASES:
+    for kind, name, args in cases:
         outs = {}
         for side in ("py", "cs"):
             out = work / "out" / side / name
             if out.exists():
                 shutil.rmtree(out)
             out.mkdir(parents=True)
-            extra = ["--output", f"out/{side}/{name}/profile.toml", "--report", f"out/{side}/{name}/report.md",
-                     "--runtime-header", f"out/{side}/{name}/runtime.h"]
-            cmd = [python, str(tool), "generate", *args, *extra] if side == "py" else [str(mkpfs), "ampr", "profile", "generate", *args, *extra]
+            o = f"out/{side}/{name}"
+            if kind == "generate":
+                extra = ["--output", f"{o}/profile.toml", "--report", f"{o}/report.md", "--metrics", f"{o}/metrics.json",
+                         "--runtime-header", f"{o}/runtime.h"]
+                case_args = args
+            else:
+                extra = ["--output-dir", f"{o}/profiles"]
+                case_args = [f"{o}/summary-custom.json" if a == "SUMMARY" else a for a in args]
+            cmd = [python, str(tool), kind, *case_args, *extra] if side == "py" else [str(mkpfs), "ampr", "profile", kind, *case_args, *extra]
             code, so, se = run(cmd, work)
             outs[side] = (code, so.replace(f"out/{side}/", "out/X/"), se.strip().splitlines()[-1:] if se.strip() else [])
         (pc, pso, pse), (cc, cso, cse) = outs["py"], outs["cs"]
@@ -406,20 +477,12 @@ def check(work: Path, python: str, mkpfs: Path, ampr_emu: Path) -> int:
             problems.append(f"stdout\n  py: {pso!r}\n  cs: {cso!r}")
         if pse != cse:
             problems.append(f"stderr\n  py: {pse!r}\n  cs: {cse!r}")
-        pdir, cdir = work / "out" / "py" / name, work / "out" / "cs" / name
-        pfiles = sorted(p.name for p in pdir.iterdir())
-        cfiles = sorted(p.name for p in cdir.iterdir())
-        if pfiles != cfiles:
-            problems.append(f"files {pfiles} vs {cfiles}")
-        for f in sorted(set(pfiles) & set(cfiles)):
-            if not filecmp.cmp(pdir / f, cdir / f, shallow=False):
-                diff = subprocess.run(["diff", str(pdir / f), str(cdir / f)], capture_output=True, text=True).stdout
-                problems.append(f"{f} differs:\n{diff[:3000]}")
-        print(f"{'OK  ' if not problems else 'FAIL'} {name} (exit {pc})")
+        problems += compare_trees(work / "out" / "py" / name, work / "out" / "cs" / name)
+        print(f"{'OK  ' if not problems else 'FAIL'} {kind} {name} (exit {pc})")
         for p in problems:
             print("   ", p)
         failures += bool(problems)
-    print(f"{failures} failing case(s) of {len(CASES)}")
+    print(f"{failures} failing case(s) of {len(cases)}")
     return 1 if failures else 0
 
 
@@ -434,6 +497,7 @@ def main() -> int:
     if work.exists():
         shutil.rmtree(work)
     build(work / "data")
+    build_batch_inputs(work / "data")
     return check(work, args.python, args.mkpfs.resolve(), args.ampr_emu.resolve())
 
 

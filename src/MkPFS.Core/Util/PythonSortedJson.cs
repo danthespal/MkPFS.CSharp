@@ -7,7 +7,8 @@ namespace MkPFS.Core.Util;
 /// Python <c>json.dumps(value, sort_keys=True, ...)</c> for byte-exact output: keys sorted by code point, floats as
 /// Python repr. Values: <see langword="null"/>, <see cref="bool"/>, integers, <see cref="double"/>,
 /// <see cref="string"/>, <see cref="IReadOnlyDictionary{TKey, TValue}"/> with string keys, and other
-/// <see cref="System.Collections.IEnumerable"/> as arrays.
+/// <see cref="System.Collections.IEnumerable"/> as arrays. A <see cref="PythonJsonObject"/> keeps its insertion
+/// order, like a dict dumped without <c>sort_keys</c>.
 /// </summary>
 public static class PythonSortedJson
 {
@@ -50,6 +51,14 @@ public static class PythonSortedJson
                 break;
             case string s:
                 WriteString(builder, s, ensureAscii);
+                break;
+            case PythonJsonObject ordered:
+                WriteContainer(builder, '{', '}', ordered.Count, indent, level, i =>
+                {
+                    WriteString(builder, ordered[i].Key, ensureAscii);
+                    builder.Append(indent is null ? ":" : ": ");
+                    Write(builder, ordered[i].Value, indent, level + 1, ensureAscii);
+                });
                 break;
             case IReadOnlyDictionary<string, object?> map:
                 List<string> keys = [.. map.Keys.OrderBy(k => k, PythonCodePointComparer.Instance)];
@@ -147,4 +156,14 @@ public static class PythonSortedJson
 
         builder.Append('"');
     }
+}
+
+
+/// <summary>A JSON object written in insertion order (a Python dict dumped without <c>sort_keys</c>).</summary>
+public sealed class PythonJsonObject : List<KeyValuePair<string, object?>>
+{
+    /// <summary>Append a member.</summary>
+    /// <param name="key">Key.</param>
+    /// <param name="value">Value.</param>
+    public void Add(string key, object? value) => Add(new KeyValuePair<string, object?>(key, value));
 }

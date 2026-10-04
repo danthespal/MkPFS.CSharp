@@ -379,8 +379,9 @@ What traces can and cannot show:
   too.
 
 `mkpfs ampr profile generate <trace run> --output rules.toml --report rules.md` (or `--trace COMMANDS
-INDEX`, repeatable) writes the same rules as a TOML file to review or edit, plus a report and a runtime
-header; the output matches `ampr_pack_profile.py generate` byte for byte.
+INDEX`, repeatable) writes the same rules as a TOML file to review or edit, plus a report, a metrics JSON
+and a runtime header; `mkpfs ampr profile batch` makes one profile per run of a folder or ZIP bundle. The
+output matches `ampr_pack_profile.py` byte for byte.
 
 ##### Reporting a game
 
@@ -394,8 +395,9 @@ of such a test lets the built-in rules learn that game.
 #### How the packs are made
 
 `mkpfs ampr` is a port of ampr_emu's `tools/ampr_pack.py` (tool version 4.0): the same options, the same
-JSON on standard output, and byte-identical packs. `ampr profile generate` is a port of
-`tools/ampr_pack_profile.py` (4.1): the same TOML, report and runtime header. A pack set is the manifest `ampr_assets.index`, data
+JSON on standard output, and byte-identical packs. `ampr profile` is a port of
+`tools/ampr_pack_profile.py` (4.1, `generate` and `batch`): the same TOML, report, metrics JSON and runtime
+header. A pack set is the manifest `ampr_assets.index`, data
 volumes `ampr_assets-*.pak`, optional runtime settings `ampr_assets.index.runtime`, and an offline CRC
 sidecar `ampr_assets.index.crc`.
 
@@ -419,7 +421,8 @@ volume from one build together; the `.crc` sidecar is only for `verify` and `unp
 | `inspect` | `--index <manifest>` | Manifest summary, volumes, and runtime settings. |
 | `runtime-config` | `--index <manifest> --config <toml>` | Replace `<manifest>.runtime` from a `[runtime]` section without repacking. |
 | `remove-sources` | `--index <manifest> --root <app0>` | Show which sources the packs replace; with `--confirm`, verify everything and delete them. Also `remove-packed-sources`. |
-| `profile generate` | `[<trace run>] --output <toml>` | Pack rules from APR traces (`--trace COMMANDS INDEX`, repeatable); `--report`, `--runtime-header` and every tuning option of `ampr_pack_profile.py generate`. Its `--metrics` JSON and `batch` are not ported. |
+| `profile generate` | `[<trace run>] --output <toml>` | Pack rules from APR traces (`--trace COMMANDS INDEX`, repeatable); `--report`, `--metrics` (JSON, `--full-metrics` for every block-size candidate), `--runtime-header` and every tuning option of `ampr_pack_profile.py generate`. |
+| `profile batch` | `<folder or ZIP> --output-dir <dir>` | One profile per trace run found (TOML, report, metrics JSON, runtime header) and a `summary.json`; a ZIP support bundle is read for its trace files only. Defaults to `--pattern-mode hybrid` without the cache simulation; `--batch-jobs`, `--summary`. |
 
 `pack` options:
 
@@ -643,7 +646,7 @@ needs python-lz4 4.4.5):
 python tools/oracle/build_ampr_goldens.py --check
 ```
 
-`ampr profile generate` is checked against `ampr_pack_profile.py` on synthetic traces (every output file,
+`ampr profile` is checked against `ampr_pack_profile.py` on synthetic traces (every output file,
 byte for byte; build MkPFS first):
 
 ```bash

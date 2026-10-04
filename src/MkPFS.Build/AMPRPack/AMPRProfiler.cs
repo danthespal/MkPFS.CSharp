@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text;
 using MkPFS.Core.AMPR;
@@ -206,10 +207,10 @@ public sealed class AMPRProfileResult
 }
 
 /// <summary>
-/// Port of ampr_emu <c>tools/ampr_pack_profile.py</c> 4.1 (<c>generate</c>): turns APR traces recorded by the debug
+/// Port of ampr_emu <c>tools/ampr_pack_profile.py</c> 4.1: turns APR traces recorded by the debug
 /// emulator build into an <c>ampr_pack</c> TOML profile. Files the traces show the game reading through APR are
 /// packed with block sizes and layouts fitted to the observed reads; every other file stays loose. The TOML, the
-/// Markdown report and the runtime header match the Python output.
+/// Markdown report, the metrics JSON and the runtime header match the Python output.
 /// </summary>
 public static class AMPRProfiler
 {
@@ -267,8 +268,13 @@ public static class AMPRProfiler
         public required List<ReadEvent> Events { get; init; }
         public int ReadCount { get; init; }
         public long RequestedBytes { get; init; }
+        public long UniqueRequestedBytes { get; init; }
+        public double CoverageRatio { get; init; }
         public double P50 { get; init; }
+        public double P75 { get; init; }
         public double P90 { get; init; }
+        public double P95 { get; init; }
+        public double P99 { get; init; }
         public double Tiny4kRatio { get; init; }
         public double Small16kRatio { get; init; }
         public double Small64kRatio { get; init; }
@@ -290,6 +296,8 @@ public static class AMPRProfiler
         public bool Hot { get; set; }
         public required string Group { get; set; }
         public required string Reason { get; set; }
+        public double? SampledRatio { get; set; }
+        public long SampledBytes { get; set; }
 
         public ProfileKey Key => new(Action, Layout, BlockSize, Hot, Group);
 
@@ -708,6 +716,207 @@ public static class AMPRProfiler
             "",
         ]);
         return string.Join('\n', lines);
+    }
+
+    /// <summary>
+    /// The metrics document (Python <c>json.dumps(result_as_json(...), ensure_ascii=False, indent=2)</c> plus a
+    /// newline): profile settings, traces, cache simulations, warnings and every observed file.
+    /// </summary>
+    /// <param name="result">Profile.</param>
+    /// <param name="fullCandidates">Include all seven block-size candidates per file (<c>--full-metrics</c>).</param>
+    /// <returns>JSON text.</returns>
+    public static string RenderMetricsJson(AMPRProfileResult result, bool fullCandidates = false)
+    {
+        PythonJsonObject groups = [];
+        foreach ((string name, int packCount, long maxPackSize) in result.Groups)
+        {
+            groups.Add(name, new PythonJsonObject
+            {
+                { "pack_count", packCount },
+                { "assignment", "balanced" },
+                { "max_pack_size", maxPackSize },
+                { "stripe_large_files", false },
+            });
+        }
+
+        PythonJsonObject document = new()
+        {
+            { "tool_version", ToolVersion },
+            { "name", result.Name },
+            { "traces", result.Traces.Select(t => new PythonJsonObject
+                {
+                    { "name", t.Name },
+                    { "commands", t.Commands },
+                    { "index", t.Index },
+                    { "command_sha256", t.CommandSha256 },
+                    { "index_sha256", t.IndexSha256 },
+                    { "records", t.Records },
+                    { "reads", t.Reads },
+                    { "warnings", t.Warnings },
+                    { "decode_errors", t.DecodeErrors },
+                    { "duration_ns", t.DurationNs },
+                }).ToList() },
+            { "projected_index_bytes", result.ProjectedIndexBytes },
+            { "index_budget", result.IndexBudget },
+            { "recommended_cache_bytes", result.RecommendedCacheBytes },
+            { "recommended_physical_cache_bytes", result.RecommendedPhysicalCacheBytes },
+            { "recommended_runtime_workers", result.RecommendedRuntimeWorkers },
+            { "recommended_latency_reserve_workers", result.RecommendedLatencyReserveWorkers },
+            { "recommended_pool_bytes", result.RecommendedPoolBytes },
+            { "groups", groups },
+            { "cache_simulations", result.CacheSimulations.Select(c => new PythonJsonObject
+                {
+                    { "capacity", c.Capacity },
+                    { "requested_bytes", c.RequestedBytes },
+                    { "hit_bytes", c.HitBytes },
+                    { "misses", c.Misses },
+                    { "hits", c.Hits },
+                    { "sampled_touches", c.SampledTouches },
+                    { "total_touches", c.TotalTouches },
+                    { "sampled_windows", c.SampledWindows },
+                    { "hit_ratio", c.HitRatio },
+                }).ToList() },
+            { "warnings", result.Warnings },
+            { "files", result.Recommendations.OrderByDescending(r => r.Metrics.RequestedBytes).Select(r => RecommendationJson(r, fullCandidates)).ToList() },
+        };
+        return PythonSortedJson.Indented(document) + "\n";
+    }
+
+    // Python _recommendation_json.
+    private static PythonJsonObject RecommendationJson(FileRecommendation recommendation, bool fullCandidates)
+    {
+        FileMetrics m = recommendation.Metrics;
+        CandidateMetrics selected = m.Candidates[recommendation.BlockSize];
+        PythonJsonObject json = new()
+        {
+            { "path", m.Path },
+            { "relative", m.Relative },
+            { "file_size", m.FileSize },
+            { "read_count", m.ReadCount },
+            { "requested_bytes", m.RequestedBytes },
+            { "unique_requested_bytes", m.UniqueRequestedBytes },
+            { "coverage_ratio", m.CoverageRatio },
+            { "request_percentiles", new PythonJsonObject { { "p50", m.P50 }, { "p75", m.P75 }, { "p90", m.P90 }, { "p95", m.P95 }, { "p99", m.P99 } } },
+            { "sequential_ratio", m.ExactSequentialRatio + m.NearSequentialRatio },
+            { "random_seek_ratio", m.RandomSeekRatio },
+            { "repeat_ratio_64k", m.Candidates[K64].RepeatRatio },
+            { "confidence", m.Confidence },
+            { "confidence_label", m.ConfidenceLabel },
+            { "recommendation", new PythonJsonObject
+                {
+                    { "action", recommendation.Action },
+                    { "layout", recommendation.Layout },
+                    { "block_size", recommendation.BlockSize },
+                    { "hot", recommendation.Hot },
+                    { "group", recommendation.Group },
+                    { "reason", recommendation.Reason },
+                    { "metadata_bytes", recommendation.MetadataBytes },
+                    { "amplification", selected.Amplification },
+                    { "average_blocks_per_read", selected.AverageBlocksPerRead },
+                    { "sampled_ratio", recommendation.SampledRatio },
+                    { "sampled_bytes", recommendation.SampledBytes },
+                } },
+        };
+        if (fullCandidates)
+        {
+            PythonJsonObject candidates = [];
+            foreach (CandidateMetrics c in m.Candidates.Values.OrderBy(c => c.BlockSize))
+            {
+                candidates.Add(c.BlockSize.ToString(CultureInfo.InvariantCulture), new PythonJsonObject
+                {
+                    { "block_size", c.BlockSize },
+                    { "touched_bytes", c.TouchedBytes },
+                    { "total_block_touches", c.TotalBlockTouches },
+                    { "unique_blocks", c.UniqueBlocks },
+                    { "amplification", c.Amplification },
+                    { "average_blocks_per_read", c.AverageBlocksPerRead },
+                    { "repeat_ratio", c.RepeatRatio },
+                    { "offset_alignment_ratio", c.OffsetAlignmentRatio },
+                    { "length_alignment_ratio", c.LengthAlignmentRatio },
+                    { "metadata_bytes", c.MetadataBytes },
+                    { "local_score", c.LocalScore },
+                });
+            }
+
+            json.Add("candidates", candidates);
+        }
+
+        return json;
+    }
+
+    /// <summary>One row of the batch <c>summary.json</c> (Python <c>_build_batch_profile</c>).</summary>
+    /// <param name="result">Profile.</param>
+    /// <returns>JSON object.</returns>
+    public static PythonJsonObject BatchSummaryRow(AMPRProfileResult result)
+    {
+        CacheSimulation? first = result.CacheSimulations.Count > 0 ? result.CacheSimulations[0] : null;
+        return new PythonJsonObject
+        {
+            { "name", result.Name },
+            { "files", result.Recommendations.Count },
+            { "reads", result.Recommendations.Sum(r => (long)r.Metrics.ReadCount) },
+            { "submitted_bytes", result.Recommendations.Sum(r => r.Metrics.RequestedBytes) },
+            { "selected_file_bytes", result.Recommendations.Sum(r => r.Metrics.FileSize) },
+            { "projected_index_bytes", result.ProjectedIndexBytes },
+            { "recommended_cache_bytes", result.RecommendedCacheBytes },
+            { "recommended_physical_cache_bytes", result.RecommendedPhysicalCacheBytes },
+            { "recommended_runtime_workers", result.RecommendedRuntimeWorkers },
+            { "recommended_latency_reserve_workers", result.RecommendedLatencyReserveWorkers },
+            { "recommended_pool_bytes", result.RecommendedPoolBytes },
+            { "cache_sampled_touches", first?.SampledTouches ?? 0 },
+            { "cache_total_touches", first?.TotalTouches ?? 0 },
+            { "warnings", result.Warnings.Count },
+        };
+    }
+
+    /// <summary>
+    /// Extract the trace inputs of a ZIP support bundle (Python <c>_extract_trace_archive</c>): only
+    /// <c>ampr_commands.bin</c> and <c>ampr_emu.index</c> members, under <c>&lt;tempRoot&gt;/traces</c>.
+    /// </summary>
+    /// <param name="path">ZIP file.</param>
+    /// <param name="tempRoot">Scratch folder.</param>
+    /// <returns>The folder to scan for trace pairs.</returns>
+    /// <exception cref="AMPRPackException">Not a ZIP, an unsafe member, or no trace inputs.</exception>
+    public static string ExtractTraceArchive(string path, string tempRoot)
+    {
+        ZipArchive archive;
+        try
+        {
+            archive = ZipFile.OpenRead(path);
+        }
+        catch (InvalidDataException)
+        {
+            throw new AMPRPackException($"unsupported archive (only ZIP is accepted): {path}");
+        }
+
+        string destination = Path.Combine(tempRoot, "traces");
+        Directory.CreateDirectory(destination);
+        int extracted = 0;
+        using (archive)
+        {
+            foreach (ZipArchiveEntry member in archive.Entries)
+            {
+                string name = member.FullName;
+                string[] parts = [.. name.Split('/').Where(p => p.Length > 0 && p != ".")];
+                if (name.StartsWith('/') || parts.Contains(".."))
+                {
+                    throw new AMPRPackException($"unsafe archive member: {PythonText.Repr(name)}");
+                }
+
+                // Support bundles also carry multi-gigabyte decoded logs; the profiler needs only these two.
+                if (name.EndsWith('/') || parts.Length == 0 || parts[^1] is not ("ampr_commands.bin" or "ampr_emu.index"))
+                {
+                    continue;
+                }
+
+                string target = Path.Combine([destination, .. parts]);
+                Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+                member.ExtractToFile(target, overwrite: true);
+                extracted++;
+            }
+        }
+
+        return extracted > 0 ? destination : throw new AMPRPackException($"archive contains no AMPR trace inputs: {path}");
     }
 
     /// <summary>The runtime header with the recommended emulator defines (Python <c>render_runtime_header</c>).</summary>
@@ -1297,6 +1506,7 @@ public static class AMPRProfiler
             List<long> lengths = [.. fileEvents.Select(e => e.Length)];
             long requested = lengths.Sum();
             long fileSize = fileEvents.Max(e => e.FileSize);
+            long uniqueRequested = UnionLength(fileEvents.Select(e => (e.Offset, e.End)));
 
             long transitionBytes = 0;
             long exactBytes = 0;
@@ -1373,8 +1583,13 @@ public static class AMPRProfiler
                 Events = fileEvents,
                 ReadCount = fileEvents.Count,
                 RequestedBytes = requested,
+                UniqueRequestedBytes = uniqueRequested,
+                CoverageRatio = fileSize != 0 ? (double)uniqueRequested / fileSize : 0.0,
                 P50 = p50,
+                P75 = Percentile(lengths, 75),
                 P90 = p90,
+                P95 = Percentile(lengths, 95),
+                P99 = Percentile(lengths, 99),
                 Tiny4kRatio = tiny4k,
                 Small16kRatio = small16k,
                 Small64kRatio = small64k,
@@ -1665,6 +1880,8 @@ public static class AMPRProfiler
             }
 
             double ratio = (double)storedTotal / rawTotal;
+            recommendation.SampledRatio = ratio;
+            recommendation.SampledBytes = rawTotal;
             if (ratio >= 0.94)
             {
                 if (recommendation.Metrics.FileSize >= 64L * 1024 * 1024)

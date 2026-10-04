@@ -12,7 +12,7 @@ Python MkPFS (`D:\TOOLS\PS5\MkPFS`, expected at `../MkPFS`) stays the oracle unt
 | `build_goldens.py` | Builds 33 cases, captures inspect/tree/verify output, writes `manifest.json` and zlib vectors |
 | `bench.py` | Python baseline timings on a ~330 MiB tree |
 | `build_ampr_goldens.py` | AMPR asset-pack corpus from ampr_emu's `ampr_pack.py` (second oracle, see the last section) |
-| `check_ampr_profile.py` | Runs ampr_emu's `ampr_pack_profile.py generate` and `mkpfs ampr profile generate` on synthetic APR traces and compares every output byte for byte (33 cases) |
+| `check_ampr_profile.py` | Runs ampr_emu's `ampr_pack_profile.py` and `mkpfs ampr profile` (`generate` and `batch`) on synthetic APR traces and ZIP bundles and compares every output byte for byte (45 cases) |
 
 ## Run
 
