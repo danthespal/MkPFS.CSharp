@@ -41,6 +41,11 @@
   <data name="ap_rules_untested" xml:space="preserve"><value>Sin probar: puede que el juego no arranque en la PS5.</value></data>
   <data name="ap_rules_none" xml:space="preserve"><value>No se encontró ningún perfil para este juego: se usarán reglas genéricas. {0} No están probadas, así que puede que el juego no arranque en la PS5; conserva el original.</value></data>
   <data name="ap_rules_config" xml:space="preserve"><value>Tu archivo TOML decide qué se empaqueta; no se usa ningún perfil integrado.</value></data>
+  <data name="ap_traces_label" xml:space="preserve"><value>Carpeta de trazas (opcional)</value></data>
+  <data name="ap_traces_ph" xml:space="preserve"><value>Carpeta con ampr_commands.bin y ampr_emu.index del AMPR Emu de depuración, una ejecución por subcarpeta</value></data>
+  <data name="ap_rules_traces" xml:space="preserve"><value>✓ Reglas a partir de trazas: {0} ejecución(es) grabada(s). Solo se empaquetan los archivos que el juego leyó mediante AMPR; el resto queda suelto.</value></data>
+  <data name="ap_rules_no_traces" xml:space="preserve"><value>No hay trazas en esta carpeta: cada ejecución necesita ampr_commands.bin y su ampr_emu.index juntos.</value></data>
+  <data name="ap_err_traces_config" xml:space="preserve"><value>Usa un archivo TOML o una carpeta de trazas, no ambos.</value></data>
   <data name="ap_experimental" xml:space="preserve"><value>⚠ Experimental: que un juego empaquetado funcione depende de cómo lee sus archivos, y solo una prueba en la PS5 lo muestra. Conserva el juego original hasta haber jugado el empaquetado.</value></data>
   <data name="ap_game_note" xml:space="preserve"><value>Crea una carpeta nueva que puedes copiar a la PS5 y jugar: tus bibliotecas en fakelib/, ampr_emu.index, los packs LZ4 y todos los archivos que quedan sueltos. La carpeta del juego solo se lee. Requiere AMPR Emu 0.4.2.1 o posterior y un juego que use AMPR.</value></data>
   <data name="ap_libs_label" xml:space="preserve"><value>Carpeta de Bibliotecas (fakelib)</value></data>

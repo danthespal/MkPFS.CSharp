@@ -31,6 +31,9 @@
     <c:PathField Label="{l:Tr ap_out_label}" Placeholder="{l:Tr ap_out_ph}" Mode="Folder" Text="{Binding Output}" IsVisible="{Binding ShowOutput}" />
     <c:PathField Label="{l:Tr ap_libs_label}" Placeholder="{l:Tr ap_libs_ph}" Mode="Folder" Text="{Binding Libs}" IsVisible="{Binding ShowGameOptions}" />
     <c:PathField Label="{l:Tr ap_config_label}" Placeholder="{l:Tr ap_config_ph}" Mode="Open" Filters="TOML:*.toml|All files:*.*" Text="{Binding Config}" IsVisible="{Binding ShowConfig}" />
+    <c:PathField Label="{l:Tr ap_traces_label}" Placeholder="{l:Tr ap_traces_ph}" Mode="Folder" Text="{Binding Traces}" IsVisible="{Binding ShowPackOptions}" />
+    <TextBlock Name="RulesTraces" Text="{Binding RulesTracesText}" TextWrapping="Wrap" Foreground="{StaticResource Success}" IsVisible="{Binding ShowRulesTraces}" />
+    <TextBlock Name="NoTraces" Text="{l:Tr ap_rules_no_traces}" TextWrapping="Wrap" Foreground="{StaticResource Warning}" IsVisible="{Binding ShowNoTraces}" />
     <Rectangle Classes="separator" />
     <TextBlock Text="{l:Tr options}" Classes="section" Foreground="{Binding Accent}" />
     <StackPanel Spacing="8" IsVisible="{Binding ShowPackOptions}">

@@ -34,7 +34,7 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
     [NotifyPropertyChangedFor(nameof(ShowRoot), nameof(ShowPackPaths), nameof(ShowOutput), nameof(ShowManifest), nameof(ShowConfig))]
     [NotifyPropertyChangedFor(nameof(ShowPackOptions), nameof(ShowOverwrite), nameof(ShowJson), nameof(ShowConfirm))]
     [NotifyPropertyChangedFor(nameof(ShowGameOptions), nameof(ShowAllowMissing), nameof(ShowExfatPath), nameof(ShowPackNote))]
-    [NotifyPropertyChangedFor(nameof(ShowRulesFound), nameof(ShowRulesNone), nameof(ShowRulesConfig))]
+    [NotifyPropertyChangedFor(nameof(ShowRulesFound), nameof(ShowRulesNone), nameof(ShowRulesConfig), nameof(ShowRulesTraces), nameof(ShowNoTraces))]
     public partial Choice Action { get; set; } = ActionChoices[0];
 
     /// <summary><c>--fakelib</c> (game): folder with AMPR Emu and other libraries to add.</summary>
@@ -73,8 +73,14 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
 
     /// <summary><c>--config</c>; empty packs with <c>--preset auto</c>, and runtime-config requires it.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowRulesFound), nameof(ShowRulesNone), nameof(ShowRulesConfig))]
+    [NotifyPropertyChangedFor(nameof(ShowRulesFound), nameof(ShowRulesNone), nameof(ShowRulesConfig), nameof(ShowRulesTraces), nameof(ShowNoTraces))]
     public partial string Config { get; set; } = string.Empty;
+
+    /// <summary><c>--traces</c> (game, pack): folder with APR traces of the debug emulator build.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowRulesFound), nameof(ShowRulesNone), nameof(ShowRulesConfig), nameof(ShowRulesTraces), nameof(ShowNoTraces))]
+    [NotifyPropertyChangedFor(nameof(RulesTracesText))]
+    public partial string Traces { get; set; } = string.Empty;
 
     /// <summary><c>--workers</c>; empty for the configuration's value.</summary>
     [ObservableProperty]
@@ -133,7 +139,19 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
     // Built-in rules picked for the game folder (as --preset auto does), or null when the folder does not exist.
     private (string Preset, string? Marker)? _detected;
 
-    private bool UsesBuiltInRules => ShowPackOptions && Config.Trim().Length == 0 && _detected is not null;
+    // Trace runs found in the trace folder, or null when the field is empty.
+    private int? _traceRuns;
+
+    private bool UsesBuiltInRules => ShowPackOptions && Config.Trim().Length == 0 && Traces.Trim().Length == 0 && _detected is not null;
+
+    /// <summary>The trace folder has runs: the rules come from the traces.</summary>
+    public bool ShowRulesTraces => ShowPackOptions && Config.Trim().Length == 0 && _traceRuns > 0;
+
+    /// <summary>The trace folder has no runs.</summary>
+    public bool ShowNoTraces => ShowPackOptions && Config.Trim().Length == 0 && _traceRuns == 0;
+
+    /// <summary>How many trace runs were found.</summary>
+    public string RulesTracesText => Localizer.Instance.Format("ap_rules_traces", _traceRuns ?? 0);
 
     /// <summary>A built-in profile matches the game folder (game, pack without a TOML).</summary>
     public bool ShowRulesFound => UsesBuiltInRules && _detected!.Value.Marker is not null;
@@ -142,7 +160,7 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
     public bool ShowRulesNone => UsesBuiltInRules && _detected!.Value.Marker is null;
 
     /// <summary>The user's TOML file decides what is packed.</summary>
-    public bool ShowRulesConfig => ShowPackOptions && Config.Trim().Length > 0;
+    public bool ShowRulesConfig => ShowPackOptions && Config.Trim().Length > 0 && Traces.Trim().Length == 0;
 
     /// <summary>The matched profile, the file that identified it and the games it ran on.</summary>
     public string RulesFoundText
@@ -182,8 +200,10 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
         string manifest = Manifest.Trim();
         string output = Output.Trim();
         string config = Config.Trim();
+        string traces = Traces.Trim();
         error = Action.Value switch
         {
+            "game" or "pack" when config.Length > 0 && traces.Length > 0 => Localizer.Instance["ap_err_traces_config"],
             "game" when root.Length == 0 || output.Length == 0 => Localizer.Instance["ap_err_pack"],
             "pack" when root.Length == 0 || output.Length == 0 => Localizer.Instance["ap_err_pack"],
             "game" or "pack" when Workers.Trim().Length > 0 && !(int.TryParse(Workers.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out int n) && n is >= 1 and <= 256)
@@ -205,8 +225,9 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
             case "game":
                 args.AddRange(["--root", root, "--output", output]);
                 AddOption(args, "--fakelib", Libs);
-                // Without a TOML, ampr game picks the rules from the game (Unity or not).
+                // Without a TOML or traces, ampr game picks the rules from the game.
                 AddOption(args, "--config", config);
+                AddOption(args, "--traces", traces);
                 AddOption(args, "--workers", Workers);
                 AddFlag(args, SelfContained, "--self-contained");
                 AddFlag(args, !VerifyGame, "--skip-verify");
@@ -220,7 +241,7 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
             case "pack":
                 args.AddRange(["--root", root, "--ampr-index", AmprIndex.Trim() is { Length: > 0 } index ? index : Path.Combine(root, "ampr_emu.index"), "--output", output]);
                 // Without a TOML every file would stay loose; the page uses the built-in rules instead.
-                args.AddRange(config.Length > 0 ? ["--config", config] : ["--preset", "auto"]);
+                args.AddRange(config.Length > 0 ? ["--config", config] : traces.Length > 0 ? ["--traces", traces] : ["--preset", "auto"]);
                 AddOption(args, "--workers", Workers);
                 AddFlag(args, SelfContained, "--self-contained");
                 AddFlag(args, AllowMissing, "--allow-missing");
@@ -257,6 +278,26 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
     {
         string root = value.Trim();
         _detected = root.Length > 0 && Directory.Exists(root) ? Build.AMPRPack.AMPRPackConfig.DetectPreset(root) : null;
+    }
+
+    /// <summary>Count the trace runs in the chosen folder (each needs ampr_commands.bin and ampr_emu.index).</summary>
+    partial void OnTracesChanged(string value)
+    {
+        string folder = value.Trim();
+        if (folder.Length == 0)
+        {
+            _traceRuns = null;
+            return;
+        }
+
+        try
+        {
+            _traceRuns = Directory.Exists(folder) ? Build.AMPRPack.AMPRProfiler.DiscoverTracePairs(Path.GetFullPath(folder)).Count : 0;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or Core.AMPR.AMPRPackException)
+        {
+            _traceRuns = 0;
+        }
     }
 
     /// <summary>The manifest a pack run writes, so the other actions can use it right away.</summary>

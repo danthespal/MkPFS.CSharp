@@ -41,6 +41,11 @@
   <data name="ap_rules_untested" xml:space="preserve"><value>Non testé : le jeu risque de ne pas démarrer sur la PS5.</value></data>
   <data name="ap_rules_none" xml:space="preserve"><value>Aucun profil trouvé pour ce jeu : des règles génériques seront utilisées. {0} Elles ne sont pas testées, le jeu risque donc de ne pas démarrer sur la PS5 ; gardez l’original.</value></data>
   <data name="ap_rules_config" xml:space="preserve"><value>Votre fichier TOML décide de ce qui est empaqueté ; aucun profil intégré n’est utilisé.</value></data>
+  <data name="ap_traces_label" xml:space="preserve"><value>Dossier de traces (facultatif)</value></data>
+  <data name="ap_traces_ph" xml:space="preserve"><value>Dossier avec ampr_commands.bin et ampr_emu.index de l’AMPR Emu de débogage, une session par sous-dossier</value></data>
+  <data name="ap_rules_traces" xml:space="preserve"><value>✓ Règles issues des traces : {0} session(s) enregistrée(s). Seuls les fichiers que le jeu a lus via AMPR sont empaquetés ; les autres restent à part.</value></data>
+  <data name="ap_rules_no_traces" xml:space="preserve"><value>Aucune trace dans ce dossier : chaque session a besoin de ampr_commands.bin et de son ampr_emu.index côte à côte.</value></data>
+  <data name="ap_err_traces_config" xml:space="preserve"><value>Utilisez un fichier TOML ou un dossier de traces, pas les deux.</value></data>
   <data name="ap_experimental" xml:space="preserve"><value>⚠ Expérimental : qu’un jeu empaqueté fonctionne dépend de la façon dont il lit ses fichiers, et seul un test sur la PS5 le montre. Conservez le jeu d’origine jusqu’à avoir joué à la version empaquetée.</value></data>
   <data name="ap_game_note" xml:space="preserve"><value>Crée un nouveau dossier à copier sur la PS5 pour jouer : vos bibliothèques dans fakelib/, ampr_emu.index, les packs LZ4 et tous les fichiers qui restent libres. Le dossier du jeu est seulement lu. Nécessite AMPR Emu 0.4.2.1 ou plus récent et un jeu qui utilise AMPR.</value></data>
   <data name="ap_libs_label" xml:space="preserve"><value>Dossier des bibliothèques (fakelib)</value></data>

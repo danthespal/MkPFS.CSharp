@@ -42,6 +42,7 @@ internal static class AmprCommand
         command.Subcommands.Add(List(ctx));
         command.Subcommands.Add(Inspect(ctx));
         command.Subcommands.Add(RuntimeConfig(ctx));
+        command.Subcommands.Add(AmprProfileCommand.Create(ctx));
         return command;
     }
 
@@ -58,6 +59,7 @@ internal static class AmprCommand
         Option<string?> config = new("--config") { Description = "TOML pack configuration" };
         Option<string?> preset = new("--preset") { Description = "built-in rules instead of --config: default compresses every file and keeps executables, modules and system files loose; unity compresses only StreamingAssets; insomniac compresses only the d/ archives but boot, movie and audio ones; auto picks insomniac or unity from the game, else default" };
         preset.AcceptOnlyFromAmong([.. AMPRPackConfig.PresetNames]);
+        Option<string?> traces = new("--traces") { Description = TracesDescription };
         Option<string[]> include = Repeated("--include", "additional include glob");
         Option<string[]> exclude = Repeated("--exclude", "force-loose glob");
         Option<string?> includeFrom = new("--include-from") { Description = "newline-delimited include globs" };
@@ -69,16 +71,20 @@ internal static class AmprCommand
         Option<bool> noProgress = new("--no-progress") { Description = "suppress build progress on stderr; final JSON still goes to stdout" };
         Command command = new("pack", "build pack index and data volumes")
         {
-            root, amprIndex, output, config, preset, include, exclude, includeFrom, excludeFrom, workers, selfContained, requirePacked, allowMissing, noProgress,
+            root, amprIndex, output, config, preset, traces, include, exclude, includeFrom, excludeFrom, workers, selfContained, requirePacked, allowMissing, noProgress,
         };
         command.SetAction(parse => Run(ctx, () =>
         {
             string? configPath = parse.GetValue(config);
             string? presetName = parse.GetValue(preset);
-            AMPRPackConfig loaded = (configPath, presetName) switch
+            string? tracesDir = parse.GetValue(traces);
+            AMPRPackConfig loaded = (configPath, presetName, tracesDir) switch
             {
-                (not null, not null) => throw new AMPRPackException("--config and --preset cannot be used together"),
-                (null, not null) => Preset(presetName, Resolve(ctx, parse.GetValue(root)!), ctx.Err.WriteLine),
+                (not null, not null, _) => throw new AMPRPackException("--config and --preset cannot be used together"),
+                (_, _, not null) when configPath is not null || presetName is not null =>
+                    throw new AMPRPackException("--traces cannot be used with --config or --preset"),
+                (null, null, string dir) => TraceRules(Resolve(ctx, dir), ctx.Err.WriteLine),
+                (null, not null, _) => Preset(presetName, Resolve(ctx, parse.GetValue(root)!), ctx.Err.WriteLine),
                 _ => AMPRPackConfig.Load(configPath is null ? null : Resolve(ctx, configPath)),
             };
             if (parse.GetValue(workers) is { } count)
@@ -162,6 +168,7 @@ internal static class AmprCommand
         Option<string?> config = new("--config") { Description = "TOML pack configuration (default: --preset auto)" };
         Option<string?> preset = new("--preset") { Description = "built-in rules instead of --config: auto (insomniac or unity from the game, else default), default (every file but executables, modules and system files), insomniac (the d/ archives but boot, movie and audio ones) or unity (only StreamingAssets); default: auto" };
         preset.AcceptOnlyFromAmong([.. AMPRPackConfig.PresetNames]);
+        Option<string?> traces = new("--traces") { Description = TracesDescription };
         Option<int?> workers = new("--workers") { Description = "compression workers" };
         Option<bool> selfContained = new("--self-contained") { Description = "do not auto-loose explicitly packed files; store incompressible blocks RAW" };
         Option<string?> exfat = new("--exfat") { Description = "also build an exFAT image of the output (file, or folder for <titleId>.exfat)" };
@@ -169,18 +176,27 @@ internal static class AmprCommand
         Option<bool> noProgress = new("--no-progress") { Description = "suppress progress on stderr" };
         Command command = new("game", "build a folder that runs from packs as is: libraries, ampr_emu.index, packs and loose files (not in ampr_pack.py)")
         {
-            root, output, fakelib, config, preset, workers, selfContained, exfat, skipVerify, noProgress,
+            root, output, fakelib, config, preset, traces, workers, selfContained, exfat, skipVerify, noProgress,
         };
         command.SetAction(parse => Run(ctx, () =>
         {
             ctx.Log.Warning(ExperimentalWarning);
             string? configPath = parse.GetValue(config);
-            AMPRPackConfig loaded = (configPath, parse.GetValue(preset)) switch
+            string? presetName = parse.GetValue(preset);
+            string? tracesDir = parse.GetValue(traces);
+            if (configPath is not null && presetName is not null)
             {
-                (not null, not null) => throw new AMPRPackException("--config and --preset cannot be used together"),
-                (not null, null) => Config(ctx, Resolve(ctx, configPath)),
-                (null, var name) => Preset(name ?? "auto", Resolve(ctx, parse.GetValue(root)!), message => ctx.Log.Info(message)),
-            };
+                throw new AMPRPackException("--config and --preset cannot be used together");
+            }
+
+            if (tracesDir is not null && (configPath is not null || presetName is not null))
+            {
+                throw new AMPRPackException("--traces cannot be used with --config or --preset");
+            }
+
+            AMPRPackConfig loaded = tracesDir is not null ? TraceRules(Resolve(ctx, tracesDir), message => ctx.Log.Info(message))
+                : configPath is not null ? Config(ctx, Resolve(ctx, configPath))
+                : Preset(presetName ?? "auto", Resolve(ctx, parse.GetValue(root)!), message => ctx.Log.Info(message));
             if (parse.GetValue(workers) is { } count)
             {
                 loaded.Workers = count is >= 1 and <= 256 ? count : throw new AMPRPackException("--workers must be between 1 and 256");
@@ -244,6 +260,33 @@ internal static class AmprCommand
             ("default", null, true) => $"No profile found for this game: generic rules ({packs}). {tested}",
             _ => $"Rules: {preset} (--preset); {packs}. {tested}",
         };
+    }
+
+    private const string TracesDescription =
+        "folder with APR traces of the debug emulator build (ampr_commands.bin and ampr_emu.index, one run per subfolder): " +
+        "pack the files the game read through APR, as ampr_pack_profile.py would, and keep the rest loose";
+
+    // Not in ampr_pack.py: the rules ampr_pack_profile.py would write for the traces, without the intermediate TOML.
+    private static AMPRPackConfig TraceRules(string directory, Action<string> report)
+    {
+        List<AMPRTraceSpec> runs = AMPRProfiler.DiscoverTracePairs(directory);
+        if (runs.Count == 0)
+        {
+            throw new AMPRPackException($"no traces found in {directory}: each run needs ampr_commands.bin and its ampr_emu.index side by side");
+        }
+
+        AMPRProfileOptions options = new() { Name = Path.GetFileName(Path.TrimEndingDirectorySeparator(directory)) };
+        AMPRProfileResult profile = AMPRProfiler.Build(runs, options);
+        string runText = runs.Count == 1 ? "1 trace run" : $"{runs.Count} trace runs";
+        string fileText = profile.PackedFiles == 1 ? "1 file" : $"{profile.PackedFiles} files";
+        report($"Rules: from {runText} in {directory}; {fileText} the game read through APR are packed " +
+            $"({AMPRProfiler.HumanSize(profile.PackedFileBytes)}), every other file stays loose");
+        if (profile.Warnings.Count > 0)
+        {
+            report($"warning: the traces have {profile.Warnings.Count} warnings; `mkpfs ampr profile generate --report` lists them");
+        }
+
+        return AMPRProfiler.ToConfig(profile, options);
     }
 
     private static AMPRPackConfig Config(CliContext ctx, string path)
@@ -428,7 +471,7 @@ internal static class AmprCommand
     }
 
     // Python main(): PackError, ValueError, OSError and RuntimeError print "error: <message>" and exit 2.
-    private static int Run(CliContext ctx, Action action)
+    internal static int Run(CliContext ctx, Action action)
     {
         try
         {
@@ -453,7 +496,7 @@ internal static class AmprCommand
         ["latency_reserve_workers"] = settings.LatencyReserveWorkers,
     };
 
-    private static string Resolve(CliContext ctx, string path) => Path.GetFullPath(PathRules.ExpandUser(path), ctx.WorkingDirectory);
+    internal static string Resolve(CliContext ctx, string path) => Path.GetFullPath(PathRules.ExpandUser(path), ctx.WorkingDirectory);
 
     private static List<string> PatternFile(CliContext ctx, string? path) =>
         path is null ? [] : AMPRPackConfig.LoadPatternFile(Resolve(ctx, path));

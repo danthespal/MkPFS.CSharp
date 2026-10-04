@@ -41,6 +41,11 @@
   <data name="ap_rules_untested" xml:space="preserve"><value>Untested: the game may not start on the PS5.</value></data>
   <data name="ap_rules_none" xml:space="preserve"><value>No profile found for this game: generic rules will be used. {0} They are untested, so the game may not start on the PS5; keep the original.</value></data>
   <data name="ap_rules_config" xml:space="preserve"><value>Your TOML file decides what is packed; no built-in profile is used.</value></data>
+  <data name="ap_traces_label" xml:space="preserve"><value>Trace folder (optional)</value></data>
+  <data name="ap_traces_ph" xml:space="preserve"><value>Folder with ampr_commands.bin and ampr_emu.index from the debug AMPR Emu, one run per subfolder</value></data>
+  <data name="ap_rules_traces" xml:space="preserve"><value>✓ Rules from traces: {0} recorded run(s) found. Only the files the game read through AMPR are packed; every other file stays loose.</value></data>
+  <data name="ap_rules_no_traces" xml:space="preserve"><value>No traces in this folder: each run needs ampr_commands.bin and its ampr_emu.index side by side.</value></data>
+  <data name="ap_err_traces_config" xml:space="preserve"><value>Use either a TOML file or a trace folder, not both.</value></data>
   <data name="ap_experimental" xml:space="preserve"><value>⚠ Experimental: whether a packed game runs depends on how it reads its files, and only a test on the PS5 shows that. Keep the original game until the packed one has been played.</value></data>
   <data name="ap_game_note" xml:space="preserve"><value>Builds a new folder you can copy to the PS5 and play: your libraries in fakelib/, ampr_emu.index, the LZ4 packs, and every file that stays loose. The game folder is only read. Needs AMPR Emu 0.4.2.1 or newer and a game that uses AMPR.</value></data>
   <data name="ap_libs_label" xml:space="preserve"><value>Library Folder (fakelib)</value></data>

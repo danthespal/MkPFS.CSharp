@@ -29,7 +29,8 @@ offline PFSC block repair ported from PS5 Game Compressor.
   `ampr_emu.index` when `pack folder`, `pack exfat`, or `batch` packs a game that has them.
 - **AMPR packs (experimental)**: `ampr` builds, checks, and extracts AMPR Emu seekable LZ4 asset packs, byte for byte
   like ampr_emu's `ampr_pack.py`, and `ampr game` turns a game folder into a smaller one that runs from
-  them ([what it is and its limits](#ampr-packing-what-it-is-and-why-it-is-experimental)).
+  them ([what it is and its limits](#ampr-packing-what-it-is-and-why-it-is-experimental)). `ampr profile`
+  turns traces recorded on the console into pack rules, like ampr_emu's `ampr_pack_profile.py`.
 - **GUI**: `mkpfs-gui` with a page per command, cover and metadata preview, batch queue, and a PFSC
   block map; English, Português (BR), Español, Română, Deutsch, and Français.
 
@@ -348,6 +349,39 @@ build as a test. With `--config`, the log says `Rules: your TOML file ...` inste
    a save or a level: some files are only read later.
 4. Delete the original only after that.
 
+##### Rules from traces
+
+Built-in rules only exist for a few engines. For any other game, the most reliable rules come from
+watching the game on the console: the debug build of AMPR Emu (`Prospero_DebugHooksPackedStdio`, for
+example the 0.4.2.1 test-debug-pack) records every read the game makes through AMPR into
+`/app0/ampr_commands.bin`. MkPFS reads those traces and packs exactly the files the game read that way,
+with block sizes fitted to how it read them, like ampr_emu's `ampr_pack_profile.py`.
+
+1. Put the debug `libSceAmpr.sprx` into the **unpacked** game's `fakelib/` (keep the normal one to put
+   back), and set `mount_read_only=0` in ShadowMountPlus for this run: the emulator writes its trace into
+   the game folder. Run from the folder, not an exFAT image.
+2. Play a session: start-up to the menu and loading a save, then other sessions for different levels,
+   cutscenes, fast travel. Quit the game normally from the PS5 menu; a crash can cut the trace short.
+3. After each session, copy `ampr_commands.bin` and `ampr_emu.index` (and `ampr_emu.log`) into a
+   subfolder of one trace folder, for example `traces/startup/`, `traces/level2/`, and delete them from
+   the game folder.
+4. Put the normal emulator back and `mount_read_only=1`.
+5. On the AMPR Packs page, pick that trace folder in **Trace folder** (leave the TOML field empty); the
+   page says how many runs it found. On the command line: `mkpfs ampr game ... --traces traces`. The log
+   says `Rules: from N trace runs ...; M files the game read through APR are packed`.
+
+What traces can and cannot show:
+
+- A file in a trace was read through AMPR, so AMPR Emu can serve it from the packs.
+- Files no session touched (other levels, languages, DLC) stay loose: safe, but they save no space. More
+  sessions cover more.
+- Files the game memory-maps (`mmap`) or reads with plain reads never appear in a trace, so they stay loose
+  too.
+
+`mkpfs ampr profile generate <trace run> --output rules.toml --report rules.md` (or `--trace COMMANDS
+INDEX`, repeatable) writes the same rules as a TOML file to review or edit, plus a report and a runtime
+header; the output matches `ampr_pack_profile.py generate` byte for byte.
+
 ##### Reporting a game
 
 Whether it works or not, please report: the game title, ID and version, the `Profile found` or `No profile
@@ -360,7 +394,8 @@ of such a test lets the built-in rules learn that game.
 #### How the packs are made
 
 `mkpfs ampr` is a port of ampr_emu's `tools/ampr_pack.py` (tool version 4.0): the same options, the same
-JSON on standard output, and byte-identical packs. A pack set is the manifest `ampr_assets.index`, data
+JSON on standard output, and byte-identical packs. `ampr profile generate` is a port of
+`tools/ampr_pack_profile.py` (4.1): the same TOML, report and runtime header. A pack set is the manifest `ampr_assets.index`, data
 volumes `ampr_assets-*.pak`, optional runtime settings `ampr_assets.index.runtime`, and an offline CRC
 sidecar `ampr_assets.index.crc`.
 
@@ -384,6 +419,7 @@ volume from one build together; the `.crc` sidecar is only for `verify` and `unp
 | `inspect` | `--index <manifest>` | Manifest summary, volumes, and runtime settings. |
 | `runtime-config` | `--index <manifest> --config <toml>` | Replace `<manifest>.runtime` from a `[runtime]` section without repacking. |
 | `remove-sources` | `--index <manifest> --root <app0>` | Show which sources the packs replace; with `--confirm`, verify everything and delete them. Also `remove-packed-sources`. |
+| `profile generate` | `[<trace run>] --output <toml>` | Pack rules from APR traces (`--trace COMMANDS INDEX`, repeatable); `--report`, `--runtime-header` and every tuning option of `ampr_pack_profile.py generate`. Its `--metrics` JSON and `batch` are not ported. |
 
 `pack` options:
 
@@ -394,6 +430,7 @@ volume from one build together; the `.crc` sidecar is only for `verify` and `unp
 | `--preset unity` | none | For Unity games: compress only `StreamingAssets/` (Addressables bundles, FMOD banks, videos) and keep Unity's own data files (`level*`, `sharedassets*`, `globalgamemanagers`, `.resS`) loose. Packing those made a Unity title abort at startup on the console, while packing only `StreamingAssets` ran normally. |
 | `--preset insomniac` | none | For Insomniac Games titles: compress only the `d/` archives (128 KiB blocks) and keep the boot, movie, sound bank and `wem*` archives, `toc`, `dag` and the other top-level files loose. Packing every file made such a title crash at startup, while these rules ran it. |
 | `--preset auto` | none | `insomniac` when `toc`, `dag` and `d/` are at the top of the game, `unity` for Unity games (a `globalgamemanagers`, `data.unity3d` or `global-metadata.dat` within four folder levels), else `default`; prints the profile found (or that none was) on standard error. The default for `ampr game` and the AMPR Packs page. |
+| `--traces <folder>` | none | Rules from APR traces instead of `--config` or `--preset` (see [Rules from traces](#rules-from-traces)); also for `ampr game`. |
 | `--include <glob>`, `--exclude <glob>` | none; repeatable | Narrow the rule selection; `--exclude` forces files loose. |
 | `--include-from <file>`, `--exclude-from <file>` | none | Glob lists, one per line, `#` comments. |
 | `--workers <n>` | config, else min(8, cores) | Compression threads (1 to 256). |
@@ -420,7 +457,7 @@ mkpfs ampr game --root PPSA12345-app --output PPSA12345-packed --fakelib ampr-em
 2. **Index.** Writes `ampr_emu.index` for the final tree: the game's files plus the new libraries with
    their real sizes. This must come before packing, because the manifest addresses files by their row
    in this index.
-3. **Packs.** Packs from the game folder with `--config`, `--preset`, or by default `--preset auto`, which
+3. **Packs.** Packs from the game folder with `--config`, `--traces`, `--preset`, or by default `--preset auto`, which
    picks the rules from the game: `insomniac` when `toc`, `dag` and `d/` are at the top, `unity` when a
    Unity file (`globalgamemanagers`, `data.unity3d`, `global-metadata.dat`) is within four folder levels,
    else `default`. The log says whether a profile
@@ -519,6 +556,7 @@ dotnet run --project src/MkPFS.Gui -c Release
   offset, stored size, and largest back-reference distance.
 - The AMPR Packs page runs every `ampr` subcommand and shows only the fields the chosen action needs. Its
   default action, Build playable game, runs `ampr game` with a library folder and an optional exFAT image.
+  Its optional trace folder takes the rules from console traces.
   Without a TOML file, the rules are picked from the game (Unity or not), so there is nothing to choose.
   Packing without a TOML uses `--preset default`.
 
@@ -603,6 +641,13 @@ needs python-lz4 4.4.5):
 
 ```bash
 python tools/oracle/build_ampr_goldens.py --check
+```
+
+`ampr profile generate` is checked against `ampr_pack_profile.py` on synthetic traces (every output file,
+byte for byte; build MkPFS first):
+
+```bash
+uv run --no-project --python 3.12 --with lz4==4.4.5 python tools/oracle/check_ampr_profile.py
 ```
 
 ### Releases

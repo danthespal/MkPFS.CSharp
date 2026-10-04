@@ -171,6 +171,38 @@ public sealed class AmprPackPanelTests
         Assert.False(panel.ShowRulesFound || panel.ShowRulesNone || panel.ShowRulesConfig);
     }
 
+    [Fact]
+    public void Page_takes_rules_from_a_trace_folder()
+    {
+        using TempDir dir = new();
+        AmprPackPanelViewModel panel = Panel("game");
+        panel.Root = Directory.CreateDirectory(Path.Combine(dir.Path, "game")).FullName;
+        panel.Output = Path.Combine(dir.Path, "out");
+        string traces = Directory.CreateDirectory(Path.Combine(dir.Path, "traces")).FullName;
+
+        panel.Traces = traces;
+        Assert.True(panel.ShowNoTraces);
+        Assert.False(panel.ShowRulesTraces || panel.ShowRulesNone || panel.ShowRulesFound);
+
+        dir.File("traces/startup/ampr_commands.bin");
+        dir.File("traces/startup/ampr_emu.index");
+        dir.File("traces/level1/ampr_commands.bin");
+        dir.File("traces/level1/ampr_emu.index");
+        panel.Traces = traces + Path.DirectorySeparatorChar;
+        Assert.True(panel.ShowRulesTraces);
+        Assert.False(panel.ShowNoTraces);
+        Assert.StartsWith("✓ Rules from traces: 2 recorded run(s) found.", panel.RulesTracesText, StringComparison.Ordinal);
+        Assert.Equal(["--traces", traces + Path.DirectorySeparatorChar], panel.BuildArguments(out _)!.SkipWhile(a => a != "--traces").Take(2));
+
+        panel.Action = panel.Actions.Single(a => a.Value == "pack");
+        Assert.DoesNotContain("--preset", panel.BuildArguments(out _)!);
+
+        panel.Config = "rules.toml";
+        Assert.False(panel.ShowRulesTraces || panel.ShowRulesConfig);
+        Assert.Null(panel.BuildArguments(out string? error));
+        Assert.Equal("Use either a TOML file or a trace folder, not both.", error);
+    }
+
     [AvaloniaFact]
     public async Task Page_without_a_toml_packs_with_the_default_rules_and_logs_cli_progress()
     {
