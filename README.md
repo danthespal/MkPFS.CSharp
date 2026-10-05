@@ -317,20 +317,6 @@ The build log names the rules used:
 Rules: TOML profile D:\PS5\profiles\ufc6-PPSA23566.toml
 ```
 
-What the profiles of the tested games learned:
-
-- **Unity games**: pack only `StreamingAssets/` (asset bundles, audio banks, videos). Unity's own data
-  files (`level*`, `sharedassets*`, `globalgamemanagers`, `.resS`) stay loose, because packing them made a
-  Unity game abort at startup; `global-metadata.dat` is memory-mapped and must stay loose.
-- **Insomniac Games titles** (`toc` and `dag` files and a `d/` folder at the top of the game): pack only the
-  `d/` archives. The boot (`bootload*`, `critbootload*`), movie, sound bank and streamed audio (`wem*`)
-  archives stay loose, as do `toc`, `dag` and the other top-level files. Packing every file made such a game
-  crash at startup.
-- **Frostbite games** (EA SPORTS UFC 6): pack the `.cas` archives and keep the small `.toc` files,
-  `initfs_Ps5` and `chunkmanifest` loose; packing those too crashed the game about 40 seconds in.
-- **Every file but executables, modules and system files**: no game has run with this yet, and both the
-  Unity and the Insomniac game failed with it.
-
 **Recommended steps.**
 
 1. Make sure the unpacked game runs with AMPR Emu 0.4.2.1 in its `fakelib/`.
