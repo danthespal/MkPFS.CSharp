@@ -33,18 +33,13 @@
   <data name="am_section" xml:space="preserve"><value>APR Emu</value></data>
   <data name="am_title" xml:space="preserve"><value>Tratează ca titlu APR</value></data>
   <data name="ap_act_game" xml:space="preserve"><value>Creează jocul gata de rulat (pack-uri + fișiere libere)</value></data>
-  <data name="ap_rules_found" xml:space="preserve"><value>✓ Profil găsit: {0} (identificat după {1}). {2}</value></data>
-  <data name="ap_rules_packs_insomniac" xml:space="preserve"><value>Se împachetează doar arhivele din d/; cele de pornire, video și audio rămân separate.</value></data>
-  <data name="ap_rules_packs_unity" xml:space="preserve"><value>Se împachetează doar StreamingAssets.</value></data>
-  <data name="ap_rules_packs_default" xml:space="preserve"><value>Se împachetează toate fișierele, mai puțin executabilele, modulele și fișierele de sistem.</value></data>
-  <data name="ap_rules_tested" xml:space="preserve"><value>Testat: rulează pe {0}.</value></data>
-  <data name="ap_rules_untested" xml:space="preserve"><value>Netestat: este posibil ca jocul să nu pornească pe PS5.</value></data>
-  <data name="ap_rules_none" xml:space="preserve"><value>Niciun profil găsit pentru acest joc: se vor folosi reguli generice. {0} Nu sunt testate, deci este posibil ca jocul să nu pornească pe PS5; păstrează originalul.</value></data>
-  <data name="ap_rules_config" xml:space="preserve"><value>Fișierul tău TOML decide ce se împachetează; nu se folosește niciun profil inclus.</value></data>
+  <data name="ap_rules_missing" xml:space="preserve"><value>Alege profilul TOML pentru acest joc sau un dosar cu trace-uri APR din care să se creeze regulile. Profilurile sunt fișiere TOML partajate pentru fiecare joc.</value></data>
+  <data name="ap_rules_config" xml:space="preserve"><value>Profilul tău TOML decide ce se împachetează.</value></data>
   <data name="ap_traces_label" xml:space="preserve"><value>Dosar cu trace-uri (opțional)</value></data>
   <data name="ap_traces_ph" xml:space="preserve"><value>Dosar cu ampr_commands.bin și ampr_emu.index de la AMPR Emu de depanare, o rulare pe subdosar</value></data>
   <data name="ap_rules_traces" xml:space="preserve"><value>✓ Reguli din trace-uri: {0} rulare(i) înregistrată(e). Se împachetează doar fișierele citite de joc prin AMPR; restul rămân separate.</value></data>
   <data name="ap_rules_no_traces" xml:space="preserve"><value>Niciun trace în acest dosar: fiecare rulare are nevoie de ampr_commands.bin și de ampr_emu.index alături.</value></data>
+  <data name="ap_err_rules" xml:space="preserve"><value>✗ Alege un profil TOML sau un dosar cu trace-uri: fără reguli nu se împachetează nimic.</value></data>
   <data name="ap_err_traces_config" xml:space="preserve"><value>Folosește fie un fișier TOML, fie un dosar cu trace-uri, nu amândouă.</value></data>
   <data name="ap_untraced_types" xml:space="preserve"><value>Împachetează și fișierele pe care nicio sesiune nu le-a citit, dacă un fișier urmărit are același tip (de exemplu, restul arhivelor .cas). Nu s-a văzut cum sunt citite, așa că testează jocul cu ele.</value></data>
   <data name="ap_exfat_free" xml:space="preserve"><value>Spațiu liber în imagine (opțional, ex. 2GiB): necesar pentru un test cu AMPR Emu de depanare, care își scrie jurnalul în dosarul jocului</value></data>
@@ -66,7 +61,7 @@
   <data name="ap_action" xml:space="preserve"><value>Acțiune</value></data>
   <data name="ap_allow_missing" xml:space="preserve"><value>Lasă libere fișierele sursă lipsă</value></data>
   <data name="ap_config_label" xml:space="preserve"><value>Configurație TOML</value></data>
-  <data name="ap_config_ph" xml:space="preserve"><value>Gol: reguli alese după joc (jocurile Unity împachetează doar StreamingAssets)…</value></data>
+  <data name="ap_config_ph" xml:space="preserve"><value>Profilul TOML al jocului…</value></data>
   <data name="ap_confirm" xml:space="preserve"><value>Șterge fișierele sursă împachetate (ireversibil; nebifat arată doar planul)</value></data>
   <data name="ap_err_manifest" xml:space="preserve"><value>✗ Manifestul pachetului este necesar.</value></data>
   <data name="ap_err_pack" xml:space="preserve"><value>✗ Folderul jocului și folderul de ieșire sunt ambele necesare.</value></data>

@@ -306,53 +306,56 @@ PC, so the only real check is to start the packed game on the console. `ampr gam
 that every packed byte decodes to the original, but that proves the packs are correct, not that the game
 reads them in a supported way.
 
-The built-in rules come from these tests, and `ampr game` picks them from the game itself (`--preset
-auto`, the default). Before anything is built, the log and the AMPR Packs page say whether a profile
-matched the game, which one, the file that identified it, and whether it has run on a PS5:
+**Game profiles.** What to pack is decided per game by a TOML profile (`--config`, the **TOML
+Configuration** field), or by the traces of the game recorded on the console (see [Rules from
+traces](#rules-from-traces)). MkPFS has no built-in rules: `ampr game` needs one or the other. Profiles are
+plain TOML files in ampr_emu's format (see below), one per game, shared and improved by the people
+who test them. A profile's header says which game and version it was tested with and whether it runs.
+The build log names the rules used:
 
 ```
-Profile found: unity (Media/globalgamemanagers); only StreamingAssets is packed. Tested: runs on God of War Sons of Sparta (PPSA28997).
-No profile found for this game: generic rules (every file but executables, modules and system files is packed). Untested: the game may not start on the PS5; keep the original.
+Rules: TOML profile D:\PS5\profiles\ufc6-PPSA23566.toml
 ```
 
-A found, tested profile is the best sign that the packed game will run; with no profile, treat the
-build as a test. With `--config`, the log says `Rules: your TOML file ...` instead.
+What the profiles of the tested games learned:
 
-- **Unity games** (a `globalgamemanagers`, `data.unity3d` or `global-metadata.dat` in the game): only
-  `StreamingAssets/` is packed (asset bundles, audio banks, videos). Unity's own data files
-  (`level*`, `sharedassets*`, `globalgamemanagers`, `.resS`) stay loose, because packing them made a
-  Unity game abort at startup.
-- **Insomniac Games titles** (`toc` and `dag` files and a `d/` folder at the top of the game): only the
-  `d/` archives are packed. The boot (`bootload*`, `critbootload*`), movie, sound bank and streamed audio
-  (`wem*`) archives stay loose, as do `toc`, `dag` and the other top-level files. Packing every file made
-  such a game crash at startup.
-- **Other games** (no profile found): every file except executables, modules and system files is
-  packed. No game has run with these rules yet, and both games above failed with them, so expect to
-  need a TOML that leaves more files loose.
+- **Unity games**: pack only `StreamingAssets/` (asset bundles, audio banks, videos). Unity's own data
+  files (`level*`, `sharedassets*`, `globalgamemanagers`, `.resS`) stay loose, because packing them made a
+  Unity game abort at startup; `global-metadata.dat` is memory-mapped and must stay loose.
+- **Insomniac Games titles** (`toc` and `dag` files and a `d/` folder at the top of the game): pack only the
+  `d/` archives. The boot (`bootload*`, `critbootload*`), movie, sound bank and streamed audio (`wem*`)
+  archives stay loose, as do `toc`, `dag` and the other top-level files. Packing every file made such a game
+  crash at startup.
+- **Frostbite games** (EA SPORTS UFC 6): pack the `.cas` archives and keep the small `.toc` files,
+  `initfs_Ps5` and `chunkmanifest` loose; packing those too crashed the game about 40 seconds in.
+- **Every file but executables, modules and system files**: no game has run with this yet, and both the
+  Unity and the Insomniac game failed with it.
 
 **Tested games.** Results on a PS5 with ShadowMountPlus 1.7 beta 4 and AMPR Emu 0.4.2.1:
 
 | Game | Version | Engine | Rules | Result |
 |---|---|---|---|---|
-| God of War Sons of Sparta (PPSA28997) | 01.008.001 | Unity (IL2CPP) | `unity` (auto) | Runs: menu, saves, gameplay. |
-| God of War Sons of Sparta (PPSA28997) | 01.008.001 | Unity (IL2CPP) | `default` | Aborts at startup (`SYSTEM_ABNORMAL_TERMINATION_REQUEST`). |
-| PPSA03671 | 01.001.005 | Insomniac | `insomniac` (auto) | Runs. |
-| PPSA03671 | 01.001.005 | Insomniac | `default` | Crashes 2 s after start (`SIGSEGV`, null read in `eboot.bin`). |
+| God of War Sons of Sparta (PPSA28997) | 01.008.001 | Unity (IL2CPP) | `StreamingAssets/` only | Runs: menu, saves, gameplay. |
+| God of War Sons of Sparta (PPSA28997) | 01.008.001 | Unity (IL2CPP) | every file but executables | Aborts at startup (`SYSTEM_ABNORMAL_TERMINATION_REQUEST`). |
+| PPSA03671 | 01.001.005 | Insomniac | `d/` archives but boot, movie and audio | Runs. |
+| PPSA03671 | 01.001.005 | Insomniac | every file but executables | Crashes 2 s after start (`SIGSEGV`, null read in `eboot.bin`). |
+| EA SPORTS UFC 6 (PPSA23566) | | Frostbite | all 292 `.cas` archives (traces plus untraced `.cas`) | Runs; 166 GB to about 98 GB. |
+| EA SPORTS UFC 6 (PPSA23566) | | Frostbite | traces plus untraced types, `.toc`, `initfs_Ps5`, `chunkmanifest` packed | Crashes about 40 s after start (`SIGSEGV` in `Job0`). |
 
 **Recommended steps.**
 
 1. Make sure the unpacked game runs with AMPR Emu 0.4.2.1 in its `fakelib/`.
 2. On the AMPR Packs page, choose **Build playable game** (the default), pick the game folder, a new
-   output folder and the folder with AMPR Emu's `libSceAmpr.sprx`, and leave the TOML field empty.
-   Optionally tick the exFAT image box. On the command line:
-   `mkpfs ampr game --root <game> --output <new folder> --fakelib <AMPR Emu folder> --exfat .`
+   output folder, the folder with AMPR Emu's `libSceAmpr.sprx` and the game's TOML profile (no profile yet:
+   record traces, see below). Optionally tick the exFAT image box. On the command line:
+   `mkpfs ampr game --root <game> --output <new folder> --fakelib <AMPR Emu folder> --config <profile.toml> --exfat .`
 3. Copy the output folder or the `.exfat` image to the PS5 and start the game. Play past the menu and load
    a save or a level: some files are only read later.
 4. Delete the original only after that.
 
 ##### Rules from traces
 
-Built-in rules only exist for a few engines. For any other game, the most reliable rules come from
+For a game without a profile, the most reliable rules come from
 watching the game on the console: the debug build of AMPR Emu (`Prospero_DebugHooksPackedStdio`, for
 example the 0.4.2.1 test-debug-pack) records every read the game makes through AMPR into
 `/app0/ampr_commands.bin`. MkPFS reads those traces and packs exactly the files the game read that way,
@@ -387,7 +390,7 @@ packed with the settings most traced files of that type got: with traces of an E
 the parts of the game they belong to before deleting the original. Files without an extension are never added.
 
 `mkpfs ampr profile generate <trace run> --output rules.toml --report rules.md` (or `--trace COMMANDS
-INDEX`, repeatable) writes the same rules as a TOML file to review or edit, plus a report, a metrics JSON
+INDEX`, repeatable) writes the same rules as a TOML file to review, edit and share as the game's profile, plus a report, a metrics JSON
 and a runtime header; `mkpfs ampr profile batch` makes one profile per run of a folder or ZIP bundle. The
 output matches `ampr_pack_profile.py` byte for byte.
 
@@ -402,12 +405,11 @@ to leave loose.
 
 ##### Reporting a game
 
-Whether it works or not, please report: the game title, ID and version, the `Profile found` or `No profile
-found` line from the build
-log, what happened on the console, and for a game that fails, the ShadowMountPlus log
+Whether it works or not, please report: the game title, ID and version, the profile or traces used,
+what happened on the console, and for a game that fails, the ShadowMountPlus log
 (`/data/shadowmount/debug.log`) and the console log around the crash. A failing game can often still be
-packed with a TOML file that leaves more files loose (see the TOML format below); a report with the result
-of such a test lets the built-in rules learn that game.
+packed with a TOML file that leaves more files loose (see the TOML format below); share the profile that
+works so others can use it.
 
 #### How the packs are made
 
@@ -445,12 +447,8 @@ volume from one build together; the `.crc` sidecar is only for `verify` and `unp
 
 | Option | Default | Meaning |
 |---|---|---|
-| `--config <toml>` | none | Pack rules. Without a config or preset every file stays loose, and `pack` prints a warning on standard error. |
-| `--preset default` | none | Built-in rules instead of `--config` (not in `ampr_pack.py`): compress every file but keep loose everything `remove-sources` protects (`eboot.bin`, `*.prx`/`*.sprx`/`*.elf`/`*.self`, `sce_sys/`, `sce_module/`, `fakelib/`, `fakelib2/`, `mods/`, `save/`, `system/`, `param.sfo`, `nptitle.dat`, `ampr_emu.index`) and Unity IL2CPP `global-metadata.dat`, which is memory-mapped. |
-| `--preset unity` | none | For Unity games: compress only `StreamingAssets/` (Addressables bundles, FMOD banks, videos) and keep Unity's own data files (`level*`, `sharedassets*`, `globalgamemanagers`, `.resS`) loose. Packing those made a Unity title abort at startup on the console, while packing only `StreamingAssets` ran normally. |
-| `--preset insomniac` | none | For Insomniac Games titles: compress only the `d/` archives (128 KiB blocks) and keep the boot, movie, sound bank and `wem*` archives, `toc`, `dag` and the other top-level files loose. Packing every file made such a title crash at startup, while these rules ran it. |
-| `--preset auto` | none | `insomniac` when `toc`, `dag` and `d/` are at the top of the game, `unity` for Unity games (a `globalgamemanagers`, `data.unity3d` or `global-metadata.dat` within four folder levels), else `default`; prints the profile found (or that none was) on standard error. The default for `ampr game` and the AMPR Packs page. |
-| `--traces <folder>` | none | Rules from APR traces instead of `--config` or `--preset` (see [Rules from traces](#rules-from-traces)); also for `ampr game`. |
+| `--config <toml>` | none | Pack rules (the game's profile). Without a config or `--traces` every file stays loose, and `pack` prints a warning on standard error. |
+| `--traces <folder>` | none | Rules from APR traces instead of `--config` (see [Rules from traces](#rules-from-traces)); also for `ampr game`. |
 | `--pack-untraced-types` | off | With `--traces`: also pack untraced files of the traced file types, like the traced ones (also for `ampr game` and `profile generate`). |
 | `--include <glob>`, `--exclude <glob>` | none; repeatable | Narrow the rule selection; `--exclude` forces files loose. |
 | `--include-from <file>`, `--exclude-from <file>` | none | Glob lists, one per line, `#` comments. |
@@ -478,11 +476,8 @@ mkpfs ampr game --root PPSA12345-app --output PPSA12345-packed --fakelib ampr-em
 2. **Index.** Writes `ampr_emu.index` for the final tree: the game's files plus the new libraries with
    their real sizes. This must come before packing, because the manifest addresses files by their row
    in this index.
-3. **Packs.** Packs from the game folder with `--config`, `--traces`, `--preset`, or by default `--preset auto`, which
-   picks the rules from the game: `insomniac` when `toc`, `dag` and `d/` are at the top, `unity` when a
-   Unity file (`globalgamemanagers`, `data.unity3d`, `global-metadata.dat`) is within four folder levels,
-   else `default`. The log says whether a profile
-   was found, the file that identified it and whether the profile has run on a PS5.
+3. **Packs.** Packs from the game folder with the rules of `--config` (the game's TOML profile) or
+   `--traces`; one of them is required.
 4. **Loose files.** Copies every file that stays loose, keeping its modification time, and every folder,
    including empty ones. This runs after packing because the packer only then decides which large,
    incompressible files to leave loose.
@@ -580,8 +575,7 @@ dotnet run --project src/MkPFS.Gui -c Release
 - The AMPR Packs page runs every `ampr` subcommand and shows only the fields the chosen action needs. Its
   default action, Build playable game, runs `ampr game` with a library folder and an optional exFAT image.
   Its optional trace folder takes the rules from console traces.
-  Without a TOML file, the rules are picked from the game (Unity or not), so there is nothing to choose.
-  Packing without a TOML uses `--preset default`.
+  Building and packing need the game's TOML profile or a trace folder; the page asks for one until it is set.
 
 ## Differences from Python MkPFS
 

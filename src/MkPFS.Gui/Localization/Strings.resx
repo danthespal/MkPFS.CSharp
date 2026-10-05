@@ -33,18 +33,13 @@
   <data name="am_section" xml:space="preserve"><value>APR Emu</value></data>
   <data name="am_title" xml:space="preserve"><value>Treat as APR title</value></data>
   <data name="ap_act_game" xml:space="preserve"><value>Build playable game (packs + loose files)</value></data>
-  <data name="ap_rules_found" xml:space="preserve"><value>✓ Profile found: {0} (identified by {1}). {2}</value></data>
-  <data name="ap_rules_packs_insomniac" xml:space="preserve"><value>Only the d/ archives are packed; boot, movie and audio archives stay loose.</value></data>
-  <data name="ap_rules_packs_unity" xml:space="preserve"><value>Only StreamingAssets is packed.</value></data>
-  <data name="ap_rules_packs_default" xml:space="preserve"><value>Every file but executables, modules and system files is packed.</value></data>
-  <data name="ap_rules_tested" xml:space="preserve"><value>Tested: runs on {0}.</value></data>
-  <data name="ap_rules_untested" xml:space="preserve"><value>Untested: the game may not start on the PS5.</value></data>
-  <data name="ap_rules_none" xml:space="preserve"><value>No profile found for this game: generic rules will be used. {0} They are untested, so the game may not start on the PS5; keep the original.</value></data>
-  <data name="ap_rules_config" xml:space="preserve"><value>Your TOML file decides what is packed; no built-in profile is used.</value></data>
+  <data name="ap_rules_missing" xml:space="preserve"><value>Choose the TOML profile for this game, or a folder of APR traces to build the rules from. Profiles are TOML files shared for each game.</value></data>
+  <data name="ap_rules_config" xml:space="preserve"><value>Your TOML profile decides what is packed.</value></data>
   <data name="ap_traces_label" xml:space="preserve"><value>Trace folder (optional)</value></data>
   <data name="ap_traces_ph" xml:space="preserve"><value>Folder with ampr_commands.bin and ampr_emu.index from the debug AMPR Emu, one run per subfolder</value></data>
   <data name="ap_rules_traces" xml:space="preserve"><value>✓ Rules from traces: {0} recorded run(s) found. Only the files the game read through AMPR are packed; every other file stays loose.</value></data>
   <data name="ap_rules_no_traces" xml:space="preserve"><value>No traces in this folder: each run needs ampr_commands.bin and its ampr_emu.index side by side.</value></data>
+  <data name="ap_err_rules" xml:space="preserve"><value>✗ Choose a TOML profile or a trace folder: without rules nothing is packed.</value></data>
   <data name="ap_err_traces_config" xml:space="preserve"><value>Use either a TOML file or a trace folder, not both.</value></data>
   <data name="ap_untraced_types" xml:space="preserve"><value>Also pack files no session read, when a traced file has the same type (for example the remaining .cas archives). They were not seen being read, so test the game with them.</value></data>
   <data name="ap_exfat_free" xml:space="preserve"><value>Free space inside the image (optional, e.g. 2GiB): needed for a test run with the debug AMPR Emu, which writes its log into the game folder</value></data>
@@ -66,7 +61,7 @@
   <data name="ap_action" xml:space="preserve"><value>Action</value></data>
   <data name="ap_allow_missing" xml:space="preserve"><value>Leave missing source files loose</value></data>
   <data name="ap_config_label" xml:space="preserve"><value>TOML Configuration</value></data>
-  <data name="ap_config_ph" xml:space="preserve"><value>Empty: rules chosen from the game (Unity games pack only StreamingAssets)…</value></data>
+  <data name="ap_config_ph" xml:space="preserve"><value>The game's TOML profile…</value></data>
   <data name="ap_confirm" xml:space="preserve"><value>Delete the packed source files (cannot be undone; unchecked shows the plan only)</value></data>
   <data name="ap_err_manifest" xml:space="preserve"><value>✗ Pack manifest is required.</value></data>
   <data name="ap_err_pack" xml:space="preserve"><value>✗ Game folder and output folder are both required.</value></data>

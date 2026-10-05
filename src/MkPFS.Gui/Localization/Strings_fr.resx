@@ -33,18 +33,13 @@
   <data name="am_section" xml:space="preserve"><value>APR Emu</value></data>
   <data name="am_title" xml:space="preserve"><value>Traiter comme un titre APR</value></data>
   <data name="ap_act_game" xml:space="preserve"><value>Créer le jeu prêt à lancer (packs + fichiers libres)</value></data>
-  <data name="ap_rules_found" xml:space="preserve"><value>✓ Profil trouvé : {0} (identifié par {1}). {2}</value></data>
-  <data name="ap_rules_packs_insomniac" xml:space="preserve"><value>Seules les archives de d/ sont empaquetées ; celles de démarrage, vidéo et audio restent à part.</value></data>
-  <data name="ap_rules_packs_unity" xml:space="preserve"><value>Seul StreamingAssets est empaqueté.</value></data>
-  <data name="ap_rules_packs_default" xml:space="preserve"><value>Tous les fichiers sont empaquetés, sauf les exécutables, les modules et les fichiers système.</value></data>
-  <data name="ap_rules_tested" xml:space="preserve"><value>Testé : fonctionne avec {0}.</value></data>
-  <data name="ap_rules_untested" xml:space="preserve"><value>Non testé : le jeu risque de ne pas démarrer sur la PS5.</value></data>
-  <data name="ap_rules_none" xml:space="preserve"><value>Aucun profil trouvé pour ce jeu : des règles génériques seront utilisées. {0} Elles ne sont pas testées, le jeu risque donc de ne pas démarrer sur la PS5 ; gardez l’original.</value></data>
-  <data name="ap_rules_config" xml:space="preserve"><value>Votre fichier TOML décide de ce qui est empaqueté ; aucun profil intégré n’est utilisé.</value></data>
+  <data name="ap_rules_missing" xml:space="preserve"><value>Choisissez le profil TOML de ce jeu, ou un dossier de traces APR pour en tirer les règles. Les profils sont des fichiers TOML partagés pour chaque jeu.</value></data>
+  <data name="ap_rules_config" xml:space="preserve"><value>Votre profil TOML décide de ce qui est empaqueté.</value></data>
   <data name="ap_traces_label" xml:space="preserve"><value>Dossier de traces (facultatif)</value></data>
   <data name="ap_traces_ph" xml:space="preserve"><value>Dossier avec ampr_commands.bin et ampr_emu.index de l’AMPR Emu de débogage, une session par sous-dossier</value></data>
   <data name="ap_rules_traces" xml:space="preserve"><value>✓ Règles issues des traces : {0} session(s) enregistrée(s). Seuls les fichiers que le jeu a lus via AMPR sont empaquetés ; les autres restent à part.</value></data>
   <data name="ap_rules_no_traces" xml:space="preserve"><value>Aucune trace dans ce dossier : chaque session a besoin de ampr_commands.bin et de son ampr_emu.index côte à côte.</value></data>
+  <data name="ap_err_rules" xml:space="preserve"><value>✗ Choisissez un profil TOML ou un dossier de traces : sans règles, rien n’est empaqueté.</value></data>
   <data name="ap_err_traces_config" xml:space="preserve"><value>Utilisez un fichier TOML ou un dossier de traces, pas les deux.</value></data>
   <data name="ap_untraced_types" xml:space="preserve"><value>Empaqueter aussi les fichiers qu’aucune session n’a lus, quand un fichier tracé a le même type (par exemple les archives .cas restantes). Leur lecture n’a pas été observée : testez le jeu avec eux.</value></data>
   <data name="ap_exfat_free" xml:space="preserve"><value>Espace libre dans l’image (facultatif, ex. 2GiB) : nécessaire pour un test avec l’AMPR Emu de débogage, qui écrit son journal dans le dossier du jeu</value></data>
@@ -66,7 +61,7 @@
   <data name="ap_action" xml:space="preserve"><value>Action</value></data>
   <data name="ap_allow_missing" xml:space="preserve"><value>Laisser libres les fichiers sources manquants</value></data>
   <data name="ap_config_label" xml:space="preserve"><value>Configuration TOML</value></data>
-  <data name="ap_config_ph" xml:space="preserve"><value>Vide : règles selon le jeu (les jeux Unity n’empaquettent que StreamingAssets)…</value></data>
+  <data name="ap_config_ph" xml:space="preserve"><value>Profil TOML du jeu…</value></data>
   <data name="ap_confirm" xml:space="preserve"><value>Supprimer les fichiers sources empaquetés (irréversible ; décoché, affiche seulement le plan)</value></data>
   <data name="ap_err_manifest" xml:space="preserve"><value>✗ Le manifeste du paquet est requis.</value></data>
   <data name="ap_err_pack" xml:space="preserve"><value>✗ Le dossier du jeu et le dossier de sortie sont tous deux requis.</value></data>

@@ -33,18 +33,13 @@
   <data name="am_section" xml:space="preserve"><value>APR Emu</value></data>
   <data name="am_title" xml:space="preserve"><value>Tratar como título APR</value></data>
   <data name="ap_act_game" xml:space="preserve"><value>Criar jogo pronto (packs + arquivos soltos)</value></data>
-  <data name="ap_rules_found" xml:space="preserve"><value>✓ Perfil encontrado: {0} (identificado por {1}). {2}</value></data>
-  <data name="ap_rules_packs_insomniac" xml:space="preserve"><value>Só os arquivos de d/ são empacotados; os de inicialização, vídeo e áudio ficam soltos.</value></data>
-  <data name="ap_rules_packs_unity" xml:space="preserve"><value>Só StreamingAssets é empacotado.</value></data>
-  <data name="ap_rules_packs_default" xml:space="preserve"><value>Todos os arquivos são empacotados, exceto executáveis, módulos e arquivos de sistema.</value></data>
-  <data name="ap_rules_tested" xml:space="preserve"><value>Testado: funciona em {0}.</value></data>
-  <data name="ap_rules_untested" xml:space="preserve"><value>Não testado: o jogo pode não iniciar no PS5.</value></data>
-  <data name="ap_rules_none" xml:space="preserve"><value>Nenhum perfil encontrado para este jogo: serão usadas regras genéricas. {0} Elas não foram testadas, então o jogo pode não iniciar no PS5; guarde o original.</value></data>
-  <data name="ap_rules_config" xml:space="preserve"><value>O seu arquivo TOML decide o que é empacotado; nenhum perfil embutido é usado.</value></data>
+  <data name="ap_rules_missing" xml:space="preserve"><value>Escolha o perfil TOML deste jogo, ou uma pasta de traces APR para criar as regras. Perfis são arquivos TOML compartilhados para cada jogo.</value></data>
+  <data name="ap_rules_config" xml:space="preserve"><value>O seu perfil TOML decide o que é empacotado.</value></data>
   <data name="ap_traces_label" xml:space="preserve"><value>Pasta de traces (opcional)</value></data>
   <data name="ap_traces_ph" xml:space="preserve"><value>Pasta com ampr_commands.bin e ampr_emu.index do AMPR Emu de debug, uma execução por subpasta</value></data>
   <data name="ap_rules_traces" xml:space="preserve"><value>✓ Regras a partir dos traces: {0} execução(ões) gravada(s). Só os arquivos que o jogo leu pelo AMPR são empacotados; os demais ficam soltos.</value></data>
   <data name="ap_rules_no_traces" xml:space="preserve"><value>Nenhum trace nesta pasta: cada execução precisa de ampr_commands.bin e do seu ampr_emu.index lado a lado.</value></data>
+  <data name="ap_err_rules" xml:space="preserve"><value>✗ Escolha um perfil TOML ou uma pasta de traces: sem regras nada é empacotado.</value></data>
   <data name="ap_err_traces_config" xml:space="preserve"><value>Use um arquivo TOML ou uma pasta de traces, não os dois.</value></data>
   <data name="ap_untraced_types" xml:space="preserve"><value>Empacotar também os arquivos que nenhuma sessão leu, quando um arquivo rastreado tem o mesmo tipo (por exemplo, os .cas restantes). Eles não foram vistos sendo lidos, então teste o jogo com eles.</value></data>
   <data name="ap_exfat_free" xml:space="preserve"><value>Espaço livre dentro da imagem (opcional, ex. 2GiB): necessário para um teste com o AMPR Emu de debug, que grava o log na pasta do jogo</value></data>
@@ -66,7 +61,7 @@
   <data name="ap_action" xml:space="preserve"><value>Ação</value></data>
   <data name="ap_allow_missing" xml:space="preserve"><value>Deixar soltos os arquivos-fonte ausentes</value></data>
   <data name="ap_config_label" xml:space="preserve"><value>Configuração TOML</value></data>
-  <data name="ap_config_ph" xml:space="preserve"><value>Vazio: regras escolhidas pelo jogo (jogos Unity empacotam só StreamingAssets)…</value></data>
+  <data name="ap_config_ph" xml:space="preserve"><value>Perfil TOML do jogo…</value></data>
   <data name="ap_confirm" xml:space="preserve"><value>Excluir os arquivos-fonte empacotados (não pode ser desfeito; desmarcado mostra apenas o plano)</value></data>
   <data name="ap_err_manifest" xml:space="preserve"><value>✗ O manifesto do pacote é obrigatório.</value></data>
   <data name="ap_err_pack" xml:space="preserve"><value>✗ A pasta do jogo e a pasta de saída são obrigatórias.</value></data>

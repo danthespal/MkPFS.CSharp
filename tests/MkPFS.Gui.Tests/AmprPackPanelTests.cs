@@ -28,8 +28,11 @@ public sealed class AmprPackPanelTests
         panel.Root = "D:/game";
         panel.Output = "D:/out";
         Assert.Equal(Path.Combine("D:/out", "ampr_assets.index"), panel.Manifest);
+        Assert.Null(panel.BuildArguments(out error));
+        Assert.Equal("✗ Choose a TOML profile or a trace folder: without rules nothing is packed.", error);
+        panel.Config = "D:/rules.toml";
         Assert.Equal(
-            ["ampr", "pack", "--root", "D:/game", "--ampr-index", Path.Combine("D:/game", "ampr_emu.index"), "--output", "D:/out", "--preset", "auto"],
+            ["ampr", "pack", "--root", "D:/game", "--ampr-index", Path.Combine("D:/game", "ampr_emu.index"), "--output", "D:/out", "--config", "D:/rules.toml"],
             panel.BuildArguments(out _));
 
         panel.AmprIndex = "D:/idx/ampr_emu.index";
@@ -58,10 +61,12 @@ public sealed class AmprPackPanelTests
         panel.Root = "D:/game";
         panel.Output = "D:/games/out";
         Assert.Equal(Path.Combine("D:/games/out", "ampr_assets.index"), panel.Manifest);
-        Assert.Equal(["ampr", "game", "--root", "D:/game", "--output", "D:/games/out"], panel.BuildArguments(out _));
+        Assert.Null(panel.BuildArguments(out error));
+        Assert.Equal("✗ Choose a TOML profile or a trace folder: without rules nothing is packed.", error);
+        panel.Config = "D:/rules.toml";
+        Assert.Equal(["ampr", "game", "--root", "D:/game", "--output", "D:/games/out", "--config", "D:/rules.toml"], panel.BuildArguments(out _));
 
         panel.Libs = "D:/emu";
-        panel.Config = "D:/rules.toml";
         panel.Workers = "4";
         panel.SelfContained = true;
         panel.VerifyGame = false;
@@ -143,32 +148,23 @@ public sealed class AmprPackPanelTests
     }
 
     [Fact]
-    public void Page_says_which_profile_matches_the_game_folder()
+    public void Page_asks_for_a_profile_or_traces()
     {
-        using TempDir dir = new();
-        string game = Directory.CreateDirectory(Path.Combine(dir.Path, "game")).FullName;
         AmprPackPanelViewModel panel = Panel("game");
-        Assert.False(panel.ShowRulesFound || panel.ShowRulesNone || panel.ShowRulesConfig);
-
-        panel.Root = game;
-        Assert.True(panel.ShowRulesNone);
-        Assert.False(panel.ShowRulesFound);
-        Assert.Contains("No profile found", panel.RulesNoneText, StringComparison.Ordinal);
-
-        dir.File("game/Media/globalgamemanagers", "unity");
-        panel.Root = game + Path.DirectorySeparatorChar;
-        Assert.True(panel.ShowRulesFound);
-        Assert.False(panel.ShowRulesNone);
-        Assert.Equal(
-            "✓ Profile found: unity (identified by Media/globalgamemanagers). Only StreamingAssets is packed. Tested: runs on God of War Sons of Sparta (PPSA28997).",
-            panel.RulesFoundText);
+        Assert.True(panel.ShowRulesMissing);
+        Assert.False(panel.ShowRulesConfig);
 
         panel.Config = "rules.toml";
-        Assert.False(panel.ShowRulesFound);
+        Assert.False(panel.ShowRulesMissing);
         Assert.True(panel.ShowRulesConfig);
 
+        panel.Config = string.Empty;
+        panel.Traces = "traces";
+        Assert.False(panel.ShowRulesMissing);
+
         panel.Action = panel.Actions.Single(a => a.Value == "verify");
-        Assert.False(panel.ShowRulesFound || panel.ShowRulesNone || panel.ShowRulesConfig);
+        panel.Traces = string.Empty;
+        Assert.False(panel.ShowRulesMissing || panel.ShowRulesConfig);
     }
 
     [Fact]
@@ -182,7 +178,7 @@ public sealed class AmprPackPanelTests
 
         panel.Traces = traces;
         Assert.True(panel.ShowNoTraces);
-        Assert.False(panel.ShowRulesTraces || panel.ShowRulesNone || panel.ShowRulesFound);
+        Assert.False(panel.ShowRulesTraces || panel.ShowRulesMissing);
 
         // Runs copied in after the folder was picked are found when the page runs; hidden files count.
         dir.File("traces/startup/ampr_commands.bin");
@@ -205,7 +201,7 @@ public sealed class AmprPackPanelTests
         Assert.Contains("--pack-untraced-types", panel.BuildArguments(out _)!);
 
         panel.Action = panel.Actions.Single(a => a.Value == "pack");
-        Assert.DoesNotContain("--preset", panel.BuildArguments(out _)!);
+        Assert.Equal(["--traces", traces + Path.DirectorySeparatorChar], panel.BuildArguments(out _)!.SkipWhile(a => a != "--traces").Take(2));
         Assert.Contains("--pack-untraced-types", panel.BuildArguments(out _)!);
 
         panel.Config = "rules.toml";
@@ -214,8 +210,14 @@ public sealed class AmprPackPanelTests
         Assert.Equal("Use either a TOML file or a trace folder, not both.", error);
     }
 
+    // Compress every file but executables, modules, system files and the libraries.
+    private static string CompressAll(TempDir dir) => dir.File(
+        "compress-all.toml",
+        "[pack]\ndefault_action = \"compress\"\n[[rule]]\naction = \"loose\"\n"
+            + "include = [\"eboot.bin\", \"*.prx\", \"*.sprx\", \"sce_sys/*\", \"sce_module/*\", \"fakelib/*\", \"ampr_emu.index\"]\n");
+
     [AvaloniaFact]
-    public async Task Page_without_a_toml_packs_with_the_default_rules_and_logs_cli_progress()
+    public async Task Page_packs_with_a_toml_profile_and_logs_cli_progress()
     {
         using TempDir dir = new();
         string game = BuildPanelTests.Game(dir);
@@ -226,6 +228,7 @@ public sealed class AmprPackPanelTests
         AmprPackPanelViewModel panel = Panel("pack");
         panel.Root = game;
         panel.Output = Path.Combine(dir.Path, "packs");
+        panel.Config = CompressAll(dir);
         await panel.RunCommand.ExecuteAsync(null);
 
         Assert.Equal("✓ Completed successfully.", panel.Job.Lines[^1].Text);
@@ -247,6 +250,7 @@ public sealed class AmprPackPanelTests
         panel.Root = game;
         panel.Output = Path.Combine(dir.Path, "playable");
         panel.Libs = Path.Combine(dir.Path, "emu");
+        panel.Config = CompressAll(dir);
         await panel.RunCommand.ExecuteAsync(null);
 
         Assert.True(panel.Job.Lines[^1].Text == "✓ Completed successfully.", string.Join('\n', panel.Job.Lines.Select(l => l.Text)));

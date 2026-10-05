@@ -183,9 +183,9 @@ public sealed class AMPRProfilerTests
         Assert.True(File.Exists(Path.Combine(output, "data", "level1.dat")));
         Assert.True(File.Exists(Path.Combine(output, "ampr_assets.index.runtime")));
 
-        exit = MkPFSCli.Run(["ampr", "game", "--root", game, "--output", Path.Combine(dir.Path, "out2"), "--traces", traces, "--preset", "unity"], ctx);
+        exit = MkPFSCli.Run(["ampr", "game", "--root", game, "--output", Path.Combine(dir.Path, "out2"), "--traces", traces, "--config", traces], ctx);
         Assert.Equal(2, exit);
-        Assert.EndsWith("error: --traces cannot be used with --config or --preset\n", stderr.ToString(), StringComparison.Ordinal);
+        Assert.EndsWith("error: --traces cannot be used with --config\n", stderr.ToString(), StringComparison.Ordinal);
 
         exit = MkPFSCli.Run(["ampr", "game", "--root", game, "--output", Path.Combine(dir.Path, "out3"), "--traces", game], ctx);
         Assert.Equal(2, exit);

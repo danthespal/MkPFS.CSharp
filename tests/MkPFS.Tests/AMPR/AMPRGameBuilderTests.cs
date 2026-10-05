@@ -45,10 +45,20 @@ public sealed class AMPRGameBuilderTests
 
     private static AMPRGameOptions Options(TempDir dir, string? image = null) => new()
     {
-        Config = AMPRPackConfig.LoadPreset("default"),
+        Config = CompressAll(),
         LibsDir = Path.Combine(dir.Path, "libs"),
         ExfatImage = image,
     };
+
+    // Compress every file but executables, modules, system files and the libraries.
+    private static AMPRPackConfig CompressAll() => AMPRProfiler.ToConfig("""
+        [pack]
+        default_action = "compress"
+
+        [[rule]]
+        action = "loose"
+        include = ["eboot.bin", "*/eboot.bin", "*.prx", "*.sprx", "sce_sys/*", "sce_module/*", "fakelib/*", "fakelib2/*", "ampr_emu.index"]
+        """);
 
     private static Dictionary<string, string> Hashes(string root) =>
         Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories).ToDictionary(
@@ -148,8 +158,8 @@ public sealed class AMPRGameBuilderTests
         using TempDir dir = new();
         string game = Game(dir);
         string output = dir.Dir("out");
-        AMPRGameOptions options = Options(dir) with { Config = AMPRPackConfig.LoadPreset("default") };
-        options.Config.RequiredPacked = ["eboot.bin"]; // the preset keeps it loose, so the packer fails
+        AMPRGameOptions options = Options(dir) with { Config = CompressAll() };
+        options.Config.RequiredPacked = ["eboot.bin"]; // the rules keep it loose, so the packer fails
 
         Assert.ThrowsAny<Exception>(() => AMPRGameBuilder.Build(game, output, options, new ListLog()));
 
@@ -203,22 +213,17 @@ public sealed class AMPRGameBuilderTests
         StringWriter stderr = new() { NewLine = "\n" };
         CliContext ctx = new(stdout, stderr, useColor: false, utf8: false, progress: false);
 
-        int exit = MkPFSCli.Run(["ampr", "game", "--root", game, "--output", Path.Combine(dir.Path, "out"), "--fakelib", Path.Combine(dir.Path, "libs")], ctx);
+        string toml = dir.File("rules.toml", "[pack]\ndefault_action = \"compress\"\n[[rule]]\naction = \"loose\"\ninclude = [\"eboot.bin\", \"*.prx\", \"*.sprx\", \"sce_sys/*\"]\n");
+        int exit = MkPFSCli.Run(["ampr", "game", "--root", game, "--output", Path.Combine(dir.Path, "out"), "--fakelib", Path.Combine(dir.Path, "libs"), "--config", toml], ctx);
 
         Assert.True(exit == 0, stdout.ToString() + stderr.ToString());
-        Assert.StartsWith(global::MkPFS.Cli.Commands.AmprCommand.ExperimentalWarning + "\nNo profile found for this game: ", stdout.ToString(), StringComparison.Ordinal);
+        Assert.StartsWith(global::MkPFS.Cli.Commands.AmprCommand.ExperimentalWarning + $"\nRules: TOML profile {toml}\n", stdout.ToString(), StringComparison.Ordinal);
         foreach (string step in (string[])["[1/5] Libraries: fakelib/", "[2/5] Writing ampr_emu.index", "[3/5] Packing", "[4/5] Copying loose files", "[5/5] Verifying"])
         {
             Assert.Contains(step + "\n", stdout.ToString(), StringComparison.Ordinal);
         }
 
-        string toml = dir.File("rules.toml", "[pack]\ndefault_action = \"loose\"\n");
-        stdout.GetStringBuilder().Clear();
-        exit = MkPFSCli.Run(["ampr", "game", "--root", game, "--output", Path.Combine(dir.Path, "out3"), "--fakelib", Path.Combine(dir.Path, "libs"), "--config", toml], ctx);
-        Assert.True(exit == 0, stdout.ToString() + stderr.ToString());
-        Assert.Contains($"\nRules: your TOML file {toml} (no built-in profile)\n", stdout.ToString(), StringComparison.Ordinal);
-
-        exit = MkPFSCli.Run(["ampr", "game", "--root", game, "--output", Path.Combine(dir.Path, "out2")], ctx);
+        exit = MkPFSCli.Run(["ampr", "game", "--root", game, "--output", Path.Combine(dir.Path, "out2"), "--config", toml], ctx);
         Assert.Equal(2, exit);
         Assert.EndsWith("error: fakelib/libSceAmpr.sprx cannot read asset packs; use AMPR Emu 0.4.2.1 or newer from https://github.com/drakmor/ampr_emu/releases\n", stderr.ToString(), StringComparison.Ordinal);
     }

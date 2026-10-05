@@ -20,7 +20,7 @@ internal static class AmprCommand
 {
     /// <summary>Printed to stderr when a pack run packs nothing (an addition to the oracle output).</summary>
     internal const string NothingPackedWarning =
-        "warning: no files were packed; without --config or --preset default every file stays loose";
+        "warning: no files were packed; without --config or --traces every file stays loose";
 
     /// <summary>Printed by <c>ampr game</c> before it starts.</summary>
     internal const string ExperimentalWarning =
@@ -57,8 +57,6 @@ internal static class AmprCommand
         Option<string> amprIndex = Required("--ampr-index", "AMPRIDX3 file");
         Option<string> output = Required("--output", "output directory");
         Option<string?> config = new("--config") { Description = "TOML pack configuration" };
-        Option<string?> preset = new("--preset") { Description = "built-in rules instead of --config: default compresses every file and keeps executables, modules and system files loose; unity compresses only StreamingAssets; insomniac compresses only the d/ archives but boot, movie and audio ones; auto picks insomniac or unity from the game, else default" };
-        preset.AcceptOnlyFromAmong([.. AMPRPackConfig.PresetNames]);
         Option<string?> traces = new("--traces") { Description = TracesDescription };
         Option<bool> untracedTypes = new("--pack-untraced-types") { Description = UntracedTypesDescription };
         Option<string[]> include = Repeated("--include", "additional include glob");
@@ -72,27 +70,16 @@ internal static class AmprCommand
         Option<bool> noProgress = new("--no-progress") { Description = "suppress build progress on stderr; final JSON still goes to stdout" };
         Command command = new("pack", "build pack index and data volumes")
         {
-            root, amprIndex, output, config, preset, traces, untracedTypes, include, exclude, includeFrom, excludeFrom, workers, selfContained, requirePacked, allowMissing, noProgress,
+            root, amprIndex, output, config, traces, untracedTypes, include, exclude, includeFrom, excludeFrom, workers, selfContained, requirePacked, allowMissing, noProgress,
         };
         command.SetAction(parse => Run(ctx, () =>
         {
             string? configPath = parse.GetValue(config);
-            string? presetName = parse.GetValue(preset);
             string? tracesDir = parse.GetValue(traces);
-            if (parse.GetValue(untracedTypes) && tracesDir is null)
-            {
-                throw new AMPRPackException("--pack-untraced-types needs --traces");
-            }
-
-            AMPRPackConfig loaded = (configPath, presetName, tracesDir) switch
-            {
-                (not null, not null, _) => throw new AMPRPackException("--config and --preset cannot be used together"),
-                (_, _, not null) when configPath is not null || presetName is not null =>
-                    throw new AMPRPackException("--traces cannot be used with --config or --preset"),
-                (null, null, string dir) => TraceRules(Resolve(ctx, dir), parse.GetValue(untracedTypes), ctx.Err.WriteLine),
-                (null, not null, _) => Preset(presetName, Resolve(ctx, parse.GetValue(root)!), ctx.Err.WriteLine),
-                _ => AMPRPackConfig.Load(configPath is null ? null : Resolve(ctx, configPath)),
-            };
+            CheckRuleOptions(configPath, tracesDir, parse.GetValue(untracedTypes));
+            AMPRPackConfig loaded = tracesDir is not null
+                ? TraceRules(Resolve(ctx, tracesDir), parse.GetValue(untracedTypes), ctx.Err.WriteLine)
+                : AMPRPackConfig.Load(configPath is null ? null : Resolve(ctx, configPath));
             if (parse.GetValue(workers) is { } count)
             {
                 loaded.Workers = count is >= 1 and <= 256 ? count : throw new AMPRPackException("--workers must be between 1 and 256");
@@ -171,9 +158,7 @@ internal static class AmprCommand
         Option<string> root = Required("--root", "unpacked game folder (/app0); only read");
         Option<string> output = Required("--output", "new or empty folder for the playable game");
         Option<string?> fakelib = new("--fakelib") { Description = "folder with AMPR Emu 0.4.2.1+ libSceAmpr.sprx and other fakelib libraries to add" };
-        Option<string?> config = new("--config") { Description = "TOML pack configuration (default: --preset auto)" };
-        Option<string?> preset = new("--preset") { Description = "built-in rules instead of --config: auto (insomniac or unity from the game, else default), default (every file but executables, modules and system files), insomniac (the d/ archives but boot, movie and audio ones) or unity (only StreamingAssets); default: auto" };
-        preset.AcceptOnlyFromAmong([.. AMPRPackConfig.PresetNames]);
+        Option<string?> config = new("--config") { Description = "TOML pack profile for the game (or --traces)" };
         Option<string?> traces = new("--traces") { Description = TracesDescription };
         Option<bool> untracedTypes = new("--pack-untraced-types") { Description = UntracedTypesDescription };
         Option<int?> workers = new("--workers") { Description = "compression workers" };
@@ -184,32 +169,17 @@ internal static class AmprCommand
         Option<bool> noProgress = new("--no-progress") { Description = "suppress progress on stderr" };
         Command command = new("game", "build a folder that runs from packs as is: libraries, ampr_emu.index, packs and loose files (not in ampr_pack.py)")
         {
-            root, output, fakelib, config, preset, traces, untracedTypes, workers, selfContained, exfat, exfatFree, skipVerify, noProgress,
+            root, output, fakelib, config, traces, untracedTypes, workers, selfContained, exfat, exfatFree, skipVerify, noProgress,
         };
         command.SetAction(parse => Run(ctx, () =>
         {
             ctx.Log.Warning(ExperimentalWarning);
             string? configPath = parse.GetValue(config);
-            string? presetName = parse.GetValue(preset);
             string? tracesDir = parse.GetValue(traces);
-            if (configPath is not null && presetName is not null)
-            {
-                throw new AMPRPackException("--config and --preset cannot be used together");
-            }
-
-            if (parse.GetValue(untracedTypes) && tracesDir is null)
-            {
-                throw new AMPRPackException("--pack-untraced-types needs --traces");
-            }
-
-            if (tracesDir is not null && (configPath is not null || presetName is not null))
-            {
-                throw new AMPRPackException("--traces cannot be used with --config or --preset");
-            }
-
+            CheckRuleOptions(configPath, tracesDir, parse.GetValue(untracedTypes));
             AMPRPackConfig loaded = tracesDir is not null ? TraceRules(Resolve(ctx, tracesDir), parse.GetValue(untracedTypes), message => ctx.Log.Info(message))
                 : configPath is not null ? Config(ctx, Resolve(ctx, configPath))
-                : Preset(presetName ?? "auto", Resolve(ctx, parse.GetValue(root)!), message => ctx.Log.Info(message));
+                : throw new AMPRPackException(NoRulesError);
             if (parse.GetValue(workers) is { } count)
             {
                 loaded.Workers = count is >= 1 and <= 256 ? count : throw new AMPRPackException("--workers must be between 1 and 256");
@@ -249,33 +219,21 @@ internal static class AmprCommand
         return command;
     }
 
-    // Built-in rules. The log says whether a profile matched the game and whether it was played on a PS5, so the
-    // user can tell how likely the packed game is to run.
-    private static AMPRPackConfig Preset(string name, string root, Action<string> report)
+    /// <summary><c>ampr game</c> without rules: nothing would be packed.</summary>
+    internal const string NoRulesError =
+        "ampr game needs the rules to pack with: --config <profile.toml> for the game, or --traces <folder> of APR traces";
+
+    private static void CheckRuleOptions(string? configPath, string? tracesDir, bool untracedTypes)
     {
-        bool auto = name == "auto";
-        string? marker = null;
-        if (auto)
+        if (untracedTypes && tracesDir is null)
         {
-            (name, marker) = AMPRPackConfig.DetectPreset(root);
+            throw new AMPRPackException("--pack-untraced-types needs --traces");
         }
 
-        report(RulesReport(name, marker, auto));
-        return AMPRPackConfig.LoadPreset(name);
-    }
-
-    private static string RulesReport(string preset, string? marker, bool auto)
-    {
-        (string packs, string? testedOn) = AMPRPackConfig.PresetInfo(preset);
-        string tested = testedOn is null
-            ? "Untested: the game may not start on the PS5; keep the original."
-            : $"Tested: runs on {testedOn}.";
-        return (preset, marker, auto) switch
+        if (tracesDir is not null && configPath is not null)
         {
-            (_, not null, _) => $"Profile found: {preset} ({marker}); {packs}. {tested}",
-            ("default", null, true) => $"No profile found for this game: generic rules ({packs}). {tested}",
-            _ => $"Rules: {preset} (--preset); {packs}. {tested}",
-        };
+            throw new AMPRPackException("--traces cannot be used with --config");
+        }
     }
 
     private const string TracesDescription =
@@ -329,7 +287,7 @@ internal static class AmprCommand
 
     private static AMPRPackConfig Config(CliContext ctx, string path)
     {
-        ctx.Log.Info($"Rules: your TOML file {path} (no built-in profile)");
+        ctx.Log.Info($"Rules: TOML profile {path}");
         return AMPRPackConfig.Load(path);
     }
 

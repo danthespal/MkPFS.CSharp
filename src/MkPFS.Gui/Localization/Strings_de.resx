@@ -33,18 +33,13 @@
   <data name="am_section" xml:space="preserve"><value>APR Emu</value></data>
   <data name="am_title" xml:space="preserve"><value>Als APR-Titel behandeln</value></data>
   <data name="ap_act_game" xml:space="preserve"><value>Spielfertigen Ordner erstellen (Packs + lose Dateien)</value></data>
-  <data name="ap_rules_found" xml:space="preserve"><value>✓ Profil gefunden: {0} (erkannt an {1}). {2}</value></data>
-  <data name="ap_rules_packs_insomniac" xml:space="preserve"><value>Nur die Archive in d/ werden gepackt; Boot-, Video- und Audioarchive bleiben einzeln.</value></data>
-  <data name="ap_rules_packs_unity" xml:space="preserve"><value>Nur StreamingAssets wird gepackt.</value></data>
-  <data name="ap_rules_packs_default" xml:space="preserve"><value>Alle Dateien außer ausführbaren Dateien, Modulen und Systemdateien werden gepackt.</value></data>
-  <data name="ap_rules_tested" xml:space="preserve"><value>Getestet: läuft mit {0}.</value></data>
-  <data name="ap_rules_untested" xml:space="preserve"><value>Ungetestet: das Spiel startet auf der PS5 eventuell nicht.</value></data>
-  <data name="ap_rules_none" xml:space="preserve"><value>Kein Profil für dieses Spiel gefunden: es werden allgemeine Regeln verwendet. {0} Sie sind ungetestet, das Spiel startet auf der PS5 eventuell nicht; behalte das Original.</value></data>
-  <data name="ap_rules_config" xml:space="preserve"><value>Deine TOML-Datei bestimmt, was gepackt wird; kein eingebautes Profil wird verwendet.</value></data>
+  <data name="ap_rules_missing" xml:space="preserve"><value>Wähle das TOML-Profil für dieses Spiel oder einen Ordner mit APR-Traces, aus dem die Regeln erstellt werden. Profile sind TOML-Dateien, die pro Spiel geteilt werden.</value></data>
+  <data name="ap_rules_config" xml:space="preserve"><value>Dein TOML-Profil bestimmt, was gepackt wird.</value></data>
   <data name="ap_traces_label" xml:space="preserve"><value>Trace-Ordner (optional)</value></data>
   <data name="ap_traces_ph" xml:space="preserve"><value>Ordner mit ampr_commands.bin und ampr_emu.index vom Debug-AMPR-Emu, ein Lauf pro Unterordner</value></data>
   <data name="ap_rules_traces" xml:space="preserve"><value>✓ Regeln aus Traces: {0} aufgezeichnete(r) Lauf/Läufe gefunden. Nur die Dateien, die das Spiel über AMPR gelesen hat, werden gepackt; alle anderen bleiben einzeln.</value></data>
   <data name="ap_rules_no_traces" xml:space="preserve"><value>Keine Traces in diesem Ordner: jeder Lauf braucht ampr_commands.bin und seine ampr_emu.index nebeneinander.</value></data>
+  <data name="ap_err_rules" xml:space="preserve"><value>✗ Wähle ein TOML-Profil oder einen Trace-Ordner: ohne Regeln wird nichts gepackt.</value></data>
   <data name="ap_err_traces_config" xml:space="preserve"><value>Verwende entweder eine TOML-Datei oder einen Trace-Ordner, nicht beides.</value></data>
   <data name="ap_untraced_types" xml:space="preserve"><value>Auch Dateien packen, die keine Sitzung gelesen hat, wenn eine aufgezeichnete Datei denselben Typ hat (zum Beispiel die übrigen .cas-Archive). Ihr Lesen wurde nicht beobachtet, also das Spiel damit testen.</value></data>
   <data name="ap_exfat_free" xml:space="preserve"><value>Freier Platz im Abbild (optional, z. B. 2GiB): nötig für einen Test mit dem Debug-AMPR-Emu, der sein Protokoll in den Spielordner schreibt</value></data>
@@ -66,7 +61,7 @@
   <data name="ap_action" xml:space="preserve"><value>Aktion</value></data>
   <data name="ap_allow_missing" xml:space="preserve"><value>Fehlende Quelldateien lose lassen</value></data>
   <data name="ap_config_label" xml:space="preserve"><value>TOML-Konfiguration</value></data>
-  <data name="ap_config_ph" xml:space="preserve"><value>Leer: Regeln nach Spiel (Unity-Spiele packen nur StreamingAssets)…</value></data>
+  <data name="ap_config_ph" xml:space="preserve"><value>TOML-Profil des Spiels…</value></data>
   <data name="ap_confirm" xml:space="preserve"><value>Gepackte Quelldateien löschen (nicht rückgängig zu machen; sonst nur den Plan anzeigen)</value></data>
   <data name="ap_err_manifest" xml:space="preserve"><value>✗ Paket-Manifest ist erforderlich.</value></data>
   <data name="ap_err_pack" xml:space="preserve"><value>✗ Spielordner und Ausgabeordner sind beide erforderlich.</value></data>

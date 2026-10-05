@@ -23,14 +23,13 @@
     <Rectangle Classes="separator" />
     <TextBlock Text="{l:Tr paths}" Classes="section" Foreground="{Binding Accent}" />
     <c:PathField Label="{l:Tr ap_root_label}" Placeholder="{l:Tr ap_root_ph}" Mode="Folder" Text="{Binding Root}" IsVisible="{Binding ShowRoot}" />
-    <TextBlock Name="RulesFound" Text="{Binding RulesFoundText}" TextWrapping="Wrap" Foreground="{StaticResource Success}" IsVisible="{Binding ShowRulesFound}" />
-    <TextBlock Name="RulesNone" Text="{Binding RulesNoneText}" TextWrapping="Wrap" Foreground="{StaticResource Warning}" IsVisible="{Binding ShowRulesNone}" />
-    <TextBlock Name="RulesConfig" Text="{l:Tr ap_rules_config}" TextWrapping="Wrap" IsVisible="{Binding ShowRulesConfig}" />
     <c:PathField Label="{l:Tr ap_index_label}" Placeholder="{l:Tr ap_index_ph}" Mode="Open" Filters="AMPR index:*.index|All files:*.*" Text="{Binding AmprIndex}" IsVisible="{Binding ShowPackPaths}" />
     <c:PathField Label="{l:Tr ap_manifest_label}" Placeholder="{l:Tr ap_manifest_ph}" Mode="Open" Filters="Pack manifest:*.index|All files:*.*" Text="{Binding Manifest}" IsVisible="{Binding ShowManifest}" />
     <c:PathField Label="{l:Tr ap_out_label}" Placeholder="{l:Tr ap_out_ph}" Mode="Folder" Text="{Binding Output}" IsVisible="{Binding ShowOutput}" />
     <c:PathField Label="{l:Tr ap_libs_label}" Placeholder="{l:Tr ap_libs_ph}" Mode="Folder" Text="{Binding Libs}" IsVisible="{Binding ShowGameOptions}" />
     <c:PathField Label="{l:Tr ap_config_label}" Placeholder="{l:Tr ap_config_ph}" Mode="Open" Filters="TOML:*.toml|All files:*.*" Text="{Binding Config}" IsVisible="{Binding ShowConfig}" />
+    <TextBlock Name="RulesConfig" Text="{l:Tr ap_rules_config}" TextWrapping="Wrap" IsVisible="{Binding ShowRulesConfig}" />
+    <TextBlock Name="RulesMissing" Text="{l:Tr ap_rules_missing}" TextWrapping="Wrap" Foreground="{StaticResource Warning}" IsVisible="{Binding ShowRulesMissing}" />
     <c:PathField Label="{l:Tr ap_traces_label}" Placeholder="{l:Tr ap_traces_ph}" Mode="Folder" Text="{Binding Traces}" IsVisible="{Binding ShowPackOptions}" />
     <TextBlock Name="RulesTraces" Text="{Binding RulesTracesText}" TextWrapping="Wrap" Foreground="{StaticResource Success}" IsVisible="{Binding ShowRulesTraces}" />
     <TextBlock Name="NoTraces" Text="{l:Tr ap_rules_no_traces}" TextWrapping="Wrap" Foreground="{StaticResource Warning}" IsVisible="{Binding ShowNoTraces}" />
