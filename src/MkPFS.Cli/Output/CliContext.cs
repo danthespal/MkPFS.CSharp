@@ -41,6 +41,15 @@ public sealed class CliContext
     /// <summary>Progress bars enabled.</summary>
     public bool ProgressEnabled { get; }
 
+    /// <summary>Progress sink supplied by the host (the GUI), or <see langword="null"/> on a terminal.</summary>
+    public IProgressSink? ExternalProgressSink => _progressSink;
+
+    /// <summary>
+    /// Directory that relative path arguments resolve against (the process directory by default). Commands that
+    /// echo a path as typed, like Python does, resolve it here for file access.
+    /// </summary>
+    public string WorkingDirectory { get; init; } = Directory.GetCurrentDirectory();
+
     /// <summary>Context over the process console.</summary>
     /// <returns>Default context.</returns>
     public static CliContext CreateDefault()

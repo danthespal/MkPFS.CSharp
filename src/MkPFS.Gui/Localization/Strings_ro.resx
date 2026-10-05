@@ -16,8 +16,6 @@
   <data name="adv_keep_ext" xml:space="preserve"><value>Păstrează extensia de ieșire</value></data>
   <data name="adv_keep_inner" xml:space="preserve"><value>Păstrează numele fișierului intern</value></data>
   <data name="adv_new_crypt" xml:space="preserve"><value>Derivare alternativă a cheii (newCrypt)</value></data>
-  <data name="adv_raw" xml:space="preserve"><value>Imagine PFS brută (.ffpfs)</value></data>
-  <data name="adv_require" xml:space="preserve"><value>Cere fișierele jocului</value></data>
   <data name="adv_skip_check" xml:space="preserve"><value>Omite verificarea după împachetare</value></data>
   <data name="adv_spool" xml:space="preserve"><value>Folosește constructorul cu spool</value></data>
   <data name="adv_title" xml:space="preserve"><value>Avansat</value></data>
@@ -32,28 +30,63 @@
   <data name="am_libs_ph" xml:space="preserve"><value>Folder cu libSceAmpr.sprx…</value></data>
   <data name="am_section" xml:space="preserve"><value>APR Emu</value></data>
   <data name="am_title" xml:space="preserve"><value>Tratează ca titlu APR</value></data>
+  <data name="ap_act_game" xml:space="preserve"><value>Creează jocul gata de rulat (pack-uri + fișiere libere)</value></data>
+  <data name="ap_rules_missing" xml:space="preserve"><value>Alege profilul TOML pentru acest joc sau un dosar cu trace-uri APR din care să se creeze regulile. Profilurile sunt fișiere TOML partajate pentru fiecare joc.</value></data>
+  <data name="ap_rules_config" xml:space="preserve"><value>Profilul tău TOML decide ce se împachetează.</value></data>
+  <data name="ap_traces_label" xml:space="preserve"><value>Dosar cu trace-uri (opțional)</value></data>
+  <data name="ap_traces_ph" xml:space="preserve"><value>Dosar cu ampr_commands.bin și ampr_emu.index de la AMPR Emu de depanare, o rulare pe subdosar</value></data>
+  <data name="ap_rules_traces" xml:space="preserve"><value>✓ Reguli din trace-uri: {0} rulare(i) înregistrată(e). Se împachetează doar fișierele citite de joc prin AMPR; restul rămân separate.</value></data>
+  <data name="ap_rules_no_traces" xml:space="preserve"><value>Niciun trace în acest dosar: fiecare rulare are nevoie de ampr_commands.bin și de ampr_emu.index alături.</value></data>
+  <data name="ap_err_rules" xml:space="preserve"><value>✗ Alege un profil TOML sau un dosar cu trace-uri: fără reguli nu se împachetează nimic.</value></data>
+  <data name="ap_err_traces_config" xml:space="preserve"><value>Folosește fie un fișier TOML, fie un dosar cu trace-uri, nu amândouă.</value></data>
+  <data name="ap_untraced_types" xml:space="preserve"><value>Împachetează și fișierele pe care nicio sesiune nu le-a citit, dacă un fișier urmărit are același tip. Nu s-a văzut cum sunt citite, așa că testează jocul cu ele.</value></data>
+  <data name="ap_exfat_free" xml:space="preserve"><value>Spațiu liber în imagine (opțional, ex. 2GiB): necesar pentru un test cu AMPR Emu de depanare, care își scrie jurnalul în dosarul jocului</value></data>
+  <data name="ap_experimental" xml:space="preserve"><value>⚠ Experimental: dacă un joc împachetat rulează depinde de cum își citește fișierele, iar doar un test pe PS5 arată asta. Păstrează jocul original până când ai jucat varianta împachetată.</value></data>
+  <data name="ap_game_note" xml:space="preserve"><value>Creează un folder nou pe care îl copiezi pe PS5 și joci: bibliotecile tale în fakelib/, ampr_emu.index, pack-urile LZ4 și toate fișierele care rămân libere. Folderul jocului este doar citit. Necesită AMPR Emu 0.4.2.1 sau mai nou și un joc care folosește AMPR.</value></data>
+  <data name="ap_libs_label" xml:space="preserve"><value>Folder de Biblioteci (fakelib)</value></data>
+  <data name="ap_libs_ph" xml:space="preserve"><value>Folder cu libSceAmpr.sprx și alte biblioteci fakelib (opțional dacă jocul le are deja)…</value></data>
+  <data name="ap_verify_game" xml:space="preserve"><value>Verifică pack-urile și fișierele libere după creare</value></data>
+  <data name="ap_exfat" xml:space="preserve"><value>Creează și o imagine exFAT (clustere de 64 KiB, montare doar citire)</value></data>
+  <data name="ap_exfat_label" xml:space="preserve"><value>Imagine exFAT (opțional)</value></data>
+  <data name="ap_exfat_ph" xml:space="preserve"><value>Implicit: &lt;titleId&gt;.exfat lângă folderul de ieșire</value></data>
+  <data name="ap_act_inspect" xml:space="preserve"><value>Inspectează manifestul</value></data>
+  <data name="ap_act_list" xml:space="preserve"><value>Listează fișierele</value></data>
+  <data name="ap_act_pack" xml:space="preserve"><value>Doar împachetare (manifest și volume .pak)</value></data>
+  <data name="ap_act_remove" xml:space="preserve"><value>Șterge sursele împachetate</value></data>
+  <data name="ap_act_runtime" xml:space="preserve"><value>Actualizează setările de rulare</value></data>
+  <data name="ap_act_unpack" xml:space="preserve"><value>Despachetează fișierele împachetate</value></data>
+  <data name="ap_act_verify" xml:space="preserve"><value>Verifică pachetele</value></data>
+  <data name="ap_action" xml:space="preserve"><value>Acțiune</value></data>
+  <data name="ap_allow_missing" xml:space="preserve"><value>Lasă libere fișierele sursă lipsă</value></data>
+  <data name="ap_config_label" xml:space="preserve"><value>Configurație TOML</value></data>
+  <data name="ap_config_ph" xml:space="preserve"><value>Profilul TOML al jocului…</value></data>
+  <data name="ap_confirm" xml:space="preserve"><value>Șterge fișierele sursă împachetate (ireversibil; nebifat arată doar planul)</value></data>
+  <data name="ap_err_manifest" xml:space="preserve"><value>✗ Manifestul pachetului este necesar.</value></data>
+  <data name="ap_err_pack" xml:space="preserve"><value>✗ Folderul jocului și folderul de ieșire sunt ambele necesare.</value></data>
+  <data name="ap_err_remove" xml:space="preserve"><value>✗ Manifestul pachetului și folderul jocului sunt ambele necesare.</value></data>
+  <data name="ap_err_runtime" xml:space="preserve"><value>✗ Manifestul pachetului și configurația TOML sunt ambele necesare.</value></data>
+  <data name="ap_err_unpack" xml:space="preserve"><value>✗ Manifestul pachetului și folderul de ieșire sunt ambele necesare.</value></data>
+  <data name="ap_err_workers" xml:space="preserve"><value>✗ Firele trebuie să fie un număr întreg de la 1 la 256.</value></data>
+  <data name="ap_index_label" xml:space="preserve"><value>Index AMPR (opțional)</value></data>
+  <data name="ap_index_ph" xml:space="preserve"><value>Implicit: ampr_emu.index din folderul jocului</value></data>
+  <data name="ap_json" xml:space="preserve"><value>Ieșire JSON</value></data>
+  <data name="ap_manifest_label" xml:space="preserve"><value>Manifestul pachetului</value></data>
+  <data name="ap_manifest_ph" xml:space="preserve"><value>Selectează ampr_assets.index…</value></data>
+  <data name="ap_pack_note" xml:space="preserve"><value>Scrie doar ampr_assets.index, volumele .pak și fișierul .crc în folderul de ieșire, ca ampr_pack.py. Pentru un folder pe care îl copiezi pe PS5 și joci, folosește Creează jocul gata de rulat.</value></data>
+  <data name="ap_note" xml:space="preserve"><value>Pachetele servesc fișierele pe care jocul le citește prin AMPR și prin citiri obișnuite de fișiere (AMPR Emu 0.4.2.1). Fișierele mapate în memorie trebuie să rămână libere; păstrează fișierele sursă până testezi jocul împachetat.</value></data>
+  <data name="ap_out_label" xml:space="preserve"><value>Folder de ieșire</value></data>
+  <data name="ap_out_ph" xml:space="preserve"><value>Folder pentru manifest și volumele .pak…</value></data>
+  <data name="ap_overwrite" xml:space="preserve"><value>Suprascrie fișierele existente</value></data>
+  <data name="ap_root_label" xml:space="preserve"><value>Folderul jocului (/app0)</value></data>
+  <data name="ap_root_ph" xml:space="preserve"><value>Folder cu eboot.bin și sce_sys…</value></data>
+  <data name="ap_self_contained" xml:space="preserve"><value>Nu lăsa niciodată libere fișierele selectate (stochează necomprimate blocurile necompresibile)</value></data>
+  <data name="ap_subtitle" xml:space="preserve"><value>Creează și verifică pachete de resurse LZ4 AMPR Emu pentru un folder de joc</value></data>
+  <data name="ap_title" xml:space="preserve"><value>Pachete AMPR</value></data>
+  <data name="ap_workers" xml:space="preserve"><value>Fire (gol = din configurație)</value></data>
   <data name="app_subtitle" xml:space="preserve"><value>PlayStation File System</value></data>
   <data name="browse" xml:space="preserve"><value>Răsfoiește</value></data>
   <data name="browse_file" xml:space="preserve"><value>Fișier</value></data>
   <data name="browse_folder" xml:space="preserve"><value>Folder</value></data>
-  <data name="bt_compress" xml:space="preserve"><value>Compresie PFSC</value></data>
-  <data name="bt_dry" xml:space="preserve"><value>Simulare</value></data>
-  <data name="bt_err_out" xml:space="preserve"><value>✗ Folderul de ieșire este obligatoriu.</value></data>
-  <data name="bt_err_src" xml:space="preserve"><value>✗ Folderul sursă este obligatoriu.</value></data>
-  <data name="bt_out_label" xml:space="preserve"><value>Folder de ieșire</value></data>
-  <data name="bt_out_ph" xml:space="preserve"><value>Alege folderul de ieșire…</value></data>
-  <data name="bt_overwrite" xml:space="preserve"><value>Suprascrie existente</value></data>
-  <data name="bt_preview_count" xml:space="preserve"><value>{0} element(e): {1} folder(e), {2} fișier(e)</value></data>
-  <data name="bt_preview_empty" xml:space="preserve"><value>Alege un folder sursă pentru a previzualiza coada.</value></data>
-  <data name="bt_preview_error" xml:space="preserve"><value>Nu se poate scana folderul: {0}</value></data>
-  <data name="bt_preview_invalid" xml:space="preserve"><value>Alege un folder existent pentru a previzualiza coada.</value></data>
-  <data name="bt_preview_none" xml:space="preserve"><value>Nu s-au găsit elemente de împachetat.</value></data>
-  <data name="bt_preview_scanning" xml:space="preserve"><value>Se scanează elementele...</value></data>
-  <data name="bt_queue" xml:space="preserve"><value>Coadă lot</value></data>
-  <data name="bt_src_label" xml:space="preserve"><value>Folder sursă</value></data>
-  <data name="bt_src_ph" xml:space="preserve"><value>Alege folderul sursă…</value></data>
-  <data name="bt_subtitle" xml:space="preserve"><value>Convertește mai multe jocuri deodată în imagini PFS</value></data>
-  <data name="bt_title" xml:space="preserve"><value>Conversie în lot</value></data>
   <data name="bt_version" xml:space="preserve"><value>Versiune</value></data>
   <data name="cancel" xml:space="preserve"><value>Anulează</value></data>
   <data name="cancelled" xml:space="preserve"><value>✗ Anulat.</value></data>
@@ -65,7 +98,8 @@ Ieșirea scrisă parțial este ștearsă; o reparare pe loc își termină mai �
   <data name="ct_block" xml:space="preserve"><value>Dimensiune bloc (jocurile PS5 folosesc 64 KiB)</value></data>
   <data name="ct_block_auto" xml:space="preserve"><value>Auto (64 KiB)</value></data>
   <data name="ct_block_fit" xml:space="preserve"><value>Auto-potrivire (umplere minimă)</value></data>
-  <data name="ct_cpu" xml:space="preserve"><value>Nuclee CPU (0 = auto: {0})</value></data>
+  <data name="ct_cpu" xml:space="preserve"><value>Nuclee CPU</value></data>
+  <data name="ct_cpu_auto" xml:space="preserve"><value>Automat ({0} nuclee)</value></data>
   <data name="ct_err_min_size" xml:space="preserve"><value>✗ „Stochează fișierele mai mici de” trebuie să fie un număr întreg de octeți.</value></data>
   <data name="ct_level" xml:space="preserve"><value>Nivel de compresie (0–9)</value></data>
   <data name="ct_max_ratio" xml:space="preserve"><value>Dimensiune comprimată max. (% din original)</value></data>
@@ -105,11 +139,10 @@ Ieșirea scrisă parțial este ștearsă; o reparare pe loc își termină mai �
   <data name="i_title" xml:space="preserve"><value>Inspectare</value></data>
   <data name="lang_label" xml:space="preserve"><value>Limbă</value></data>
   <data name="meta_import" xml:space="preserve"><value>Previzualizare import</value></data>
-  <data name="nav_batch" xml:space="preserve"><value>Lot</value></data>
+  <data name="nav_ampr" xml:space="preserve"><value>Pachete AMPR</value></data>
   <data name="nav_inspect" xml:space="preserve"><value>Inspectare</value></data>
   <data name="nav_pack_exfat" xml:space="preserve"><value>Împachetare exFAT</value></data>
-  <data name="nav_pack_file" xml:space="preserve"><value>Împachetare fișier</value></data>
-  <data name="nav_pack_folder" xml:space="preserve"><value>Împachetare folder</value></data>
+  <data name="nav_pack_file" xml:space="preserve"><value>Împachetare FFPFSC</value></data>
   <data name="nav_repair" xml:space="preserve"><value>Reparare</value></data>
   <data name="nav_tree" xml:space="preserve"><value>Arbore</value></data>
   <data name="nav_unpack" xml:space="preserve"><value>Despachetare</value></data>
@@ -119,19 +152,8 @@ Ieșirea scrisă parțial este ștearsă; o reparare pe loc își termină mai �
   <data name="options" xml:space="preserve"><value>Opțiuni</value></data>
   <data name="output_log" xml:space="preserve"><value>Jurnal de ieșire</value></data>
   <data name="paths" xml:space="preserve"><value>Căi</value></data>
-  <data name="pf_compress" xml:space="preserve"><value>Compresie PFSC</value></data>
   <data name="pf_dry" xml:space="preserve"><value>Simulare</value></data>
-  <data name="pf_err_out" xml:space="preserve"><value>✗ Calea imaginii de ieșire este obligatorie.</value></data>
-  <data name="pf_err_src" xml:space="preserve"><value>✗ Folderul sursă este obligatoriu.</value></data>
-  <data name="pf_out_label" xml:space="preserve"><value>Imagine de ieșire</value></data>
-  <data name="pf_out_ph" xml:space="preserve"><value>Alege calea de ieșire…</value></data>
   <data name="pf_signed" xml:space="preserve"><value>Imagine semnată</value></data>
-  <data name="pf_src_label" xml:space="preserve"><value>Folder sursă</value></data>
-  <data name="pf_src_ph" xml:space="preserve"><value>Alege folderul sursă…</value></data>
-  <data name="pf_subtitle" xml:space="preserve"><value>Creează o imagine PFS dintr-un director sursă</value></data>
-  <data name="pf_temp" xml:space="preserve"><value>Folder temporar (opțional)</value></data>
-  <data name="pf_temp_ph" xml:space="preserve"><value>Folder temporar personalizat…</value></data>
-  <data name="pf_title" xml:space="preserve"><value>Împachetare folder</value></data>
   <data name="pf_verify" xml:space="preserve"><value>Verifică după împachetare</value></data>
   <data name="pf_version" xml:space="preserve"><value>Versiune</value></data>
   <data name="pkf_compress" xml:space="preserve"><value>Compresie PFSC</value></data>
@@ -153,7 +175,7 @@ Ieșirea scrisă parțial este ștearsă; o reparare pe loc își termină mai �
   <data name="pkf_subtitle" xml:space="preserve"><value>Împachetează un singur fișier într-o imagine comprimată PFSC</value></data>
   <data name="pkf_temp" xml:space="preserve"><value>Folder temporar (opțional)</value></data>
   <data name="pkf_temp_ph" xml:space="preserve"><value>Folder temporar personalizat…</value></data>
-  <data name="pkf_title" xml:space="preserve"><value>Împachetare fișier</value></data>
+  <data name="pkf_title" xml:space="preserve"><value>Împachetare FFPFSC</value></data>
   <data name="pkf_version" xml:space="preserve"><value>Versiune</value></data>
   <data name="r_bad_blocks" xml:space="preserve"><value>Listă blocuri defecte (opțional — TSV Game Compressor)</value></data>
   <data name="r_bad_blocks_ph" xml:space="preserve"><value>bad_blocks.tsv…</value></data>
@@ -232,4 +254,29 @@ Ieșirea scrisă parțial este ștearsă; o reparare pe loc își termină mai �
   <data name="v_subtitle" xml:space="preserve"><value>Validează structura imaginii, inode-urile și sumele de control</value></data>
   <data name="v_title" xml:space="preserve"><value>Verificare</value></data>
   <data name="version_footer" xml:space="preserve"><value>v{0}</value></data>
+  <data name="tip_ct_preset" xml:space="preserve"><value>Setări rapide pentru nivelul de compresie și nucleele CPU. Dacă schimbi oricare valoare, se alege presetarea potrivită sau Personalizat.</value></data>
+  <data name="tip_ct_level" xml:space="preserve"><value>Nivelul zlib pentru fiecare bloc: 1 este cel mai rapid, 9 dă cea mai mică imagine, 0 păstrează blocurile necomprimate. Implicit este 7.</value></data>
+  <data name="tip_ct_cpu" xml:space="preserve"><value>Câte nuclee CPU comprimă blocuri în același timp. Automat folosește toate nucleele acestui calculator; alege mai puține ca să rămână calculatorul responsiv sau să folosească mai puțină memorie.</value></data>
+  <data name="tip_ct_block" xml:space="preserve"><value>Dimensiunea blocurilor în care este împărțită imaginea și comprimată bloc cu bloc. Jocurile PS5 folosesc 64 KiB; schimb-o doar dacă știi că ținta are nevoie de altă dimensiune.</value></data>
+  <data name="tip_ct_threshold" xml:space="preserve"><value>Un bloc comprimat este păstrat doar dacă economisește cel puțin acest procent; altfel este stocat necomprimat. 0 păstrează orice bloc care devine mai mic.</value></data>
+  <data name="tip_ct_max_ratio" xml:space="preserve"><value>Un fișier rămâne necomprimat dacă dimensiunea comprimată ar depăși acest procent din original. 100 comprimă orice fișier care devine mai mic.</value></data>
+  <data name="tip_ct_min_size" xml:space="preserve"><value>Fișierele mai mici decât acest număr de octeți sunt stocate necomprimate, fără încercare. Gol înseamnă dimensiunea blocului.</value></data>
+  <data name="tip_ct_skip_exec" xml:space="preserve"><value>Stochează necomprimate executabilele și modulele (eboot.bin, .prx, .sprx).</value></data>
+  <data name="tip_adv_signed" xml:space="preserve"><value>Creează o imagine PFS semnată, cu cheie EKPFS și seed zero.</value></data>
+  <data name="tip_adv_dry" xml:space="preserve"><value>Verifică sursa și arată ce s-ar scrie, fără să scrie imaginea.</value></data>
+  <data name="tip_adv_verify" xml:space="preserve"><value>După împachetare, decodează toată imaginea și o compară cu sursa. Mai lent, dar dovedește că imaginea este corectă.</value></data>
+  <data name="tip_adv_skip_check" xml:space="preserve"><value>Sari peste verificarea rapidă a structurii de după împachetare.</value></data>
+  <data name="tip_adv_keep_ext" xml:space="preserve"><value>Folosește numele de ieșire exact cum a fost scris. Altfel, extensia este potrivită formatului (.ffpfsc sau .ffpfs).</value></data>
+  <data name="tip_adv_keep_inner" xml:space="preserve"><value>Păstrează în imagine numele fișierului sursă. Altfel, este redenumit cu un nume sigur, normalizat.</value></data>
+  <data name="tip_adv_spool" xml:space="preserve"><value>Construiește printr-un fișier temporar intermediar în loc să scrie direct în imagine. Mai lent; folosește-l doar dacă modul implicit eșuează.</value></data>
+  <data name="tip_adv_version" xml:space="preserve"><value>Profilul formatului PFS: PS5 pentru jocuri PS5, PS4 pentru imagini PS4.</value></data>
+  <data name="tip_adv_inode" xml:space="preserve"><value>Lățimea intrărilor inode: 32 de biți (implicit) sau 64 de biți.</value></data>
+  <data name="tip_adv_case" xml:space="preserve"><value>Numele fișierelor din imagine țin cont de majuscule. Implicit nu țin.</value></data>
+  <data name="tip_adv_verbose" xml:space="preserve"><value>Scrie mai multe detalii în jurnal.</value></data>
+  <data name="tip_adv_encrypted" xml:space="preserve"><value>Criptează blocurile imaginii cu AES-XTS.</value></data>
+  <data name="tip_adv_new_crypt" xml:space="preserve"><value>Derivă cheile de criptare cu metoda alternativă newCrypt.</value></data>
+  <data name="tip_adv_ekpfs" xml:space="preserve"><value>64 de caractere hexazecimale: cheia EKPFS pentru criptare sau semnare. Gol înseamnă doar zerouri.</value></data>
+  <data name="tip_adv_cluster" xml:space="preserve"><value>Dimensiunea clusterului exFAT. Automat (64 KiB) merge cel mai bine cu ShadowMountPlus; clusterele mai mici irosesc mai puțin spațiu la fișiere mici, dar citesc mai încet.</value></data>
+  <data name="tip_adv_image_format" xml:space="preserve"><value>Cum se citește imaginea: Automat detectează PFS sau exFAT; alege unul ca să-l forțezi.</value></data>
+  <data name="tip_v_require" xml:space="preserve"><value>Avertizează dacă jocului îi lipsește sce_sys/param.json, eboot.bin sau pfs-version.dat.</value></data>
 </root>

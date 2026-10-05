@@ -53,6 +53,53 @@ public sealed class JobRunnerTests
     }
 
     [Fact]
+    public async Task With_a_plan_one_bar_covers_every_phase_and_never_moves_back()
+    {
+        JobRunner runner = Runner();
+        List<double> seen = [];
+        runner.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(JobRunner.Progress))
+            {
+                seen.Add(runner.Progress);
+            }
+        };
+        List<string> labels = [];
+        IReadOnlyList<ProgressPhase> plan = ProgressPlan.For(["pack", "file", "a.exfat", "a.ffpfsc", "--verify"])!;
+
+        await runner.RunAsync(
+            job =>
+            {
+                job.Progress.Report("compress", 30, 60);
+                labels.Add(runner.PhaseText);
+                job.Progress.Report("compress", 60, 60);
+                job.Progress.Report("verify", 0, 10); // a new phase starts at 0%, the bar does not
+                labels.Add(runner.PhaseText);
+                job.Progress.Report("verify", 10, 10);
+                job.Progress.Report("compare", 5, 10);
+                return 0;
+            },
+            plan);
+
+        // compress weighs 3 of 5, verify and compare 1 each.
+        Assert.Equal([0.3, 0.6, 0.8, 0.9, 1], seen.Where(p => p > 0).Select(p => Math.Round(p, 3)).Distinct());
+        Assert.Equal(["compress (1/3)", "verify (2/3)"], labels);
+    }
+
+    [Theory]
+    [InlineData(new[] { "pack", "file", "a", "b", "--verify" }, "compress,verify,compare")]
+    [InlineData(new[] { "pack", "file", "a", "b" }, "")]
+    [InlineData(new[] { "pack", "exfat", "a" }, "")]
+    [InlineData(new[] { "verify", "a.ffpfsc", "--source-file", "a.exfat" }, "verify,compare")]
+    [InlineData(new[] { "verify", "a.ffpfsc" }, "")]
+    [InlineData(new[] { "repair", "a.ffpfsc" }, "scan,repair,verify")]
+    [InlineData(new[] { "repair", "a.ffpfsc", "--scan" }, "")]
+    [InlineData(new[] { "ampr", "game", "--root", "g", "--output", "o", "--exfat", "." }, "pack,exfat")]
+    [InlineData(new[] { "ampr", "game", "--root", "g", "--output", "o" }, "")]
+    public void Plans_list_the_phases_each_command_reports(string[] args, string phases) =>
+        Assert.Equal(phases, string.Join(',', ProgressPlan.For(args)?.Select(p => p.Name) ?? []));
+
+    [Fact]
     public async Task Cancel_stops_the_job_at_its_next_progress_report()
     {
         JobRunner runner = Runner();

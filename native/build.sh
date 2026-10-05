@@ -1,5 +1,5 @@
 #!/bin/sh
-# Build native/mkpfs_zlib (zlib 1.3.1 + shim) for Linux/macOS into artifacts/native/<rid>/.
+# Build native/mkpfs_zlib (zlib 1.3.1 + lz4 1.9.4 + shims) for Linux/macOS into artifacts/native/<rid>/.
 # Usage: sh native/build.sh linux-x64|linux-arm64|osx-x64|osx-arm64 [Release]
 set -eu
 

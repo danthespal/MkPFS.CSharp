@@ -1,0 +1,62 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MkPFS.Gui.ViewModels"
+             xmlns:c="using:MkPFS.Gui.Controls"
+             xmlns:l="using:MkPFS.Gui.Localization"
+             x:Class="MkPFS.Gui.Views.Panels.AmprPackForm"
+             x:DataType="vm:AmprPackPanelViewModel">
+  <StackPanel Classes="form">
+    <Border BorderBrush="{StaticResource Warning}" BorderThickness="1" CornerRadius="4" Padding="10,8">
+      <TextBlock Name="ExperimentalNote" Text="{l:Tr ap_experimental}" TextWrapping="Wrap" Foreground="{StaticResource Warning}" />
+    </Border>
+    <StackPanel Spacing="3">
+      <TextBlock Text="{l:Tr ap_action}" Classes="fieldlabel" />
+      <ComboBox Name="ActionPicker" ItemsSource="{Binding Actions}" SelectedItem="{Binding Action}" HorizontalAlignment="Stretch">
+        <ComboBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:Choice"><TextBlock Text="{Binding Label}" /></DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
+    </StackPanel>
+    <TextBlock Text="{l:Tr ap_game_note}" TextWrapping="Wrap" IsVisible="{Binding ShowGameOptions}" />
+    <TextBlock Text="{l:Tr ap_pack_note}" TextWrapping="Wrap" IsVisible="{Binding ShowPackNote}" />
+    <TextBlock Text="{l:Tr ap_note}" TextWrapping="Wrap" />
+    <Rectangle Classes="separator" />
+    <TextBlock Text="{l:Tr paths}" Classes="section" Foreground="{Binding Accent}" />
+    <c:PathField Label="{l:Tr ap_root_label}" Placeholder="{l:Tr ap_root_ph}" Mode="Folder" Text="{Binding Root}" IsVisible="{Binding ShowRoot}" />
+    <c:PathField Label="{l:Tr ap_index_label}" Placeholder="{l:Tr ap_index_ph}" Mode="Open" Filters="AMPR index:*.index|All files:*.*" Text="{Binding AmprIndex}" IsVisible="{Binding ShowPackPaths}" />
+    <c:PathField Label="{l:Tr ap_manifest_label}" Placeholder="{l:Tr ap_manifest_ph}" Mode="Open" Filters="Pack manifest:*.index|All files:*.*" Text="{Binding Manifest}" IsVisible="{Binding ShowManifest}" />
+    <c:PathField Label="{l:Tr ap_out_label}" Placeholder="{l:Tr ap_out_ph}" Mode="Folder" Text="{Binding Output}" IsVisible="{Binding ShowOutput}" />
+    <c:PathField Label="{l:Tr ap_libs_label}" Placeholder="{l:Tr ap_libs_ph}" Mode="Folder" Text="{Binding Libs}" IsVisible="{Binding ShowGameOptions}" />
+    <c:PathField Label="{l:Tr ap_config_label}" Placeholder="{l:Tr ap_config_ph}" Mode="Open" Filters="TOML:*.toml|All files:*.*" Text="{Binding Config}" IsVisible="{Binding ShowConfig}" />
+    <TextBlock Name="RulesConfig" Text="{l:Tr ap_rules_config}" TextWrapping="Wrap" IsVisible="{Binding ShowRulesConfig}" />
+    <TextBlock Name="RulesMissing" Text="{l:Tr ap_rules_missing}" TextWrapping="Wrap" Foreground="{StaticResource Warning}" IsVisible="{Binding ShowRulesMissing}" />
+    <c:PathField Label="{l:Tr ap_traces_label}" Placeholder="{l:Tr ap_traces_ph}" Mode="Folder" Text="{Binding Traces}" IsVisible="{Binding ShowPackOptions}" />
+    <TextBlock Name="RulesTraces" Text="{Binding RulesTracesText}" TextWrapping="Wrap" Foreground="{StaticResource Success}" IsVisible="{Binding ShowRulesTraces}" />
+    <TextBlock Name="NoTraces" Text="{l:Tr ap_rules_no_traces}" TextWrapping="Wrap" Foreground="{StaticResource Warning}" IsVisible="{Binding ShowNoTraces}" />
+    <CheckBox Name="UntracedTypesBox" IsChecked="{Binding UntracedTypes}" IsVisible="{Binding ShowRulesTraces}">
+      <TextBlock Text="{l:Tr ap_untraced_types}" TextWrapping="Wrap" />
+    </CheckBox>
+    <Rectangle Classes="separator" />
+    <TextBlock Text="{l:Tr options}" Classes="section" Foreground="{Binding Accent}" />
+    <StackPanel Spacing="8" IsVisible="{Binding ShowPackOptions}">
+      <StackPanel Spacing="3">
+        <TextBlock Text="{l:Tr ap_workers}" Classes="fieldlabel" />
+        <TextBox Text="{Binding Workers}" Width="120" HorizontalAlignment="Left" />
+      </StackPanel>
+      <CheckBox Content="{l:Tr ap_self_contained}" IsChecked="{Binding SelfContained}" />
+      <CheckBox Content="{l:Tr ap_allow_missing}" IsChecked="{Binding AllowMissing}" IsVisible="{Binding ShowAllowMissing}" />
+    </StackPanel>
+    <StackPanel Spacing="8" IsVisible="{Binding ShowGameOptions}">
+      <CheckBox Content="{l:Tr ap_verify_game}" IsChecked="{Binding VerifyGame}" />
+      <CheckBox Name="ExfatBox" Content="{l:Tr ap_exfat}" IsChecked="{Binding Exfat}" />
+      <c:PathField Label="{l:Tr ap_exfat_label}" Placeholder="{l:Tr ap_exfat_ph}" Mode="Save" Filters="exFAT image:*.exfat|All files:*.*" Text="{Binding ExfatPath}" IsVisible="{Binding ShowExfatPath}" />
+      <StackPanel Spacing="3" IsVisible="{Binding ShowExfatPath}">
+        <TextBlock Text="{l:Tr ap_exfat_free}" Classes="fieldlabel" TextWrapping="Wrap" />
+        <TextBox Text="{Binding ExfatFree}" PlaceholderText="0" Width="120" HorizontalAlignment="Left" />
+      </StackPanel>
+    </StackPanel>
+    <CheckBox Content="{l:Tr ap_overwrite}" IsChecked="{Binding Overwrite}" IsVisible="{Binding ShowOverwrite}" />
+    <CheckBox Content="{l:Tr ap_json}" IsChecked="{Binding Json}" IsVisible="{Binding ShowJson}" />
+    <CheckBox Name="ConfirmBox" Content="{l:Tr ap_confirm}" IsChecked="{Binding Confirm}" IsVisible="{Binding ShowConfirm}" />
+  </StackPanel>
+</UserControl>

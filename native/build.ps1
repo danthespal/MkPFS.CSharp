@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Build native/mkpfs_zlib (zlib 1.3.1 + shim) for Windows into artifacts/native/<rid>/.
+    Build native/mkpfs_zlib (zlib 1.3.1 + lz4 1.9.4 + shims) for Windows into artifacts/native/<rid>/.
 .EXAMPLE
     powershell -NoProfile -ExecutionPolicy Bypass -File native/build.ps1 -Rid win-x64
 #>

@@ -1,7 +1,15 @@
-# Python oracle (Phase 0)
+# Oracle corpus
 
-Builds reference images with Python MkPFS so the C# port can be checked byte for byte.
-Python MkPFS (`D:\TOOLS\PS5\MkPFS`, expected at `../MkPFS`) stays the oracle until parity sign-off.
+The parity tests check MkPFS.CSharp **byte for byte** against the Python tools it ports. These scripts run
+the Python tools on generated inputs and record what they produce.
+
+| Oracle | Checked out at | What it checks |
+|---|---|---|
+| [Python MkPFS](https://github.com/PSBrew/MkPFS) 1.0.0 | `../MkPFS` | Images, logs and game metadata (`build_goldens.py`). |
+| [ampr_emu](https://github.com/drakmor/ampr_emu) `tools/ampr_pack.py` 4.0 | `../ampr_emu` | AMPR asset packs (`build_ampr_goldens.py`). |
+| ampr_emu `tools/ampr_pack_profile.py` 4.1 | `../ampr_emu` | `mkpfs ampr profile` (`check_ampr_profile.py`). |
+
+The generated corpus lives in `tests/fixtures/generated/` (git-ignored). Without it, the parity tests skip.
 
 ## Files
 
@@ -11,8 +19,10 @@ Python MkPFS (`D:\TOOLS\PS5\MkPFS`, expected at `../MkPFS`) stays the oracle unt
 | `make_fixtures.py` | Generates deterministic source trees (seeded data, mtimes pinned to 1600000000) |
 | `build_goldens.py` | Builds 33 cases, captures inspect/tree/verify output, writes `manifest.json` and zlib vectors |
 | `bench.py` | Python baseline timings on a ~330 MiB tree |
+| `build_ampr_goldens.py` | AMPR asset-pack corpus from ampr_emu's `ampr_pack.py` (second oracle, see the last section) |
+| `check_ampr_profile.py` | Runs ampr_emu's `ampr_pack_profile.py` and `mkpfs ampr profile` (`generate` and `batch`) on synthetic APR traces and ZIP bundles and compares every output byte for byte (45 cases) |
 
-## Run
+## Python MkPFS corpus
 
 Run from the repo root. `uv` uses the Python repo's environment.
 
@@ -49,8 +59,7 @@ Both default to `tests/fixtures/generated/` (git-ignored, about 270 MB).
 | `batch` | folder + exFAT file: convert, rerun (skipped), dry run; output images hashed |
 | Game metadata | `metadata.json` / `metadata_src.json`: Python `read_game_metadata` for each image and its source |
 
-Logs (`*.log`) are UTF-8 with `
-` line endings: Python runs with `PYTHONIOENCODING=utf-8` and
+Logs (`*.log`) are UTF-8 with `\n` line endings: Python runs with `PYTHONIOENCODING=utf-8` and
 `MKPFS_NO_UTF8=1` (ASCII icons such as `WARN`). They contain Windows path separators; compare them
 only on Windows or normalize `\` first.
 Images are platform independent.
@@ -64,6 +73,11 @@ Images are platform independent.
   `pack folder` 1.14 s, `pack folder --raw` 1.51 s, `verify` 1.37 s, `unpack --deep` 0.66 s.
 
 ## Findings to carry into the port
+
+Differences between Python MkPFS and the port. **Bug** marks a Python bug that the port fixes.
+
+<details>
+<summary><b>Show the 21 findings</b></summary>
 
 1. **Bug:** `--skip-verification` alone always fails ("--verify-structure and
    --skip-verification cannot be used together") because `--verify-structure` defaults on
@@ -123,3 +137,69 @@ Images are platform independent.
 21. **Bug:** the directory walks recurse once per level, so a crafted image nested about 1000 levels deep stops
     with `RecursionError`. Port: walks PFS trees without recursion and reports directories nested deeper than
     1024 levels (PFS and exFAT) as errors instead of ending the process.
+
+</details>
+
+## AMPR asset-pack corpus (`build_ampr_goldens.py`)
+
+Second oracle, for the `ampr` commands: ampr_emu `tools/ampr_pack.py` (tool version 4.0) at commit
+`cfa85df379f6eeeb165d7badf9b648e266fe77b7`, checked out clean at `../ampr_emu`. It needs python-lz4
+4.4.5 (bundles liblz4 1.9.4), which the `../MkPFS` environment lacks, so run it with a Python that has it:
+
+```bash
+python tools/oracle/build_ampr_goldens.py --check
+```
+
+```bash
+uv run --no-project --python 3.11 --with lz4==4.4.5 python tools/oracle/build_ampr_goldens.py --check
+```
+
+The script refuses another ampr_emu commit and fails on another python-lz4 unless `--allow-lz4-version`.
+
+Output (`tests/fixtures/generated/ampr/`, about 180 MB):
+- `trees/ampr_assets/`: fixture `/app0` (edge sizes, incompressible data, duplicate files, 3 MiB archives,
+  a movie, 20 scripts, modules; mtimes 1600000000).
+- `goldens/<case>/`: `config.toml` (+ `list.txt`, `runtime_alt.toml`), `ampr_emu.index` (oracle index,
+  input for the C# tests), `out/` (manifest, `.pak` volumes, `.crc`, `.runtime`), `config.canonical.json`
+  (`_canonical_config_bytes`, the build-id input), and logs for `index`, `pack`, `verify --root`, `list`,
+  `list --json`, `inspect`, `unpack`, `remove-packed-sources` (plan), `runtime-config`. Unpacked files are
+  checked against the source and hashed, then deleted with the `app0` copy. Rebuild `app0` from
+  `trees/ampr_assets` plus the case's `remove_before_pack` and `touch_after_index`.
+- `goldens/manifest.json`: versions (ampr_emu commit, tool version, Python, python-lz4, liblz4), per-case
+  argv, exit codes, sha256 of every output.
+- `vectors/lz4_vectors.bin`: `L4VEC001`, u32 count, then per entry u8 mode (0 fast, 1 hc), 3 zero bytes,
+  u32 param (acceleration or level), u32 raw_len, u32 comp_len, raw, comp (81 entries: fast 1/2/8 and HC
+  1–12 on five small blocks, fast 1 and HC 9/12 on two 1 MiB blocks).
+
+Cases (34): default, no config, upstream example TOML, fast (accel 1, 8), HC 9, 16 KiB random hot, 1 MiB,
+streaming, store, dedup off/group/streaming, lanes balanced/hash/round-robin, striping with 1 MiB volume
+rollover, auto-loose, `--self-contained`, `[runtime]` + `runtime-config`, 4 KiB I/O page, mtime preserved
+vs not, CLI `--include`/`--exclude`, `include_from`, `--allow-missing`, `--workers 1` vs `8` (must match),
+an unsafe default without the system loose rule, and five error cases.
+
+Results (2026-10-04, Python 3.11.9, python-lz4 4.4.5, liblz4 1.9.4): 34/34 as expected, two builds
+byte-identical, `--workers 1` and `8` produce identical packs. Build time about 2 minutes per pass.
+
+### Findings to carry into the port
+
+1. `--include`/`--exclude` only narrow the rule result; with no TOML `default_action` is `loose`, so
+   packing needs at least `[pack] default_action = "compress"`.
+2. The packer has no hard exclusions: `default_action = "compress"` packs `eboot.bin`, PRX/SPRX and
+   `sce_sys`. Only `remove-packed-sources` refuses them ("manifest marks a protected game/runtime file as
+   packed"). Every golden config except `unsafe_default` ends with a `loose` rule for those paths.
+3. `load_config` reads keys with `dict.get` and ignores unknown keys (only `[runtime]` checks its key
+   set). A misspelled key silently takes the default.
+4. `validate_index_metadata` compares only sizes, not mtimes. `preserve_mtime = true` stores the disk
+   mtime, `false` the AMPRIDX3 mtime (`mtime_preserved` vs `no_preserve_mtime`).
+5. MkPFS's `ampr_emu.index` and ampr_emu's `build_ampr_index.py` produce the same bytes for the same tree
+   (checked on the `ampr` tree; only mtimes differ when the copy does not keep them).
+
+## `ampr profile` check (`check_ampr_profile.py`)
+
+Generates synthetic APR traces and ZIP support bundles, runs ampr_emu's `ampr_pack_profile.py` and
+`mkpfs ampr profile` (`generate` and `batch`) on each, and compares every output file byte for byte
+(45 cases). Build MkPFS first; `--python`, `--mkpfs`, `--ampr-emu` and `--out` override the defaults.
+
+```bash
+uv run --no-project --python 3.12 --with lz4==4.4.5 python tools/oracle/check_ampr_profile.py
+```

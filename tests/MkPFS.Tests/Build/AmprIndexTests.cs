@@ -84,6 +84,87 @@ public sealed class AmprIndexTests
         }
     }
 
+    // The ampr_emu resolver (compact_index_hash_key): FNV-1a 64 over UTF-8 bytes, '\' as '/', only ASCII A..Z folded.
+    private static ulong RuntimeHash(string path)
+    {
+        ulong hash = 1469598103934665603UL;
+        foreach (byte b in System.Text.Encoding.UTF8.GetBytes(path))
+        {
+            byte c = b == (byte)'\\' ? (byte)'/' : b is >= 0x41 and <= 0x5A ? (byte)(b + 0x20) : b;
+            hash ^= c;
+            hash = unchecked(hash * 1099511628211UL);
+        }
+
+        return hash == 0 ? 1 : hash;
+    }
+
+    [Fact]
+    public void Non_ascii_paths_use_the_console_resolver_hash_and_folding()
+    {
+        using TempDir dir = new();
+        string source = AmprTree(dir);
+        dir.File("src/Données/Écran.bin", "e");
+        dir.File("src/zz/ünité.bin", "u");
+        AmprIndex.Ensure(source, new ListLog());
+        byte[] data = File.ReadAllBytes(Path.Combine(source, AmprIndex.IndexName));
+        long hashOffset = BinaryPrimitives.ReadInt64LittleEndian(data.AsSpan(32));
+        int slots = (int)BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(44));
+        List<AmprIndex.Row> rows = AmprIndex.ReadRows(data);
+
+        Assert.Contains(rows, r => r.Path == "/app0/Données/Écran.bin");
+        Assert.Contains(rows, r => r.Path == "/app0/zz/ünité.bin");
+        Assert.NotEqual(AmprIndex.KeyFor("/app0/É"), AmprIndex.KeyFor("/app0/é")); // only ASCII folds
+        for (int i = 0; i < rows.Count; i++)
+        {
+            // The game asks with ASCII letters upper-cased; the resolver must still land on this row.
+            string asked = new([.. rows[i].Path.Select(c => c is >= 'a' and <= 'z' ? char.ToUpperInvariant(c) : c)]);
+            ulong hash = RuntimeHash(asked);
+            Assert.Equal(RuntimeHash(rows[i].Path), AmprIndex.PathHash(rows[i].Path));
+            int pos = (int)(hash & (ulong)(slots - 1));
+            while (BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan((int)hashOffset + (pos * 16) + 8)) != i + 1)
+            {
+                Assert.NotEqual(0u, BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan((int)hashOffset + (pos * 16) + 8)));
+                pos = (pos + 1) & (slots - 1);
+            }
+        }
+
+        // Records are sorted by the ASCII-folded UTF-8 bytes, the order the resolver's binary search expects.
+        List<byte[]> keys = [.. rows.Select(r => System.Text.Encoding.UTF8.GetBytes(AmprIndex.KeyFor(r.Path)))];
+        for (int i = 1; i < keys.Count; i++)
+        {
+            Assert.True(keys[i - 1].AsSpan().SequenceCompareTo(keys[i]) < 0, $"{rows[i - 1].Path} !< {rows[i].Path}");
+        }
+    }
+
+    [Fact]
+    public void Emulator_trace_and_log_files_are_not_indexed()
+    {
+        using TempDir dir = new();
+        string source = AmprTree(dir);
+        dir.File("src/ampr_commands.bin", "trace");
+        dir.File("src/APR_EMU.LOG", "log");
+        dir.File("src/data2/ampr_commands.bin", "kept below the root");
+
+        AmprIndex.Ensure(source, new ListLog());
+
+        List<AmprIndex.Row> rows = AmprIndex.ReadRows(File.ReadAllBytes(Path.Combine(source, AmprIndex.IndexName)));
+        Assert.Equal(["/app0/Data/Level1.pak", "/app0/data2/ampr_commands.bin", "/app0/data2/b.bin", "/app0/eboot.bin", "/app0/fakelib/libSceAmpr.sprx"], rows.Select(r => r.Path));
+    }
+
+    [Fact]
+    public void Fakelib2_also_marks_an_emulation_build()
+    {
+        using TempDir dir = new();
+        string source = dir.Dir("src");
+        dir.File("src/fakelib2/libSceAmpr.sprx", "sprx");
+        dir.File("src/eboot.bin", "eboot");
+        ListLog log = new();
+
+        Assert.NotNull(AmprIndex.Ensure(source, log));
+        Assert.Equal("Info: Detected fakelib2/libSceAmpr.sprx; generating ampr_emu.index...", log.Lines[0]);
+        Assert.True(AmprLibs.HasEmulator(source));
+    }
+
     [Theory]
     [InlineData(0, 0)]
     [InlineData(1, 2)]
@@ -156,6 +237,30 @@ public sealed class AmprIndexTests
         ListLog forced = new();
         Assert.NotNull(AmprIndex.Ensure(source, forced, createIfMissing: true, forceRegen: true));
         Assert.StartsWith("Info: Detected", forced.Lines[0], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void An_ampr_pack_set_keeps_its_index_unless_regeneration_is_forced()
+    {
+        using TempDir dir = new();
+        string source = AmprTree(dir);
+        AmprIndex.Ensure(source, new ListLog());
+        string index = Path.Combine(source, AmprIndex.IndexName);
+        byte[] original = File.ReadAllBytes(index);
+        dir.File("src/ampr_assets.index", "manifest");
+        dir.File("src/ampr_assets-000.pak", "volume");
+
+        // Default and create-if-missing both keep the index the packs were built against.
+        ListLog kept = new();
+        Assert.Null(AmprIndex.Ensure(source, kept));
+        Assert.Null(AmprIndex.Ensure(source, kept, createIfMissing: true));
+        Assert.Equal(original, File.ReadAllBytes(index));
+        Assert.All(kept.Lines, line => Assert.StartsWith("Warning: ampr_emu.index kept: the AMPR packs in this folder", line, StringComparison.Ordinal));
+
+        ListLog forced = new();
+        Assert.NotNull(AmprIndex.Ensure(source, forced, forceRegen: true));
+        Assert.StartsWith("Warning: Rebuilding ampr_emu.index although ampr_assets.index is present", forced.Lines[0], StringComparison.Ordinal);
+        Assert.Equal(6, AmprIndex.ReadRows(File.ReadAllBytes(index)).Count);
     }
 
     [Fact]

@@ -125,7 +125,7 @@ public sealed partial class RepairPanelViewModel(Color accent, JobRunner? job = 
             PFSCRepairOptions options = RepairCommand.Options(ctx, scan, badBlocks, recompress, mode, reportDir, cleanSlack, cpuCount: 0, progress: true);
             int code = RepairCommand.Execute(ctx, image, options, job.Token, r => result = r);
             return scan && code == RepairCommand.ExitRepairNeeded ? 0 : code; // "repair needed" is a scan result, not a failure
-        }).ConfigureAwait(true);
+        }, ProgressPlan.For(args)).ConfigureAwait(true);
 
         // After a repair the scanned map is out of date; scan again to see the new state.
         Selection = null;

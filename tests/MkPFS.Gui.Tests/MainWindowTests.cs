@@ -41,10 +41,11 @@ public sealed class MainWindowTests
 
         Assert.Equal(["section_build", "section_check", "section_read"], model.Sections.Select(s => s.TitleKey));
         Assert.Equal(
-            ["batch", "pack_folder", "pack_exfat", "pack_file", "verify", "repair", "inspect", "tree", "unpack"],
+            ["pack_exfat", "pack_file", "ampr", "verify", "repair", "inspect", "tree", "unpack"],
             NavButtons(window).Select(AutomationProperties.GetName));
-        Assert.True(Nav(window, "batch").IsChecked);
-        Assert.Equal("Batch Convert", PageTitle(window));
+        Assert.True(Nav(window, "pack_exfat").IsChecked);
+        Assert.Equal("Pack exFAT", PageTitle(window));
+        Assert.True(Shows(window, "Pack FFPFSC"));
         Assert.True(Shows(window, "BUILD"));
         Assert.Equal("MkPFS.CSharp", window.Title);
         Assert.True(Shows(window, "MkPFS.CSharp"));
@@ -56,7 +57,7 @@ public sealed class MainWindowTests
     {
         (MainWindow window, _) = Open();
 
-        foreach (string page in new[] { "batch", "pack_folder", "pack_exfat" })
+        foreach (string page in new[] { "pack_exfat" })
         {
             Nav(window, page).IsChecked = true;
             Dispatcher.UIThread.RunJobs();
@@ -75,7 +76,7 @@ public sealed class MainWindowTests
     {
         (MainWindow window, _) = Open();
 
-        foreach (string page in new[] { "batch", "pack_folder", "pack_exfat", "pack_file" })
+        foreach (string page in new[] { "pack_exfat", "pack_file" })
         {
             Nav(window, page).IsChecked = true;
             Dispatcher.UIThread.RunJobs();
@@ -153,6 +154,24 @@ public sealed class MainWindowTests
     }
 
     [AvaloniaFact]
+    public void Tuning_and_advanced_options_explain_themselves_on_hover()
+    {
+        (MainWindow window, _) = Open();
+        Nav(window, "pack_file").IsChecked = true;
+        Dispatcher.UIThread.RunJobs();
+        window.GetVisualDescendants().OfType<Expander>().Single(e => e.Name == "AdvancedExpander").IsExpanded = true;
+        Dispatcher.UIThread.RunJobs();
+
+        string[] tips = [.. window.GetVisualDescendants().OfType<Control>().Select(ToolTip.GetTip).OfType<string>()];
+
+        // 8 compression tuning fields, 7 packing options and 7 PFS options.
+        Assert.Equal(22, tips.Length);
+        Assert.All(tips, t => Assert.DoesNotContain("tip_", t, StringComparison.Ordinal));
+        Assert.Contains(tips, t => t.StartsWith("How many CPU cores compress blocks", StringComparison.Ordinal));
+        window.Close();
+    }
+
+    [AvaloniaFact]
     public void Clicking_an_entry_shows_its_page()
     {
         (MainWindow window, MainWindowViewModel model) = Open();
@@ -163,7 +182,7 @@ public sealed class MainWindowTests
         Assert.Equal("Repair", PageTitle(window));
         Assert.Same(model.Items.Single(i => i.Key == "repair").Page, model.Current);
         Assert.Equal(["repair"], model.Items.Where(i => i.IsSelected).Select(i => i.Key));
-        Assert.False(Nav(window, "batch").IsChecked);
+        Assert.False(Nav(window, "pack_exfat").IsChecked);
         window.Close();
     }
 
@@ -177,9 +196,9 @@ public sealed class MainWindowTests
             picker.SelectedIndex = 1;
             Dispatcher.UIThread.RunJobs();
 
-            Assert.Equal("Converter em Lote", PageTitle(window));
+            Assert.Equal("Empacotar EXFAT", PageTitle(window));
             Assert.True(Shows(window, "CONSTRUIR"));
-            Assert.True(Shows(window, "Empacotar Pasta"));
+            Assert.True(Shows(window, "Empacotar FFPFSC"));
             Assert.True(Shows(window, "Executar"));
         }
         finally
@@ -195,13 +214,10 @@ public sealed class MainWindowTests
         using TempDir dir = new();
         string game = BuildPanelTests.Game(dir, "games/PPSA01234-app");
         (MainWindow window, MainWindowViewModel model) = Open();
-        PackFolderPanelViewModel folder = (PackFolderPanelViewModel)model.Items.Single(i => i.Key == "pack_folder").Page;
-        folder.Metadata.Debounce = TimeSpan.Zero;
-        folder.Source = game;
-        await folder.Metadata.LoadAsync(game);
-        BatchPanelViewModel batch = (BatchPanelViewModel)model.Items.Single(i => i.Key == "batch").Page;
-        batch.Source = Path.GetDirectoryName(game)!;
-        await batch.Queue.LoadAsync(batch.Source);
+        PackExfatPanelViewModel exfat = (PackExfatPanelViewModel)model.Items.Single(i => i.Key == "pack_exfat").Page;
+        exfat.Metadata.Debounce = TimeSpan.Zero;
+        exfat.Source = game;
+        await exfat.Metadata.LoadAsync(game);
         window.Height = 1500; // whole pages in the snapshots
         RepairPanelViewModel repair = (RepairPanelViewModel)model.Items.Single(i => i.Key == "repair").Page;
         repair.Image = RepairPanelTests.RiskyImage(dir);

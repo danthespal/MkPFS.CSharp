@@ -16,8 +16,6 @@
   <data name="adv_keep_ext" xml:space="preserve"><value>Ausgabe-Endung beibehalten</value></data>
   <data name="adv_keep_inner" xml:space="preserve"><value>Inneren Dateinamen beibehalten</value></data>
   <data name="adv_new_crypt" xml:space="preserve"><value>Alternative Schlüsselableitung (newCrypt)</value></data>
-  <data name="adv_raw" xml:space="preserve"><value>Rohes PFS-Image (.ffpfs)</value></data>
-  <data name="adv_require" xml:space="preserve"><value>Spieldateien erforderlich</value></data>
   <data name="adv_skip_check" xml:space="preserve"><value>Prüfung nach dem Packen überspringen</value></data>
   <data name="adv_spool" xml:space="preserve"><value>Spool-Builder verwenden</value></data>
   <data name="adv_title" xml:space="preserve"><value>Erweitert</value></data>
@@ -32,28 +30,63 @@
   <data name="am_libs_ph" xml:space="preserve"><value>Ordner mit libSceAmpr.sprx…</value></data>
   <data name="am_section" xml:space="preserve"><value>APR Emu</value></data>
   <data name="am_title" xml:space="preserve"><value>Als APR-Titel behandeln</value></data>
+  <data name="ap_act_game" xml:space="preserve"><value>Spielfertigen Ordner erstellen (Packs + lose Dateien)</value></data>
+  <data name="ap_rules_missing" xml:space="preserve"><value>Wähle das TOML-Profil für dieses Spiel oder einen Ordner mit APR-Traces, aus dem die Regeln erstellt werden. Profile sind TOML-Dateien, die pro Spiel geteilt werden.</value></data>
+  <data name="ap_rules_config" xml:space="preserve"><value>Dein TOML-Profil bestimmt, was gepackt wird.</value></data>
+  <data name="ap_traces_label" xml:space="preserve"><value>Trace-Ordner (optional)</value></data>
+  <data name="ap_traces_ph" xml:space="preserve"><value>Ordner mit ampr_commands.bin und ampr_emu.index vom Debug-AMPR-Emu, ein Lauf pro Unterordner</value></data>
+  <data name="ap_rules_traces" xml:space="preserve"><value>✓ Regeln aus Traces: {0} aufgezeichnete(r) Lauf/Läufe gefunden. Nur die Dateien, die das Spiel über AMPR gelesen hat, werden gepackt; alle anderen bleiben einzeln.</value></data>
+  <data name="ap_rules_no_traces" xml:space="preserve"><value>Keine Traces in diesem Ordner: jeder Lauf braucht ampr_commands.bin und seine ampr_emu.index nebeneinander.</value></data>
+  <data name="ap_err_rules" xml:space="preserve"><value>✗ Wähle ein TOML-Profil oder einen Trace-Ordner: ohne Regeln wird nichts gepackt.</value></data>
+  <data name="ap_err_traces_config" xml:space="preserve"><value>Verwende entweder eine TOML-Datei oder einen Trace-Ordner, nicht beides.</value></data>
+  <data name="ap_untraced_types" xml:space="preserve"><value>Auch Dateien packen, die keine Sitzung gelesen hat, wenn eine aufgezeichnete Datei denselben Typ hat. Ihr Lesen wurde nicht beobachtet, also das Spiel damit testen.</value></data>
+  <data name="ap_exfat_free" xml:space="preserve"><value>Freier Platz im Abbild (optional, z. B. 2GiB): nötig für einen Test mit dem Debug-AMPR-Emu, der sein Protokoll in den Spielordner schreibt</value></data>
+  <data name="ap_experimental" xml:space="preserve"><value>⚠ Experimentell: Ob ein gepacktes Spiel läuft, hängt davon ab, wie es seine Dateien liest, und das zeigt nur ein Test auf der PS5. Behalte das Originalspiel, bis das gepackte gespielt wurde.</value></data>
+  <data name="ap_game_note" xml:space="preserve"><value>Erstellt einen neuen Ordner, den du auf die PS5 kopierst und spielst: deine Bibliotheken in fakelib/, ampr_emu.index, die LZ4-Packs und alle Dateien, die lose bleiben. Der Spielordner wird nur gelesen. Benötigt AMPR Emu 0.4.2.1 oder neuer und ein Spiel, das AMPR nutzt.</value></data>
+  <data name="ap_libs_label" xml:space="preserve"><value>Bibliotheksordner (fakelib)</value></data>
+  <data name="ap_libs_ph" xml:space="preserve"><value>Ordner mit libSceAmpr.sprx und weiteren fakelib-Bibliotheken (optional, wenn das Spiel sie hat)…</value></data>
+  <data name="ap_verify_game" xml:space="preserve"><value>Packs und lose Dateien nach dem Erstellen prüfen</value></data>
+  <data name="ap_exfat" xml:space="preserve"><value>Zusätzlich ein exFAT-Abbild erstellen (64-KiB-Cluster, schreibgeschützt einbinden)</value></data>
+  <data name="ap_exfat_label" xml:space="preserve"><value>exFAT-Abbild (optional)</value></data>
+  <data name="ap_exfat_ph" xml:space="preserve"><value>Standard: &lt;titleId&gt;.exfat neben dem Ausgabeordner</value></data>
+  <data name="ap_act_inspect" xml:space="preserve"><value>Manifest untersuchen</value></data>
+  <data name="ap_act_list" xml:space="preserve"><value>Dateien auflisten</value></data>
+  <data name="ap_act_pack" xml:space="preserve"><value>Nur packen (Manifest und .pak-Volumes)</value></data>
+  <data name="ap_act_remove" xml:space="preserve"><value>Gepackte Quelldateien entfernen</value></data>
+  <data name="ap_act_runtime" xml:space="preserve"><value>Laufzeiteinstellungen aktualisieren</value></data>
+  <data name="ap_act_unpack" xml:space="preserve"><value>Gepackte Dateien entpacken</value></data>
+  <data name="ap_act_verify" xml:space="preserve"><value>Pakete prüfen</value></data>
+  <data name="ap_action" xml:space="preserve"><value>Aktion</value></data>
+  <data name="ap_allow_missing" xml:space="preserve"><value>Fehlende Quelldateien lose lassen</value></data>
+  <data name="ap_config_label" xml:space="preserve"><value>TOML-Konfiguration</value></data>
+  <data name="ap_config_ph" xml:space="preserve"><value>TOML-Profil des Spiels…</value></data>
+  <data name="ap_confirm" xml:space="preserve"><value>Gepackte Quelldateien löschen (nicht rückgängig zu machen; sonst nur den Plan anzeigen)</value></data>
+  <data name="ap_err_manifest" xml:space="preserve"><value>✗ Paket-Manifest ist erforderlich.</value></data>
+  <data name="ap_err_pack" xml:space="preserve"><value>✗ Spielordner und Ausgabeordner sind beide erforderlich.</value></data>
+  <data name="ap_err_remove" xml:space="preserve"><value>✗ Paket-Manifest und Spielordner sind beide erforderlich.</value></data>
+  <data name="ap_err_runtime" xml:space="preserve"><value>✗ Paket-Manifest und TOML-Konfiguration sind beide erforderlich.</value></data>
+  <data name="ap_err_unpack" xml:space="preserve"><value>✗ Paket-Manifest und Ausgabeordner sind beide erforderlich.</value></data>
+  <data name="ap_err_workers" xml:space="preserve"><value>✗ Worker muss eine ganze Zahl von 1 bis 256 sein.</value></data>
+  <data name="ap_index_label" xml:space="preserve"><value>AMPR-Index (optional)</value></data>
+  <data name="ap_index_ph" xml:space="preserve"><value>Standard: ampr_emu.index im Spielordner</value></data>
+  <data name="ap_json" xml:space="preserve"><value>JSON-Ausgabe</value></data>
+  <data name="ap_manifest_label" xml:space="preserve"><value>Paket-Manifest</value></data>
+  <data name="ap_manifest_ph" xml:space="preserve"><value>ampr_assets.index auswählen…</value></data>
+  <data name="ap_pack_note" xml:space="preserve"><value>Schreibt nur ampr_assets.index, die .pak-Volumes und die .crc-Datei in den Ausgabeordner, wie ampr_pack.py. Für einen Ordner, den du auf die PS5 kopierst und spielst, nutze Spielfertigen Ordner erstellen.</value></data>
+  <data name="ap_note" xml:space="preserve"><value>Pakete liefern Dateien, die das Spiel über AMPR und mit normalen Dateizugriffen liest (AMPR Emu 0.4.2.1). Speicherabgebildete Dateien müssen lose bleiben; behalte die Quelldateien, bis das gepackte Spiel getestet ist.</value></data>
+  <data name="ap_out_label" xml:space="preserve"><value>Ausgabeordner</value></data>
+  <data name="ap_out_ph" xml:space="preserve"><value>Ordner für Manifest und .pak-Volumes…</value></data>
+  <data name="ap_overwrite" xml:space="preserve"><value>Vorhandene Dateien überschreiben</value></data>
+  <data name="ap_root_label" xml:space="preserve"><value>Spielordner (/app0)</value></data>
+  <data name="ap_root_ph" xml:space="preserve"><value>Ordner mit eboot.bin und sce_sys…</value></data>
+  <data name="ap_self_contained" xml:space="preserve"><value>Ausgewählte Dateien nie lose lassen (nicht komprimierbare Blöcke unkomprimiert speichern)</value></data>
+  <data name="ap_subtitle" xml:space="preserve"><value>AMPR-Emu-LZ4-Asset-Pakete für einen Spielordner erstellen und prüfen</value></data>
+  <data name="ap_title" xml:space="preserve"><value>AMPR-Pakete</value></data>
+  <data name="ap_workers" xml:space="preserve"><value>Worker (leer = aus der Konfiguration)</value></data>
   <data name="app_subtitle" xml:space="preserve"><value>PlayStation File System</value></data>
   <data name="browse" xml:space="preserve"><value>Durchsuchen</value></data>
   <data name="browse_file" xml:space="preserve"><value>Datei</value></data>
   <data name="browse_folder" xml:space="preserve"><value>Ordner</value></data>
-  <data name="bt_compress" xml:space="preserve"><value>PFSC-Komprimierung</value></data>
-  <data name="bt_dry" xml:space="preserve"><value>Probelauf</value></data>
-  <data name="bt_err_out" xml:space="preserve"><value>✗ Ausgabeordner ist erforderlich.</value></data>
-  <data name="bt_err_src" xml:space="preserve"><value>✗ Quellordner ist erforderlich.</value></data>
-  <data name="bt_out_label" xml:space="preserve"><value>Ausgabeordner</value></data>
-  <data name="bt_out_ph" xml:space="preserve"><value>Ausgabeordner wählen…</value></data>
-  <data name="bt_overwrite" xml:space="preserve"><value>Vorhandene überschreiben</value></data>
-  <data name="bt_preview_count" xml:space="preserve"><value>{0} Element(e): {1} Ordner, {2} Datei(en)</value></data>
-  <data name="bt_preview_empty" xml:space="preserve"><value>Wähle einen Quellordner für die Vorschau der Warteschlange.</value></data>
-  <data name="bt_preview_error" xml:space="preserve"><value>Stapelordner kann nicht gelesen werden: {0}</value></data>
-  <data name="bt_preview_invalid" xml:space="preserve"><value>Wähle einen vorhandenen Ordner für die Vorschau der Warteschlange.</value></data>
-  <data name="bt_preview_none" xml:space="preserve"><value>Keine packbaren Elemente gefunden.</value></data>
-  <data name="bt_preview_scanning" xml:space="preserve"><value>Elemente werden gesucht...</value></data>
-  <data name="bt_queue" xml:space="preserve"><value>Stapel-Warteschlange</value></data>
-  <data name="bt_src_label" xml:space="preserve"><value>Quellordner</value></data>
-  <data name="bt_src_ph" xml:space="preserve"><value>Quellordner wählen…</value></data>
-  <data name="bt_subtitle" xml:space="preserve"><value>Mehrere Spiele auf einmal in PFS-Images umwandeln</value></data>
-  <data name="bt_title" xml:space="preserve"><value>Stapelkonvertierung</value></data>
   <data name="bt_version" xml:space="preserve"><value>Version</value></data>
   <data name="cancel" xml:space="preserve"><value>Abbrechen</value></data>
   <data name="cancelled" xml:space="preserve"><value>✗ Abgebrochen.</value></data>
@@ -65,7 +98,8 @@ Teilweise geschriebene Ausgaben werden entfernt; eine Reparatur vor Ort beendet 
   <data name="ct_block" xml:space="preserve"><value>Blockgröße (PS5-Spiele nutzen 64 KiB)</value></data>
   <data name="ct_block_auto" xml:space="preserve"><value>Auto (64 KiB)</value></data>
   <data name="ct_block_fit" xml:space="preserve"><value>Auto-Anpassung (wenigste Auffüllung)</value></data>
-  <data name="ct_cpu" xml:space="preserve"><value>CPU-Kerne (0 = auto: {0})</value></data>
+  <data name="ct_cpu" xml:space="preserve"><value>CPU-Kerne</value></data>
+  <data name="ct_cpu_auto" xml:space="preserve"><value>Auto ({0} Kerne)</value></data>
   <data name="ct_err_min_size" xml:space="preserve"><value>✗ „Dateien kleiner als speichern“ muss eine ganze Zahl von Bytes sein.</value></data>
   <data name="ct_level" xml:space="preserve"><value>Komprimierungsstufe (0–9)</value></data>
   <data name="ct_max_ratio" xml:space="preserve"><value>Max. komprimierte Größe (% des Originals)</value></data>
@@ -105,11 +139,10 @@ Teilweise geschriebene Ausgaben werden entfernt; eine Reparatur vor Ort beendet 
   <data name="i_title" xml:space="preserve"><value>Untersuchen</value></data>
   <data name="lang_label" xml:space="preserve"><value>Sprache</value></data>
   <data name="meta_import" xml:space="preserve"><value>Import-Vorschau</value></data>
-  <data name="nav_batch" xml:space="preserve"><value>Stapel</value></data>
+  <data name="nav_ampr" xml:space="preserve"><value>AMPR-Pakete</value></data>
   <data name="nav_inspect" xml:space="preserve"><value>Untersuchen</value></data>
   <data name="nav_pack_exfat" xml:space="preserve"><value>exFAT packen</value></data>
-  <data name="nav_pack_file" xml:space="preserve"><value>Datei packen</value></data>
-  <data name="nav_pack_folder" xml:space="preserve"><value>Ordner packen</value></data>
+  <data name="nav_pack_file" xml:space="preserve"><value>FFPFSC packen</value></data>
   <data name="nav_repair" xml:space="preserve"><value>Reparieren</value></data>
   <data name="nav_tree" xml:space="preserve"><value>Baum</value></data>
   <data name="nav_unpack" xml:space="preserve"><value>Entpacken</value></data>
@@ -119,19 +152,8 @@ Teilweise geschriebene Ausgaben werden entfernt; eine Reparatur vor Ort beendet 
   <data name="options" xml:space="preserve"><value>Optionen</value></data>
   <data name="output_log" xml:space="preserve"><value>Ausgabeprotokoll</value></data>
   <data name="paths" xml:space="preserve"><value>Pfade</value></data>
-  <data name="pf_compress" xml:space="preserve"><value>PFSC-Komprimierung</value></data>
   <data name="pf_dry" xml:space="preserve"><value>Probelauf</value></data>
-  <data name="pf_err_out" xml:space="preserve"><value>✗ Ausgabe-Image-Pfad ist erforderlich.</value></data>
-  <data name="pf_err_src" xml:space="preserve"><value>✗ Quellordner ist erforderlich.</value></data>
-  <data name="pf_out_label" xml:space="preserve"><value>Ausgabe-Image</value></data>
-  <data name="pf_out_ph" xml:space="preserve"><value>Ausgabepfad wählen…</value></data>
   <data name="pf_signed" xml:space="preserve"><value>Signiertes Image</value></data>
-  <data name="pf_src_label" xml:space="preserve"><value>Quellordner</value></data>
-  <data name="pf_src_ph" xml:space="preserve"><value>Quellordner wählen…</value></data>
-  <data name="pf_subtitle" xml:space="preserve"><value>Ein PFS-Image aus einem Quellverzeichnis erstellen</value></data>
-  <data name="pf_temp" xml:space="preserve"><value>Temp-Ordner (optional)</value></data>
-  <data name="pf_temp_ph" xml:space="preserve"><value>Eigener Temp-Ordner…</value></data>
-  <data name="pf_title" xml:space="preserve"><value>Ordner packen</value></data>
   <data name="pf_verify" xml:space="preserve"><value>Nach dem Packen prüfen</value></data>
   <data name="pf_version" xml:space="preserve"><value>Version</value></data>
   <data name="pkf_compress" xml:space="preserve"><value>PFSC-Komprimierung</value></data>
@@ -153,7 +175,7 @@ Teilweise geschriebene Ausgaben werden entfernt; eine Reparatur vor Ort beendet 
   <data name="pkf_subtitle" xml:space="preserve"><value>Eine einzelne Datei in ein PFSC-komprimiertes Image packen</value></data>
   <data name="pkf_temp" xml:space="preserve"><value>Temp-Ordner (optional)</value></data>
   <data name="pkf_temp_ph" xml:space="preserve"><value>Eigener Temp-Ordner…</value></data>
-  <data name="pkf_title" xml:space="preserve"><value>Datei packen</value></data>
+  <data name="pkf_title" xml:space="preserve"><value>FFPFSC packen</value></data>
   <data name="pkf_version" xml:space="preserve"><value>Version</value></data>
   <data name="r_bad_blocks" xml:space="preserve"><value>Liste defekter Blöcke (optional — Game-Compressor-TSV)</value></data>
   <data name="r_bad_blocks_ph" xml:space="preserve"><value>bad_blocks.tsv…</value></data>
@@ -232,4 +254,29 @@ Teilweise geschriebene Ausgaben werden entfernt; eine Reparatur vor Ort beendet 
   <data name="v_subtitle" xml:space="preserve"><value>Image-Struktur, Inodes und Prüfsummen der Inhalte validieren</value></data>
   <data name="v_title" xml:space="preserve"><value>Prüfen</value></data>
   <data name="version_footer" xml:space="preserve"><value>v{0}</value></data>
+  <data name="tip_ct_preset" xml:space="preserve"><value>Schnelleinstellungen für Kompressionsstufe und CPU-Kerne. Wenn du einen der Werte änderst, wird die passende Vorgabe gewählt oder Benutzerdefiniert.</value></data>
+  <data name="tip_ct_level" xml:space="preserve"><value>zlib-Stufe für jeden Block: 1 ist am schnellsten, 9 ergibt das kleinste Image, 0 speichert die Blöcke unkomprimiert. Standard ist 7.</value></data>
+  <data name="tip_ct_cpu" xml:space="preserve"><value>Wie viele CPU-Kerne gleichzeitig Blöcke komprimieren. Auto nutzt alle Kerne dieses Computers; wähle weniger, damit der Computer reaktionsfähig bleibt oder weniger Speicher braucht.</value></data>
+  <data name="tip_ct_block" xml:space="preserve"><value>Größe der Blöcke, in die das Image geteilt und einzeln komprimiert wird. PS5-Spiele nutzen 64 KiB; ändere sie nur, wenn das Ziel eine andere Größe braucht.</value></data>
+  <data name="tip_ct_threshold" xml:space="preserve"><value>Ein komprimierter Block wird nur behalten, wenn er mindestens diesen Prozentsatz spart; sonst wird er unkomprimiert gespeichert. 0 behält jeden Block, der kleiner wird.</value></data>
+  <data name="tip_ct_max_ratio" xml:space="preserve"><value>Eine Datei bleibt unkomprimiert, wenn ihre komprimierte Größe über diesem Prozentsatz des Originals läge. 100 komprimiert jede Datei, die kleiner wird.</value></data>
+  <data name="tip_ct_min_size" xml:space="preserve"><value>Dateien unter dieser Bytezahl werden ohne Versuch unkomprimiert gespeichert. Leer bedeutet die Blockgröße.</value></data>
+  <data name="tip_ct_skip_exec" xml:space="preserve"><value>Ausführbare Dateien und Module (eboot.bin, .prx, .sprx) unkomprimiert speichern.</value></data>
+  <data name="tip_adv_signed" xml:space="preserve"><value>Ein signiertes PFS-Image erstellen, mit EKPFS-Schlüssel und Seed aus Nullen.</value></data>
+  <data name="tip_adv_dry" xml:space="preserve"><value>Die Quelle prüfen und zeigen, was geschrieben würde, ohne das Image zu schreiben.</value></data>
+  <data name="tip_adv_verify" xml:space="preserve"><value>Nach dem Packen das ganze Image dekodieren und mit der Quelle vergleichen. Langsamer, beweist aber, dass das Image korrekt ist.</value></data>
+  <data name="tip_adv_skip_check" xml:space="preserve"><value>Die schnelle Strukturprüfung nach dem Packen überspringen.</value></data>
+  <data name="tip_adv_keep_ext" xml:space="preserve"><value>Den Ausgabenamen genau wie eingegeben verwenden. Sonst wird die Endung an das Format angepasst (.ffpfsc oder .ffpfs).</value></data>
+  <data name="tip_adv_keep_inner" xml:space="preserve"><value>Den Namen der Quelldatei im Image behalten. Sonst wird sie in einen sicheren, normalisierten Namen umbenannt.</value></data>
+  <data name="tip_adv_spool" xml:space="preserve"><value>Über eine temporäre Zwischendatei bauen statt direkt ins Image zu schreiben. Langsamer; nur verwenden, wenn der Standardweg scheitert.</value></data>
+  <data name="tip_adv_version" xml:space="preserve"><value>PFS-Formatprofil: PS5 für PS5-Spiele, PS4 für PS4-Images.</value></data>
+  <data name="tip_adv_inode" xml:space="preserve"><value>Breite der Inode-Einträge: 32 Bit (Standard) oder 64 Bit.</value></data>
+  <data name="tip_adv_case" xml:space="preserve"><value>Dateinamen im Image zwischen Groß- und Kleinschreibung unterscheiden lassen. Standardmäßig nicht.</value></data>
+  <data name="tip_adv_verbose" xml:space="preserve"><value>Mehr Details ins Protokoll schreiben.</value></data>
+  <data name="tip_adv_encrypted" xml:space="preserve"><value>Die Image-Blöcke mit AES-XTS verschlüsseln.</value></data>
+  <data name="tip_adv_new_crypt" xml:space="preserve"><value>Die Verschlüsselungsschlüssel mit der alternativen newCrypt-Methode ableiten.</value></data>
+  <data name="tip_adv_ekpfs" xml:space="preserve"><value>64 Hexadezimalzeichen: der EKPFS-Schlüssel zum Verschlüsseln oder Signieren. Leer bedeutet nur Nullen.</value></data>
+  <data name="tip_adv_cluster" xml:space="preserve"><value>exFAT-Clustergröße. Auto (64 KiB) funktioniert am besten mit ShadowMountPlus; kleinere Cluster verschwenden weniger Platz bei kleinen Dateien, lesen aber langsamer.</value></data>
+  <data name="tip_adv_image_format" xml:space="preserve"><value>Wie das Image gelesen wird: Auto erkennt PFS oder exFAT; wähle eines, um es zu erzwingen.</value></data>
+  <data name="tip_v_require" xml:space="preserve"><value>Warnen, wenn sce_sys/param.json, eboot.bin oder pfs-version.dat im Spiel fehlt.</value></data>
 </root>
