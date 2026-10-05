@@ -139,8 +139,9 @@ internal static class AmprProfileCommand
         Option<string?> report = new("--report");
         Option<string?> metrics = new("--metrics");
         Option<string?> runtimeHeader = new("--runtime-header") { Description = "optional force-include header with runtime cache/pool/coalescing defines" };
+        Option<bool> untracedTypes = new("--pack-untraced-types") { Description = AmprCommand.UntracedTypesDescription + " (MkPFS extension)" };
         CommonOptions common = new("exact", cacheSimulationDefault: true);
-        Command command = new("generate", "generate one profile") { input, trace, name, output, report, metrics, runtimeHeader };
+        Command command = new("generate", "generate one profile") { input, trace, name, output, report, metrics, runtimeHeader, untracedTypes };
         common.AddTo(command);
         command.SetAction(parse => AmprCommand.Run(ctx, () =>
         {
@@ -186,7 +187,18 @@ internal static class AmprProfileCommand
             string outputText = parse.GetValue(output)!;
             string outputPath = AmprCommand.Resolve(ctx, outputText);
             Dictionary<string, string> sidecars = [];
-            string toml = AMPRProfiler.RenderToml(result, options, sidecars, Path.GetFileNameWithoutExtension(outputPath));
+            AMPRProfiler.UntracedAddition? added = null;
+            string toml;
+            if (parse.GetValue(untracedTypes))
+            {
+                toml = AMPRProfiler.RenderToml(result, options, traces, sidecars, Path.GetFileNameWithoutExtension(outputPath), out AMPRProfiler.UntracedAddition addition);
+                added = addition;
+            }
+            else
+            {
+                toml = AMPRProfiler.RenderToml(result, options, sidecars, Path.GetFileNameWithoutExtension(outputPath));
+            }
+
             bool replace = parse.GetValue(common.Overwrite);
             WriteBundle(outputPath, toml, sidecars, replace);
             if (parse.GetValue(report) is { } reportPath)
@@ -207,6 +219,13 @@ internal static class AmprProfileCommand
             ctx.Out.WriteLine(
                 $"generated {outputText}: files={result.ObservedFiles} index={AMPRProfiler.HumanSize(result.ProjectedIndexBytes)} " +
                 $"cache={AMPRProfiler.HumanSize(result.RecommendedCacheBytes)} pool={AMPRProfiler.HumanSize(result.RecommendedPoolBytes)}");
+            if (added is { } extra)
+            {
+                // Not in ampr_pack_profile.py.
+                ctx.Out.WriteLine(
+                    $"added {extra.Files} untraced files of traced types: {AMPRProfiler.HumanSize(extra.Bytes)}, " +
+                    $"index +{AMPRProfiler.HumanSize(extra.IndexBytes)}");
+            }
         }));
         return command;
     }

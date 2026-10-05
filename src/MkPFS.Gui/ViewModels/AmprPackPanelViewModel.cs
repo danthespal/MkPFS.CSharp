@@ -82,6 +82,10 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
     [NotifyPropertyChangedFor(nameof(RulesTracesText))]
     public partial string Traces { get; set; } = string.Empty;
 
+    /// <summary><c>--pack-untraced-types</c>: also pack untraced files of the traced file types.</summary>
+    [ObservableProperty]
+    public partial bool UntracedTypes { get; set; }
+
     /// <summary><c>--workers</c>; empty for the configuration's value.</summary>
     [ObservableProperty]
     public partial string Workers { get; set; } = string.Empty;
@@ -230,6 +234,7 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
                 // Without a TOML or traces, ampr game picks the rules from the game.
                 AddOption(args, "--config", config);
                 AddOption(args, "--traces", traces);
+                AddFlag(args, traces.Length > 0 && UntracedTypes, "--pack-untraced-types");
                 AddOption(args, "--workers", Workers);
                 AddFlag(args, SelfContained, "--self-contained");
                 AddFlag(args, !VerifyGame, "--skip-verify");
@@ -244,6 +249,7 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
                 args.AddRange(["--root", root, "--ampr-index", AmprIndex.Trim() is { Length: > 0 } index ? index : Path.Combine(root, "ampr_emu.index"), "--output", output]);
                 // Without a TOML every file would stay loose; the page uses the built-in rules instead.
                 args.AddRange(config.Length > 0 ? ["--config", config] : traces.Length > 0 ? ["--traces", traces] : ["--preset", "auto"]);
+                AddFlag(args, config.Length == 0 && traces.Length > 0 && UntracedTypes, "--pack-untraced-types");
                 AddOption(args, "--workers", Workers);
                 AddFlag(args, SelfContained, "--self-contained");
                 AddFlag(args, AllowMissing, "--allow-missing");

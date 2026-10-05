@@ -34,6 +34,9 @@
     <c:PathField Label="{l:Tr ap_traces_label}" Placeholder="{l:Tr ap_traces_ph}" Mode="Folder" Text="{Binding Traces}" IsVisible="{Binding ShowPackOptions}" />
     <TextBlock Name="RulesTraces" Text="{Binding RulesTracesText}" TextWrapping="Wrap" Foreground="{StaticResource Success}" IsVisible="{Binding ShowRulesTraces}" />
     <TextBlock Name="NoTraces" Text="{l:Tr ap_rules_no_traces}" TextWrapping="Wrap" Foreground="{StaticResource Warning}" IsVisible="{Binding ShowNoTraces}" />
+    <CheckBox Name="UntracedTypesBox" IsChecked="{Binding UntracedTypes}" IsVisible="{Binding ShowRulesTraces}">
+      <TextBlock Text="{l:Tr ap_untraced_types}" TextWrapping="Wrap" />
+    </CheckBox>
     <Rectangle Classes="separator" />
     <TextBlock Text="{l:Tr options}" Classes="section" Foreground="{Binding Accent}" />
     <StackPanel Spacing="8" IsVisible="{Binding ShowPackOptions}">

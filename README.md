@@ -378,6 +378,13 @@ What traces can and cannot show:
 - Files the game memory-maps (`mmap`) or reads with plain reads never appear in a trace, so they stay loose
   too.
 
+To pack the rest as well, tick **Also pack files no session read…** under the trace folder
+(`--pack-untraced-types`, a MkPFS extension). Every untraced file whose type (extension) a traced file has is
+packed with the settings most traced files of that type got: with traces of an EA SPORTS UFC 6 session, the
+111 `.cas` archives no session reached are packed like the 181 that were, and only executables, modules,
+`sce_sys`, `fakelib` and small files of other types stay loose. Those files were not seen being read, so play
+the parts of the game they belong to before deleting the original. Files without an extension are never added.
+
 `mkpfs ampr profile generate <trace run> --output rules.toml --report rules.md` (or `--trace COMMANDS
 INDEX`, repeatable) writes the same rules as a TOML file to review or edit, plus a report, a metrics JSON
 and a runtime header; `mkpfs ampr profile batch` makes one profile per run of a folder or ZIP bundle. The
@@ -434,6 +441,7 @@ volume from one build together; the `.crc` sidecar is only for `verify` and `unp
 | `--preset insomniac` | none | For Insomniac Games titles: compress only the `d/` archives (128 KiB blocks) and keep the boot, movie, sound bank and `wem*` archives, `toc`, `dag` and the other top-level files loose. Packing every file made such a title crash at startup, while these rules ran it. |
 | `--preset auto` | none | `insomniac` when `toc`, `dag` and `d/` are at the top of the game, `unity` for Unity games (a `globalgamemanagers`, `data.unity3d` or `global-metadata.dat` within four folder levels), else `default`; prints the profile found (or that none was) on standard error. The default for `ampr game` and the AMPR Packs page. |
 | `--traces <folder>` | none | Rules from APR traces instead of `--config` or `--preset` (see [Rules from traces](#rules-from-traces)); also for `ampr game`. |
+| `--pack-untraced-types` | off | With `--traces`: also pack untraced files of the traced file types, like the traced ones (also for `ampr game` and `profile generate`). |
 | `--include <glob>`, `--exclude <glob>` | none; repeatable | Narrow the rule selection; `--exclude` forces files loose. |
 | `--include-from <file>`, `--exclude-from <file>` | none | Glob lists, one per line, `#` comments. |
 | `--workers <n>` | config, else min(8, cores) | Compression threads (1 to 256). |

@@ -200,8 +200,13 @@ public sealed class AmprPackPanelTests
         Assert.StartsWith("✓ Rules from traces: 2 recorded run(s) found.", panel.RulesTracesText, StringComparison.Ordinal);
         Assert.Equal(["--traces", traces + Path.DirectorySeparatorChar], panel.BuildArguments(out _)!.SkipWhile(a => a != "--traces").Take(2));
 
+        Assert.DoesNotContain("--pack-untraced-types", panel.BuildArguments(out _)!);
+        panel.UntracedTypes = true;
+        Assert.Contains("--pack-untraced-types", panel.BuildArguments(out _)!);
+
         panel.Action = panel.Actions.Single(a => a.Value == "pack");
         Assert.DoesNotContain("--preset", panel.BuildArguments(out _)!);
+        Assert.Contains("--pack-untraced-types", panel.BuildArguments(out _)!);
 
         panel.Config = "rules.toml";
         Assert.False(panel.ShowRulesTraces || panel.ShowRulesConfig);

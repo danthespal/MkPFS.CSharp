@@ -585,12 +585,144 @@ public static class AMPRProfiler
         return string.Join('\n', lines);
     }
 
+    /// <summary>Untraced files <see cref="RenderToml(AMPRProfileResult, AMPRProfileOptions, IReadOnlyList{AMPRTraceSpec}, Dictionary{string, string}?, string)"/> added.</summary>
+    /// <param name="Files">Files added.</param>
+    /// <param name="Bytes">Their total size.</param>
+    /// <param name="IndexBytes">Their chunk records in the pack manifest.</param>
+    public readonly record struct UntracedAddition(int Files, long Bytes, long IndexBytes);
+
+    /// <summary>
+    /// <see cref="RenderToml(AMPRProfileResult, AMPRProfileOptions, Dictionary{string, string}?, string)"/> plus a
+    /// MkPFS extension (not in ampr_pack_profile.py): every file of the traced games' indexes that no trace read, but
+    /// whose extension a packed traced file has, is packed too, with the layout, block size and group most common for
+    /// that extension among the traced files. A trace session rarely visits every level or mode, and archives of the
+    /// same type are read the same way. Files without an extension, executables and modules, <c>sce_sys</c>,
+    /// <c>sce_module</c> and <c>fakelib</c> are never added. The rules go before the safety exclusions.
+    /// </summary>
+    /// <param name="result">Profile.</param>
+    /// <param name="options">Options it was built with.</param>
+    /// <param name="traces">The trace runs; their indexes list the game's files.</param>
+    /// <param name="externalLists">Receives sidecars, as for the upstream rules, or <see langword="null"/>.</param>
+    /// <param name="profileStem">Sidecar name prefix.</param>
+    /// <param name="added">What was added.</param>
+    /// <returns>TOML text.</returns>
+    public static string RenderToml(
+        AMPRProfileResult result, AMPRProfileOptions options, IReadOnlyList<AMPRTraceSpec> traces, Dictionary<string, string>? externalLists,
+        string profileStem, out UntracedAddition added)
+    {
+        string toml = RenderToml(result, options, externalLists, profileStem);
+
+        // The most common packing of each extension among the packed traced files (ties: smaller block first).
+        Dictionary<string, ProfileKey> byType = [];
+        foreach (IGrouping<string, FileRecommendation> type in result.Recommendations
+            .Where(r => r.Action != "loose")
+            .GroupBy(r => Suffix(r.Metrics.Relative[(r.Metrics.Relative.LastIndexOf('/') + 1)..]).ToLowerInvariant())
+            .Where(g => g.Key.Length > 0))
+        {
+            byType[type.Key] = type
+                .GroupBy(r => new ProfileKey(r.Action, r.Layout, r.BlockSize, false, r.Group))
+                .OrderByDescending(g => g.Count()).ThenBy(g => g.Key.BlockSize).ThenBy(g => g.Key)
+                .First().Key;
+        }
+
+        Dictionary<string, long> files = [];
+        foreach (AMPRTraceSpec spec in traces)
+        {
+            foreach (AMPRTraceIndexEntry entry in AMPRCommandLog.LoadIndex(spec.Index).Values)
+            {
+                try
+                {
+                    string relative = CanonicalRelative(entry.Path);
+                    files[relative] = Math.Max(files.GetValueOrDefault(relative), entry.Size);
+                }
+                catch (AMPRPackException)
+                {
+                    // Unsafe paths are reported by the trace reader already.
+                }
+            }
+        }
+
+        Dictionary<ProfileKey, List<string>> rules = [];
+        long bytes = 0;
+        long indexBytes = 0;
+        foreach ((string relative, long size) in files.OrderBy(f => f.Key, PythonCodePointComparer.Instance))
+        {
+            string name = relative[(relative.LastIndexOf('/') + 1)..];
+            string top = relative.Split('/')[0];
+            if (result.IndexEntries.ContainsKey(relative) || KnownAction(relative) == "loose"
+                || top is "sce_sys" or "sce_module" or "fakelib" or "fakelib2"
+                || !byType.TryGetValue(Suffix(name).ToLowerInvariant(), out ProfileKey key))
+            {
+                continue;
+            }
+
+            if (!rules.TryGetValue(key, out List<string>? list))
+            {
+                rules[key] = list = [];
+            }
+
+            list.Add(relative);
+            bytes += size;
+            indexBytes += CeilDiv(size, key.BlockSize) * ChunkRecordBytes;
+        }
+
+        added = new UntracedAddition(rules.Values.Sum(l => l.Count), bytes, indexBytes);
+        if (rules.Count == 0)
+        {
+            return toml;
+        }
+
+        StringBuilder text = new();
+        int ruleNumber = 0;
+        foreach ((ProfileKey key, List<string> paths) in rules.OrderBy(r => r.Key))
+        {
+            ruleNumber++;
+            string types = string.Join(", ", paths.Select(p => Suffix(p[(p.LastIndexOf('/') + 1)..]).ToLowerInvariant()).Distinct().Order(StringComparer.Ordinal));
+            text.Append($"# MkPFS: {paths.Count} untraced {types} files ({HumanSize(paths.Sum(p => files[p]))}), packed like most traced {types} files\n");
+            text.Append("[[rule]]\n").Append($"action = {TomlString(key.Action)}\n");
+            if (externalLists is not null && options.ExternalizePaths > 0 && paths.Count > options.ExternalizePaths)
+            {
+                string listName = $"{profileStem}.untraced-{ruleNumber:000}.include.txt";
+                externalLists[listName] = string.Concat(paths.Select(p => p + "\n"));
+                text.Append($"include_from = [{TomlString(listName)}]\n");
+            }
+            else
+            {
+                text.Append("include = [\n");
+                foreach (string path in paths)
+                {
+                    text.Append($"  {TomlString(path)},\n");
+                }
+
+                text.Append("]\n");
+            }
+
+            text.Append($"block_size = {TomlString(SizeLiteral(key.BlockSize))}\n").Append($"group = {TomlString(key.Group)}\n")
+                .Append($"layout = {TomlString(key.Layout)}\n");
+            if (key.Layout == "streaming")
+            {
+                text.Append("streaming = true\n");
+            }
+
+            text.Append('\n');
+        }
+
+        const string safety = "# Safety exclusions. The last matching rule wins.\n";
+        int at = toml.LastIndexOf(safety, StringComparison.Ordinal);
+        return toml.Insert(at, text.ToString());
+    }
+
     /// <summary>The pack configuration of <see cref="RenderToml"/> with every path inline, without writing it.</summary>
     /// <param name="result">Profile.</param>
     /// <param name="options">Options it was built with.</param>
     /// <returns>Configuration.</returns>
-    public static AMPRPackConfig ToConfig(AMPRProfileResult result, AMPRProfileOptions options) =>
-        AMPRPackConfig.FromTable(AMPRToml.Parse(RenderToml(result, options), "trace profile"), Directory.GetCurrentDirectory());
+    public static AMPRPackConfig ToConfig(AMPRProfileResult result, AMPRProfileOptions options) => ToConfig(RenderToml(result, options));
+
+    /// <summary>Parse rendered profile TOML that has every path inline.</summary>
+    /// <param name="toml">TOML text from <see cref="RenderToml(AMPRProfileResult, AMPRProfileOptions, Dictionary{string, string}?, string)"/>.</param>
+    /// <returns>Configuration.</returns>
+    public static AMPRPackConfig ToConfig(string toml) =>
+        AMPRPackConfig.FromTable(AMPRToml.Parse(toml, "trace profile"), Directory.GetCurrentDirectory());
 
     /// <summary>The Markdown report (Python <c>render_report</c>).</summary>
     /// <param name="result">Profile.</param>

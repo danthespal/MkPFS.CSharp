@@ -46,6 +46,7 @@
   <data name="ap_rules_traces" xml:space="preserve"><value>✓ Regras a partir dos traces: {0} execução(ões) gravada(s). Só os arquivos que o jogo leu pelo AMPR são empacotados; os demais ficam soltos.</value></data>
   <data name="ap_rules_no_traces" xml:space="preserve"><value>Nenhum trace nesta pasta: cada execução precisa de ampr_commands.bin e do seu ampr_emu.index lado a lado.</value></data>
   <data name="ap_err_traces_config" xml:space="preserve"><value>Use um arquivo TOML ou uma pasta de traces, não os dois.</value></data>
+  <data name="ap_untraced_types" xml:space="preserve"><value>Empacotar também os arquivos que nenhuma sessão leu, quando um arquivo rastreado tem o mesmo tipo (por exemplo, os .cas restantes). Eles não foram vistos sendo lidos, então teste o jogo com eles.</value></data>
   <data name="ap_experimental" xml:space="preserve"><value>⚠ Experimental: se um jogo empacotado funciona depende de como ele lê seus arquivos, e só um teste no PS5 mostra isso. Mantenha o jogo original até jogar o empacotado.</value></data>
   <data name="ap_game_note" xml:space="preserve"><value>Cria uma nova pasta que você pode copiar para o PS5 e jogar: suas bibliotecas em fakelib/, ampr_emu.index, os packs LZ4 e todos os arquivos que ficam soltos. A pasta do jogo é apenas lida. Requer AMPR Emu 0.4.2.1 ou mais recente e um jogo que use AMPR.</value></data>
   <data name="ap_libs_label" xml:space="preserve"><value>Pasta de Bibliotecas (fakelib)</value></data>

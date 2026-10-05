@@ -282,4 +282,36 @@ public sealed class AMPRProfilerTests
         Assert.Equal(0, MkPFSCli.Run(["ampr", "profile", "batch", zip, "--output-dir", Path.Combine(dir.Path, "fromzip")], ctx));
         Assert.True(File.Exists(Path.Combine(dir.Path, "fromzip", "startup.toml")));
     }
+
+    [Fact]
+    public void Untraced_files_of_traced_types_are_packed_like_them_on_request()
+    {
+        using TempDir dir = new();
+        (string game, string traces) = TracedGame(dir);
+        StringWriter stdout = new() { NewLine = "\n" };
+        StringWriter stderr = new() { NewLine = "\n" };
+        CliContext ctx = new(stdout, stderr, useColor: false, utf8: false, progress: false);
+        string output = Path.Combine(dir.Path, "out");
+
+        int exit = MkPFSCli.Run(["ampr", "game", "--root", game, "--output", output, "--traces", traces, "--pack-untraced-types"], ctx);
+
+        Assert.True(exit == 0, stdout.ToString() + stderr.ToString());
+        // level0.dat was traced; level1.dat has the same type, so it is packed too; eboot.bin stays loose.
+        Assert.Contains("1 file the game read through APR are packed (", stdout.ToString(), StringComparison.Ordinal);
+        Assert.Contains("), plus 1 untraced files of the same types (", stdout.ToString(), StringComparison.Ordinal);
+        Assert.False(File.Exists(Path.Combine(output, "data", "level1.dat")));
+        Assert.True(File.Exists(Path.Combine(output, "eboot.bin")));
+
+        List<AMPRTraceSpec> runs = AMPRProfiler.DiscoverTracePairs(traces);
+        AMPRProfileOptions options = new() { Name = "game" };
+        AMPRProfileResult result = AMPRProfiler.Build(runs, options);
+        string toml = AMPRProfiler.RenderToml(result, options, runs, null, "p", out AMPRProfiler.UntracedAddition added);
+        Assert.Equal(1, added.Files);
+        Assert.StartsWith(AMPRProfiler.RenderToml(result, options).Split("# Safety exclusions.")[0], toml, StringComparison.Ordinal);
+        Assert.Contains("# MkPFS: 1 untraced .dat files (", toml, StringComparison.Ordinal);
+        Assert.EndsWith(AMPRProfiler.RenderToml(result, options)[AMPRProfiler.RenderToml(result, options).IndexOf("# Safety exclusions.", StringComparison.Ordinal)..], toml, StringComparison.Ordinal);
+
+        Assert.Equal(2, MkPFSCli.Run(["ampr", "game", "--root", game, "--output", Path.Combine(dir.Path, "o2"), "--pack-untraced-types"], ctx));
+        Assert.EndsWith("error: --pack-untraced-types needs --traces\n", stderr.ToString(), StringComparison.Ordinal);
+    }
 }

@@ -46,6 +46,7 @@
   <data name="ap_rules_traces" xml:space="preserve"><value>✓ Regeln aus Traces: {0} aufgezeichnete(r) Lauf/Läufe gefunden. Nur die Dateien, die das Spiel über AMPR gelesen hat, werden gepackt; alle anderen bleiben einzeln.</value></data>
   <data name="ap_rules_no_traces" xml:space="preserve"><value>Keine Traces in diesem Ordner: jeder Lauf braucht ampr_commands.bin und seine ampr_emu.index nebeneinander.</value></data>
   <data name="ap_err_traces_config" xml:space="preserve"><value>Verwende entweder eine TOML-Datei oder einen Trace-Ordner, nicht beides.</value></data>
+  <data name="ap_untraced_types" xml:space="preserve"><value>Auch Dateien packen, die keine Sitzung gelesen hat, wenn eine aufgezeichnete Datei denselben Typ hat (zum Beispiel die übrigen .cas-Archive). Ihr Lesen wurde nicht beobachtet, also das Spiel damit testen.</value></data>
   <data name="ap_experimental" xml:space="preserve"><value>⚠ Experimentell: Ob ein gepacktes Spiel läuft, hängt davon ab, wie es seine Dateien liest, und das zeigt nur ein Test auf der PS5. Behalte das Originalspiel, bis das gepackte gespielt wurde.</value></data>
   <data name="ap_game_note" xml:space="preserve"><value>Erstellt einen neuen Ordner, den du auf die PS5 kopierst und spielst: deine Bibliotheken in fakelib/, ampr_emu.index, die LZ4-Packs und alle Dateien, die lose bleiben. Der Spielordner wird nur gelesen. Benötigt AMPR Emu 0.4.2.1 oder neuer und ein Spiel, das AMPR nutzt.</value></data>
   <data name="ap_libs_label" xml:space="preserve"><value>Bibliotheksordner (fakelib)</value></data>
