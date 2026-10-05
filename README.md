@@ -1,42 +1,86 @@
+<div align="center">
+
 # MkPFS.CSharp
 
+**Build, check and repair PS4/PS5 game images from the command line or a desktop app.**
+
 [![CI](https://github.com/danthespal/MkPFS.CSharp/actions/workflows/ci.yml/badge.svg)](https://github.com/danthespal/MkPFS.CSharp/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/danthespal/MkPFS.CSharp?label=release)](https://github.com/danthespal/MkPFS.CSharp/releases)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE.md)
+![.NET 10](https://img.shields.io/badge/.NET-10-512BD4)
+![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20Linux%20%7C%20macOS-555)
 
-Build, check, and repair PS4/PS5 PFS game images (`.ffpfs`, `.ffpfsc`, `.exfat`) from the command line
-or a desktop app.
+<img src="assets/screenshots/gui-pack-ffpfsc.png" alt="The MkPFS.CSharp desktop app packing an exFAT image into a .ffpfsc" width="720">
 
-MkPFS.CSharp is a .NET 10 port of the Python [MkPFS](https://github.com/PSBrew/MkPFS) by PSBrew. It ships
-as a native executable (no Python needed), writes the same images as the original, and adds an
-offline PFSC block repair ported from PS5 Game Compressor.
+</div>
+
+MkPFS.CSharp is a .NET 10 port of the Python [MkPFS](https://github.com/PSBrew/MkPFS) by PSBrew. It is a
+single native program (no Python needed), writes **the same images** as the original, and adds an offline
+PFSC block repair ported from PS5 Game Compressor and LZ4 asset packs for AMPR Emu.
 
 > [!WARNING]
 > **AMPR packing (`ampr`, the AMPR Packs page) is experimental.** It can shrink a game a lot, but whether
 > the packed game runs depends on how that game reads its files, and only a test on the PS5 shows that.
-> Keep the original game until the packed one has been played. See [`ampr`](#ampr-asset-packs).
+> Keep the original game until the packed one has been played. See [AMPR asset packs](#ampr-asset-packs).
+
+## Contents
+
+- [Features](#features)
+- [Quick start](#quick-start)
+- [Download](#download)
+- [Desktop app](#desktop-app)
+- [Command line](#command-line)
+- [APR Emu](#apr-emu)
+- [AMPR asset packs](#ampr-asset-packs)
+- [Differences from Python MkPFS](#differences-from-python-mkpfs)
+- [Build from source](#build-from-source)
+- [Credits and license](#credits-and-license)
 
 ## Features
 
-- **Pack**: a game folder, an exFAT image, or any single file into a compressed `.ffpfsc` (PFSC, zlib),
-  or a folder into a plain PFS image (`--raw`, with signed, encrypted, 64-bit inode, and PS4 options).
-- **exFAT**: build exFAT images from game folders (deterministic, 64 KiB clusters by default).
-- **Batch**: pack every game folder and image in a folder in one run.
-- **Check**: `verify`, `inspect`, `tree`, and `unpack` for PFS, PFSC, and exFAT images, including
-  encrypted ones (`--ekpfs-key`).
-- **Repair**: find and fix compressed blocks the PS5 may decode wrongly (images made with ISA-L).
-- **APR Emu**: copies your AMPR Emu libraries into `fakelib/` of APR titles (`--ampr-libs`) and builds
-  `ampr_emu.index` when `pack folder`, `pack exfat`, or `batch` packs a game that has them.
-- **AMPR packs (experimental)**: `ampr` builds, checks, and extracts AMPR Emu seekable LZ4 asset packs, byte for byte
-  like ampr_emu's `ampr_pack.py`, and `ampr game` turns a game folder into a smaller one that runs from
-  them ([how it works](#ampr-asset-packs)). `ampr profile`
-  turns traces recorded on the console into pack rules, like ampr_emu's `ampr_pack_profile.py`.
-- **GUI**: `mkpfs-gui` with pages to build exFAT, FFPFSC and AMPR packs and to check and read images,
-  cover and metadata preview, and a PFSC block map; English, Português (BR), Español, Română, Deutsch, and Français.
+| | Feature | What it does |
+|---|---|---|
+| 💿 | **exFAT images** | Turns a game folder into an `.exfat` image (deterministic, 64 KiB clusters). |
+| 🗜️ | **FFPFSC images** | Compresses an exFAT image, a game folder or any single file into a `.ffpfsc` (PFSC, zlib). |
+| 📁 | **Plain PFS** | Packs a folder as a `.ffpfs` (`--raw`), signed, encrypted, 64-bit inodes or PS4. |
+| 📚 | **Batch** | Packs every game folder and image in a folder in one run. |
+| 🔍 | **Check** | `verify`, `inspect`, `tree` and `unpack` for PFS, PFSC and exFAT, encrypted ones too. |
+| 🩹 | **Repair** | Finds and fixes compressed blocks the PS5 may decode wrongly (images made with ISA-L). |
+| 🎮 | **APR Emu** | Copies AMPR Emu into a game's `fakelib/` and writes its `ampr_emu.index`. |
+| 📦 | **AMPR packs** *(experimental)* | Packs game data into LZ4 asset packs that AMPR Emu reads on the fly. |
+| 🖥️ | **Desktop app** | Every command in a window, in English, Português (BR), Español, Română, Deutsch and Français. |
+
+## Quick start
+
+ShadowMountPlus works best with an **exFAT image wrapped in a compressed `.ffpfsc`**. The desktop app
+follows the same two steps.
+
+```mermaid
+flowchart LR
+    A["📁 Game folder<br/>PPSA12345-app"] -->|"1. Pack exFAT"| B["💿 PPSA12345.exfat"]
+    B -->|"2. Pack FFPFSC"| C["🗜️ PPSA12345.ffpfsc"]
+    C -->|"copy"| D["🎮 PS5<br/>ShadowMountPlus"]
+```
+
+```bash
+mkpfs pack exfat PPSA12345-app PPSA12345.exfat     # 1. build the exFAT image
+mkpfs pack file PPSA12345.exfat PPSA12345.ffpfsc   # 2. compress it
+mkpfs verify PPSA12345.ffpfsc --source-file PPSA12345.exfat   # optional: check it
+```
+
+**Which file should I make?**
+
+| Output | Size | Made with | Use it for |
+|---|---|---|---|
+| `.exfat` | Same as the game | `pack exfat` | The input of `pack file`, or a mount without compression. |
+| `.ffpfsc` | Smaller (zlib) | `pack file`, `pack folder` | The usual image for ShadowMountPlus. |
+| `.ffpfs` | Same as the game | `pack folder --raw` | Signed, encrypted or PS4 images. |
+| AMPR packs | Much smaller (LZ4) | `ampr game` | Experimental: AMPR titles with a tested profile. |
 
 ## Download
 
-Get the archive for your system from the
-[releases page](https://github.com/danthespal/MkPFS.CSharp/releases) and unpack it anywhere:
+Get the archive for your system from the [releases page](https://github.com/danthespal/MkPFS.CSharp/releases)
+and unpack it anywhere.
 
 | System | Command line | Desktop app |
 |---|---|---|
@@ -44,283 +88,315 @@ Get the archive for your system from the
 | Linux x64 | `mkpfs-<version>-linux-x64.tar.gz` | `mkpfs-gui-<version>-linux-x64.tar.gz` |
 | macOS Apple silicon | `mkpfs-<version>-osx-arm64.tar.gz` | `mkpfs-gui-<version>-osx-arm64.tar.gz` |
 
-- Keep each program in its folder with the libraries next to it (`mkpfs_zlib`, plus Skia and
-  HarfBuzz for the desktop app).
-- macOS: the desktop app is `MkPFS.CSharp.app`. It is not notarized, so open it the first time with
-  right-click > Open.
-- Linux: the desktop app needs X11 and fontconfig, which desktop distributions include.
-- `SHA256SUMS.txt` on the release page lists the archive checksums.
-- Check the command line with `mkpfs selftest`.
+> [!TIP]
+> - Keep each program in its folder with the libraries next to it (`mkpfs_zlib`, plus Skia and HarfBuzz for
+>   the desktop app).
+> - **macOS:** the desktop app is `MkPFS.CSharp.app`. It is not notarized, so open it the first time with
+>   right-click > Open.
+> - **Linux:** the desktop app needs X11 and fontconfig, which desktop distributions include.
+> - `SHA256SUMS.txt` on the release page lists the checksums. `mkpfs selftest` checks the command line.
 
-## Usage
+## Desktop app
 
-All paths may be absolute or relative to the current directory. Replace values in angle brackets
-with your own paths; square brackets indicate an optional argument. Run `mkpfs <command> --help`
-for the parser's built-in help.
+`mkpfs-gui` runs the same commands from a window and shows their output and progress.
 
-### Commands at a glance
+<table>
+  <tr>
+    <td align="center"><img src="assets/screenshots/gui-pack-exfat.png" alt="Pack exFAT page" width="400"><br><b>Pack exFAT</b>: game preview and APR Emu</td>
+    <td align="center"><img src="assets/screenshots/gui-pack-ffpfsc.png" alt="Pack FFPFSC page" width="400"><br><b>Pack FFPFSC</b>: compression tuning</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/screenshots/gui-ampr-packs.png" alt="AMPR Packs page" width="400"><br><b>AMPR Packs</b>: build a playable packed game</td>
+    <td align="center"><img src="assets/screenshots/gui-repair.png" alt="Repair page with a block map" width="400"><br><b>Repair</b>: block map of risky blocks</td>
+  </tr>
+</table>
 
-| Command | Arguments | Default result | Purpose |
-|---|---|---|---|
-| `pack folder <source_dir> <image_file>` | game/homebrew folder, output path | exFAT wrapped in a compressed `.ffpfsc` | Package a game folder. |
-| `pack file <source_file> <image_file>` | input file, output path | compressed `.ffpfsc` | Package one file in a PFS container. |
-| `pack exfat <source_dir> [output]` | game/homebrew folder, optional output path | `<titleId>.exfat` beside the source | Build an uncompressed exFAT image. |
-| `batch <source_dir> <output_dir>` | directory of folders/images, destination directory | one `.ffpfsc` per discovered item | Package many inputs; existing outputs are skipped. |
-| `verify <image_file>` | image path | — | Validate an image, optionally against its source. |
-| `inspect <image_file>` | image path | text report | Show image metadata and integrity information. |
-| `tree <image_file>` | folder or image path | outer tree | List files and directories. |
-| `unpack <image_file> <output_dir>` | image path, destination directory | — | Extract an image. |
-| `repair <image_file>` | single-file `.ffpfsc` path | repairs risky blocks | Repair PFSC blocks that a PS5 may decode incorrectly. |
-| `ampr <subcommand>` | see [`ampr`](#ampr-asset-packs) | JSON on standard output | Build and manage AMPR Emu LZ4 asset packs. |
+| Section | Page | What it does |
+|---|---|---|
+| **Build** | Pack exFAT | Game folder → `.exfat`, with the APR Emu libraries and index. |
+| | Pack FFPFSC | `.exfat` (or any file) → compressed `.ffpfsc`. |
+| | AMPR Packs | Every `ampr` command; *Build playable game* is the default. |
+| **Check** | Verify | Checks an image, optionally against its source. |
+| | Repair | Scans an image, draws a block map and repairs risky blocks. |
+| **Read** | Inspect, Tree, Unpack | Shows details, lists files and extracts an image. |
 
-### Common examples
+- **Game preview:** pick a game folder or image to see its cover, title, IDs, version, region and APR Emu marker.
+- **Compression tuning:** presets (Fast, Balanced, Max, Low RAM), the zlib level, block size and keep rules.
+  **CPU Cores** offers *Auto*, which uses every physical core (not the logical processors), or any lower count.
+- **Tooltips:** hover over any Compression Tuning or Advanced option to see what it does.
+- **One progress bar per run:** a run with several steps (pack, then verify and compare) fills one bar,
+  and the label names the step, for example `verify (2/3)`.
+- **Safe closing:** closing the window during a job asks first; *Stop and Close* waits for the job to clean up.
+- `pack folder` and `batch` are available on the command line only.
 
-Pack a game folder into a `.ffpfsc` (wrapped in exFAT and compressed in one pass):
+From a source checkout: `dotnet run --project src/MkPFS.Gui -c Release`.
 
-```bash
-mkpfs pack folder PPSA12345-app PPSA12345.ffpfsc
-```
+## Command line
 
-Compress an existing exFAT image:
+Paths may be absolute or relative. `<...>` is your value, `[...]` is optional, and
+`mkpfs <command> --help` shows every option.
 
-```bash
-mkpfs pack file PPSA12345.exfat PPSA12345.ffpfsc
-```
+| Command | Result | Purpose |
+|---|---|---|
+| `pack exfat <source_dir> [output]` | `<titleId>.exfat` | Build an uncompressed exFAT image. |
+| `pack file <source_file> <image_file>` | `.ffpfsc` | Compress one file (usually an `.exfat`) into a PFS image. |
+| `pack folder <source_dir> <image_file>` | `.ffpfsc` | Wrap a folder in exFAT and compress it in one pass. |
+| `batch <source_dir> <output_dir>` | one `.ffpfsc` per item | Pack many folders and images; existing outputs are skipped. |
+| `verify <image_file>` | report | Validate an image, optionally against its source. |
+| `inspect <image_file>` | report | Show metadata and integrity information. |
+| `tree <image_file>` | file list | List files and folders. |
+| `unpack <image_file> <output_dir>` | files | Extract an image. |
+| `repair <image_file>` | repaired image | Fix PFSC blocks the PS5 may decode wrongly. |
+| `ampr <subcommand>` | JSON | Build and manage AMPR Emu LZ4 asset packs ([details](#ampr-asset-packs)). |
+| `selftest` | — | Check that the bundled native libraries load. |
 
-Pack a folder directly as PFS (`--signed`, `--encrypted`, `--inode-bits 64`, and `--version PS4` apply
-here):
-
-```bash
-mkpfs pack folder PPSA12345-app PPSA12345.ffpfs --raw
-```
-
-Build an exFAT image from a game folder:
-
-```bash
-mkpfs pack exfat PPSA12345-app PPSA12345.exfat
-```
-
-Pack every game folder and image file in a folder (existing outputs are skipped):
-
-```bash
-mkpfs batch ./games ./output
-```
-
-Verify an image against its source:
-
-```bash
-mkpfs verify PPSA12345.ffpfsc --source-file PPSA12345.exfat
-```
-
-Show image details (`--format json` for scripts):
+### Examples
 
 ```bash
-mkpfs inspect PPSA12345.ffpfsc
+mkpfs pack exfat PPSA12345-app PPSA12345.exfat              # game folder -> exFAT
+mkpfs pack file PPSA12345.exfat PPSA12345.ffpfsc            # exFAT -> compressed image
+mkpfs pack folder PPSA12345-app PPSA12345.ffpfsc            # both steps in one pass
+mkpfs pack folder PPSA12345-app PPSA12345.ffpfs --raw       # plain PFS (signed, encrypted, PS4...)
+mkpfs batch ./games ./output                                # every game in a folder
+mkpfs verify PPSA12345.ffpfsc --source-file PPSA12345.exfat # check against the source
+mkpfs inspect PPSA12345.ffpfsc                              # details (--format json for scripts)
+mkpfs tree PPSA12345.ffpfsc --deep                          # list files inside the wrapped exFAT
+mkpfs unpack PPSA12345.ffpfsc out --deep                    # extract the game files
+mkpfs repair PPSA12345.ffpfsc                               # fix risky blocks
 ```
 
-List the files, including inside a wrapped exFAT:
+### Exit codes
 
-```bash
-mkpfs tree PPSA12345.ffpfsc --deep
-```
+| Code | Meaning |
+|---|---|
+| `0` | Success. |
+| `1` | The operation failed. |
+| `2` | Invalid command line (missing argument, unknown or conflicting options); `ampr` errors also use 2. |
+| `3` | `repair --scan` found blocks that need repair. |
 
-Extract the game files:
+### Options of `pack folder` and `pack file`
 
-```bash
-mkpfs unpack PPSA12345.ffpfsc out --deep
-```
+The defaults are PS5, 32-bit inodes, case-insensitive names, zlib level 7, 64 KiB blocks and compression on.
+The output extension is changed to `.ffpfsc` when needed. Single-file and `--raw` builds run a quick
+structure check afterwards; the default exFAT-wrapped `pack folder` checks only with `--verify`.
 
-Repair blocks the PS5 may decode wrongly in a single-file `.ffpfsc`:
+For the default exFAT-wrapped `pack folder`, compression stays on with 64 KiB blocks. Use `--raw` to make
+`--no-compress`, `--block-size`, `--inode-bits`, `--max-compressed-ratio`, `--min-compress-size` and
+`--skip-executable-compression` take effect.
 
-```bash
-mkpfs repair PPSA12345.ffpfsc
-```
-
-### `pack folder` and `pack file`
-
-Both commands require a source path and an output image path. By default, the output extension is
-changed to `.ffpfsc` when necessary. The default build is PS5, 32-bit inodes, case-insensitive,
-zlib level 7, 64 KiB blocks, and compression enabled. Direct-PFS folder builds and single-file
-builds also run a quick structure verification by default. The default exFAT-wrapped folder flow
-runs a post-pack check only when `--verify` is supplied.
-
-For the default exFAT-wrapped `pack folder` flow, compression remains enabled and the PFS block
-size remains 64 KiB. Use `--raw` to make options that control direct PFS layout or compression
-(`--no-compress`, `--block-size`, `--inode-bits`, `--max-compressed-ratio`,
-`--min-compress-size`, and `--skip-executable-compression`) take effect.
+<details>
+<summary><b>Compression options</b></summary>
 
 | Option | Default | Meaning |
 |---|---|---|
-| `--adjust-output-file-extension` | on | Change the requested output extension to match the selected pack mode. |
-| `--no-adjust-output-file-extension` | off | Keep the output filename exactly as supplied. Cannot be combined with `--adjust-output-file-extension`. |
-| `--compress` / `--no-compress` | compression on | Enable or disable PFSC block compression. The two flags are mutually exclusive. |
-| `--threshold-gain <0-100>` | `0` | Keep a compressed block only when it saves at least this percentage. |
-| `--block-size <bytes\|auto\|auto-fit>` | `auto` (`65536`) | PFS block size; it must be a power of two from 4096 through 2097152. `auto-fit` is supported by folder packing and the spool path to reduce file-data padding. |
-| `--temp-folder <dir>` | system temporary directory | Where staged pack artifacts are written. |
-| `--version <PS4\|PS5>` | `PS5` | PFS profile version. |
-| `--inode-bits <32\|64>` | `32` | PFS inode-width mode. |
-| `--case-sensitive` / `--case-insensitive` | case-insensitive | Select the PFS name-comparison mode. The two flags are mutually exclusive. |
-| `--cpu-count <n>` | `0` (automatic) | PFSC compression workers. Automatic mode uses up to 16 workers and leaves one logical CPU free; a nonzero value is clamped to at least one. |
+| `--compress` / `--no-compress` | on | Enable or disable PFSC block compression. |
 | `--compression-level <0-9>` | `7` | zlib compression level. |
-| `--compression-backend <auto\|zlib-ng\|zlib\|isal>` | `auto` | Compatibility option. This port always uses zlib 1.3.1; unsupported values produce a warning. |
-| `--max-compressed-ratio <0-100>` | `100` | Do not use PFSC when its stored size exceeds this percentage of the raw file size. |
-| `--min-compress-size <bytes>` | resolved block size | Store smaller files raw without attempting PFSC compression. |
-| `--skip-executable-compression` | off | Do not compress important executable files. |
-| `--signed` | off | Build a signed PFS using a zero EKPFS/seed. It is not supported by the default exFAT-wrapped folder mode. |
-| `--encrypted` | off | Encrypt filesystem blocks with AES-XTS. |
-| `--ekpfs-key <64-hex>` | all-zero key | EKPFS key for an encrypted image; it requires `--encrypted`. |
+| `--cpu-count <n>` | `0` (auto) | Compression workers. Auto uses up to 16 and leaves one logical CPU free. |
+| `--block-size <bytes\|auto\|auto-fit>` | `auto` (65536) | Power of two from 4096 to 2097152. `auto-fit` reduces padding (folder packing and the spool builder). |
+| `--threshold-gain <0-100>` | `0` | Keep a compressed block only when it saves at least this percentage. |
+| `--max-compressed-ratio <0-100>` | `100` | Store a file raw when PFSC would exceed this percentage of its size. |
+| `--min-compress-size <bytes>` | block size | Store smaller files raw without trying. |
+| `--skip-executable-compression` | off | Do not compress important executables. |
+| `--compression-backend <...>` | `auto` | Accepted for compatibility; this port always uses zlib 1.3.1. |
+
+</details>
+
+<details>
+<summary><b>Image layout and security options</b></summary>
+
+| Option | Default | Meaning |
+|---|---|---|
+| `--version <PS4\|PS5>` | `PS5` | PFS profile version. |
+| `--inode-bits <32\|64>` | `32` | PFS inode width. |
+| `--case-sensitive` / `--case-insensitive` | insensitive | Name comparison mode. |
+| `--signed` | off | Signed PFS with a zero EKPFS key and seed (not with the exFAT-wrapped `pack folder`). |
+| `--encrypted` | off | Encrypt blocks with AES-XTS. |
+| `--ekpfs-key <64-hex>` | all zeros | EKPFS key; needs `--encrypted`. |
+
+</details>
+
+<details>
+<summary><b>Output, checks and other options</b></summary>
+
+| Option | Default | Meaning |
+|---|---|---|
+| `--adjust-output-file-extension` / `--no-adjust-output-file-extension` | adjust | Change the extension to match the pack mode, or keep the name as typed. |
+| `--temp-folder <dir>` | system temp | Where staged files are written. |
+| `--verify` | off | Full verification after packing instead of the quick structure check. |
+| `--verify-structure` / `--no-verify-structure` | on | Turn the quick check on or off. |
+| `--skip-verification` | off | Skip every post-pack check; not with `--verify`. |
+| `--dry-run` | off | Scan and report the layout without writing. |
 | `--verbose` | off | Print per-file decisions. |
-| `--dry-run` | off | Scan and report the planned layout without writing an image. |
-| `--verify` | off | Run full post-pack verification instead of the default structure-only check. |
-| `--verify-structure` / `--no-verify-structure` | structure check on | Explicitly enable or disable the default quick post-pack check. The two flags are mutually exclusive. |
-| `--skip-verification` | off | Skip all post-pack verification. It cannot be combined with `--verify`. |
+| `--raw` | off | `pack folder`: write a plain `.ffpfs` instead of the exFAT-wrapped `.ffpfsc`. |
+| `--require-game-files` | off | `pack folder`: refuse to pack without `sce_sys/param.json` and `eboot.bin`. |
+| `--use-spool` | off | `pack file`: use the older staged builder instead of writing straight into the image. |
+| `--rename-inner-image` / `--no-rename-inner-image` | rename | `pack file`: normalize the file name stored inside, or keep it. |
 
-`pack folder` also accepts the [APR Emu options](#apr-emu) and the following:
+`pack folder` also takes the [APR Emu options](#apr-emu).
 
-| Option | Default | Meaning |
-|---|---|---|
-| `--raw` | off | Package the source directly as a PFS `.ffpfs`, rather than making the default exFAT-wrapped `.ffpfsc`. Use this mode for `--signed`, `--inode-bits 64`, and other direct-PFS settings. |
-| `--require-game-files` | off | Refuse to pack unless `sce_sys/param.json` and `eboot.bin` are present. |
+</details>
 
-`pack file` also accepts:
+### Options of `pack exfat`
 
-| Option | Default | Meaning |
-|---|---|---|
-| `--use-spool` | off | Force the legacy staged/spool builder instead of direct-to-image streaming. |
-| `--rename-inner-image` / `--no-rename-inner-image` | rename on | Normalize the filename stored inside the image (the first flag explicitly selects the default), or preserve the source filename. |
-
-### `pack exfat`
-
-`mkpfs pack exfat <source_dir> [output]` creates an uncompressed exFAT image. If `output` is omitted,
-the program derives `<titleId>.exfat` beside the source directory; an output directory is also
-accepted and receives that derived filename.
+If `output` is omitted, the image is `<titleId>.exfat` next to the source folder; an existing folder as
+`output` receives that name.
 
 | Option | Default | Meaning |
 |---|---|---|
-| `--cluster-size <bytes\|auto>` | `auto` (`65536`) | exFAT cluster size. The automatic 64 KiB value is optimized for SMP/LVD. |
-| `--free-space <size>` | `0` | Free space to leave inside the image, for example `2GiB`. Images are otherwise exactly full, so nothing can write to them even on a read-write mount (AMPR Emu's debug log and traces, a game writing to `/app0`). |
-| `--overwrite` | off | Replace an existing output image. |
-| `--verbose` | off | Print detailed packing output. |
-| `--no-progress` | off | Hide the progress bar written to standard error. |
+| `--cluster-size <bytes\|auto>` | `auto` (65536) | exFAT cluster size; 64 KiB suits ShadowMountPlus. |
+| `--free-space <size>` | `0` | Free space inside the image, for example `2GiB`. Without it nothing can write to the mounted image. |
+| `--overwrite` | off | Replace an existing image. |
+| `--verbose` / `--no-progress` | off | More output / no progress bar. |
 
-It also accepts the [APR Emu options](#apr-emu).
+It also takes the [APR Emu options](#apr-emu).
 
-### `batch`
+### Options of `batch`
 
-`mkpfs batch <source_dir> <output_dir>` discovers packable folders and image files in `source_dir`
-and writes `.ffpfsc` images into `output_dir`. It skips existing outputs by default. Its compression,
-PFS-profile, naming, and encryption options have the same meanings and defaults as the corresponding
-`pack` options: `--compress`/`--no-compress`, `--threshold-gain`, `--block-size` (`auto` = 65536;
-`auto-fit` is not accepted), `--version`, `--inode-bits`, `--case-sensitive`/`--case-insensitive`,
-`--cpu-count`, `--compression-level`, `--compression-backend`, `--max-compressed-ratio`,
-`--min-compress-size`, `--skip-executable-compression`, `--encrypted`, `--ekpfs-key`, and `--verbose`.
+`batch` finds packable folders and image files in `source_dir` and writes one `.ffpfsc` each into
+`output_dir`, skipping existing ones. Its compression, profile, naming and encryption options are the same as
+`pack` (`auto-fit` block sizes are not accepted).
 
 | Option | Default | Meaning |
 |---|---|---|
-| `--overwrite` | off | Replace images that already exist in the output directory. |
-| `--dry-run` | off | Report the conversions without writing images. |
-| `--verify` | off | Run full verification for each successful image. |
-| `--compress` / `--no-compress` | compression on | Enable or disable compression; these flags are mutually exclusive. |
+| `--overwrite` | off | Replace existing images. |
+| `--dry-run` | off | Report the conversions without writing. |
+| `--verify` | off | Fully verify each image. |
 
-Folder items get the [APR Emu options](#apr-emu) too.
+Folder items also take the [APR Emu options](#apr-emu).
 
-### APR Emu
+### Reading and extracting
 
-Some PS5 titles use PlayGo/APR and need Drakmor's APR Emu to run from a mounted image: the emulator
-libraries in the game's `fakelib/` folder plus an `ampr_emu.index` that lists every file. MkPFS does
-not ship or download the libraries. Download them into one folder and pass it with `--ampr-libs`:
+Encrypted images take `--ekpfs-key <64-hex>` (default: all zeros) and `--new-crypt` (alternate key
+derivation). `verify`, `tree` and `unpack` take `--format <auto|pfs|exfat>`.
+
+| Command | Option | Meaning |
+|---|---|---|
+| `inspect` | `--format <text\|json>` | Human-readable or JSON report. |
+| `tree` | `--deep` | List the files inside a wrapped exFAT. |
+| `unpack` | `--deep` | Extract the files inside a wrapped exFAT. |
+| | `--only <inner-path>` | With `--deep`, extract only this file or folder (repeatable). |
+| | `--overwrite`, `--no-progress` | Replace existing output; hide progress. |
+| `verify` | `--source-dir <dir>` / `--source-file <file>` | Compare with the source folder or file. |
+| | `--expect-crc32 <hex>` | Require this payload CRC32. |
+| | `--expect-manifest-sha256 <64-hex>` | Require this manifest SHA-256. |
+| | `--require-game-files` | Warn when `sce_sys/param.json`, `eboot.bin` or `pfs-version.dat` is missing. |
+
+### Repair
+
+`repair` works on an unsigned, unencrypted, single-file `.ffpfsc`. It scans for risky compressed blocks,
+stores replacements raw, checks their content and cleans unused bytes in the outer PFS.
+
+| Option | Default | Meaning |
+|---|---|---|
+| `--scan` | off | Report only; exit code 3 when blocks need repair. |
+| `--bad-blocks <file>` | none | Repair the blocks listed in a PS5 Game Compressor `bad_blocks.tsv`. |
+| `--recompress` | off | Re-encode repaired blocks with zlib level 7 instead of storing them raw. |
+| `--mode <auto\|in-place\|copy>` | `auto` | `auto` copies when there is 1.2× the image size free, else rewrites in place. An interrupted `in-place` repair can leave the image corrupt. |
+| `--report-dir <dir>` | none | Write `summary.json` and `bad_blocks.tsv`. |
+| `--no-slack-cleanup` | off | Leave unused outer bytes unchanged. |
+| `--cpu-count <n>` | `0` (all cores) | Workers for scanning and repair. |
+
+## APR Emu
+
+Some PS5 titles use PlayGo/APR and need Drakmor's APR Emu to run from a mounted image: its libraries in the
+game's `fakelib/` and an `ampr_emu.index` listing every file. MkPFS does not ship the libraries; download
+them into one folder and pass it with `--ampr-libs`.
 
 | Library | Download | Required |
 |---|---|---|
-| `libSceAmpr.sprx` | [drakmor/ampr_emu releases](https://github.com/drakmor/ampr_emu/releases) | yes |
-| `libScePlayGo.sprx` | [drakmor/pgo_stub releases](https://github.com/drakmor/pgo_stub/releases) | copied when present |
+| `libSceAmpr.sprx` | [drakmor/ampr_emu](https://github.com/drakmor/ampr_emu/releases) | yes |
+| `libScePlayGo.sprx` | [drakmor/pgo_stub](https://github.com/drakmor/pgo_stub/releases) | copied when present |
 
-Before packing a game folder, `pack folder`, `pack exfat`, and `batch` (folder items):
+Before packing a folder, `pack folder`, `pack exfat` and `batch`:
 
 1. With `--ampr-libs`, copy the libraries into `<game>/fakelib/` when the game is an APR title
-   (`sce_sys/playgo-chunk.dat` exists) or `--ampr-title` is given. Identical files are left alone;
-   changed ones are replaced.
-2. When `fakelib/libSceAmpr.sprx` or `fakelib2/libSceAmpr.sprx` exists, write `ampr_emu.index` into the
-   game folder. Paths are hashed and sorted the way the emulator looks them up (only ASCII letters fold
-   case), so names with accents resolve on the console.
+   (`sce_sys/playgo-chunk.dat` exists) or `--ampr-title` is given. Identical files are left alone.
+2. When `fakelib/libSceAmpr.sprx` or `fakelib2/libSceAmpr.sprx` exists, write `ampr_emu.index`, hashed and
+   sorted the way the emulator looks paths up, so names with accents resolve on the console.
 
-ShadowMountPlus mounts `fakelib2/` instead of `fakelib/` when both exist, so `--ampr-libs` warns and leaves
-a `fakelib2/` folder for you to update.
-
-Both steps change the source folder, so the image includes them. An APR title without
-`fakelib/libSceAmpr.sprx` and without `--ampr-libs` gets a warning and no index.
-
-A folder that already has `ampr_emu.index` gets it rebuilt by default. To keep an index made by other
-tools, pass `--ampr-skip-regen-if-exists`: the index is kept while it lists exactly the folder's files
-and sizes (paths compared case-insensitively, modification times ignored) and rebuilt otherwise. The GUI
-turns this on when the chosen folder already has an index. `--no-ampr-index` packs the existing index
-untouched, even when it no longer matches.
-
-A folder that also holds AMPR packs (`ampr_assets.index`, see [`ampr`](#ampr-asset-packs)) always keeps its
-`ampr_emu.index`, with a warning: the packs address files by their row in that index, and a rebuilt index
-renumbers the rows so the emulator fails every packed read. `--ampr-force-regen` still rebuilds it. Keep
-ShadowMountPlus's `mount_read_only=1` (its default) for such images: on a writable mount the emulator can
-rebuild a missing index from the remaining files, with the same result.
+Both steps change the source folder, so the image includes them.
 
 | Option | Default | Meaning |
 |---|---|---|
-| `--ampr-libs <dir>` | none | Folder holding `libSceAmpr.sprx` (required) and `libScePlayGo.sprx` (optional) to copy into `fakelib/`. |
-| `--ampr-title` | off | With `--ampr-libs`, add the libraries even without `sce_sys/playgo-chunk.dat`. |
-| `--no-ampr-index` | off | Do not create `ampr_emu.index` when `fakelib/libSceAmpr.sprx` is present. |
-| `--ampr-skip-regen-if-exists` | off | Keep an existing index while it lists exactly the folder's files and sizes; rebuild it otherwise. |
-| `--ampr-force-regen` | off | Regenerate an existing AMPR index. |
+| `--ampr-libs <dir>` | none | Folder with `libSceAmpr.sprx` (and optionally `libScePlayGo.sprx`). |
+| `--ampr-title` | off | With `--ampr-libs`, add the libraries even without `playgo-chunk.dat`. |
+| `--no-ampr-index` | off | Do not write `ampr_emu.index`. |
+| `--ampr-skip-regen-if-exists` | off | Keep an existing index while it lists exactly the folder's files and sizes. |
+| `--ampr-force-regen` | off | Always rebuild the index. |
 
-### `ampr` (asset packs)
+> [!NOTE]
+> - ShadowMountPlus mounts `fakelib2/` instead of `fakelib/` when both exist, so `--ampr-libs` warns and
+>   leaves `fakelib2/` for you to update.
+> - A folder that also holds AMPR packs (`ampr_assets.index`) keeps its `ampr_emu.index`: the packs address
+>   files by their row in it. `--ampr-force-regen` still rebuilds it, which breaks the packs.
+> - The desktop app keeps an existing index by default.
+
+## AMPR asset packs
 
 > [!WARNING]
 > Experimental. Keep the original, unpacked game until the packed one has been played on the PS5.
 
-#### How it works
+### How it works
 
 `ampr` compresses a game's data files (levels, textures, audio, video) with LZ4 into a few pack files
 (`ampr_assets-*.pak`) and a manifest (`ampr_assets.index`). On the PS5, Drakmor's
-[AMPR Emu](https://github.com/drakmor/ampr_emu) (`libSceAmpr.sprx` in the game's `fakelib/`) decompresses
-them on the fly, so the game reads the original bytes. Executables, modules and `sce_sys` are not touched.
+[AMPR Emu](https://github.com/drakmor/ampr_emu) decompresses them on the fly, so the game reads the original
+bytes. Executables, modules and `sce_sys` are never packed.
+
+```mermaid
+flowchart LR
+    G["🎮 Game"] -->|"opens data/level1.pak"| E["AMPR Emu<br/>libSceAmpr.sprx"]
+    E -->|"reads blocks"| P["📦 ampr_assets-*.pak"]
+    P -->|"LZ4 decode"| E
+    E -->|"original bytes"| G
+```
 
 AMPR Emu only serves files that the game reads in ways it intercepts (AMPR reads and ordinary
-`open`/`read`/`stat` calls). If a game memory-maps a packed file, or reads it some other way, the game
-usually crashes. That is why each game needs its own rules, and why only a test on the console proves that
-a packed game works.
+`open`/`read`/`stat` calls). If a game memory-maps a packed file, or reads it another way, the game usually
+crashes. That is why each game needs its own rules, and why only a test on the console proves that a packed
+game works.
 
-#### Requirements
+### Requirements
 
-- A jailbroken PS5 with [ShadowMountPlus](https://github.com/drakmor/ShadowMountPlus).
-- A game that loads `libSceAmpr` (AMPR/APR titles).
-- AMPR Emu **0.4.2.1 or newer**, the first release that reads packs. `ampr game` refuses older builds.
-- The game mounted read-only (`mount_read_only=1` in ShadowMountPlus, the default).
+| Need | Details |
+|---|---|
+| Console | A jailbroken PS5 with [ShadowMountPlus](https://github.com/drakmor/ShadowMountPlus). |
+| Game | An AMPR/APR title (loads `libSceAmpr`). |
+| Emulator | AMPR Emu **0.4.2.1 or newer**, the first release that reads packs; older builds are refused. |
+| Mount | Read-only (`mount_read_only=1` in ShadowMountPlus, the default). |
+| Rules | A **TOML profile** for the game, or **traces** you record yourself. |
 
-#### Packing a game
+### Packing a game
 
-You need the rules for the game: either a **TOML profile** (a file that lists what to pack, shared for
-each game) or **traces** you record yourself (see [Making rules from traces](#making-rules-from-traces)).
+```mermaid
+flowchart LR
+    A["📁 Game folder"] --> B{"Profile<br/>for the game?"}
+    B -->|"yes"| D["ampr game<br/>--config game.toml"]
+    B -->|"no"| C["Record traces<br/>with debug AMPR Emu"]
+    C --> D2["ampr game<br/>--traces traces"]
+    D --> E["📦 Packed folder<br/>or .exfat"]
+    D2 --> E
+    E --> F["🎮 Test on the PS5"]
+```
 
 1. Check that the unpacked game runs with AMPR Emu in its `fakelib/`.
-2. On the **AMPR Packs** page, choose **Build playable game** and fill in:
-   - the game folder and a new, empty output folder;
-   - the folder with AMPR Emu's `libSceAmpr.sprx`;
-   - the game's TOML profile in **TOML Configuration**, or a **Trace folder**;
-   - optionally, **Also build an exFAT image**.
-
-   On the command line:
+2. On the **AMPR Packs** page, choose **Build playable game** and fill in the game folder, a new output folder,
+   the folder with AMPR Emu's `libSceAmpr.sprx`, and the game's profile in **TOML Configuration** (or a
+   **Trace folder**). Optionally tick **Also build an exFAT image**. On the command line:
 
    ```bash
    mkpfs ampr game --root PPSA12345-app --output PPSA12345-packed --fakelib ampr-emu --config game.toml --exfat .
    ```
 
-3. Copy the output folder or the `.exfat` image to the PS5 and start the game. Play past the menu and load
-   a save or a level, since some files are only read later.
+3. Copy the output folder or the `.exfat` image to the PS5. Play past the menu and load a save or a level,
+   since some files are only read later.
 4. Delete the original only after that.
 
-`ampr game` copies the libraries, writes `ampr_emu.index`, packs, copies the files that stay loose, and
-checks that every packed file decodes to the original. The game folder is only read; if a step fails, the
-output folder is emptied.
+`ampr game` copies the libraries, writes `ampr_emu.index`, packs, copies the files that stay loose, and checks
+that every packed file decodes to the original. The game folder is only read; if a step fails, the output
+folder is emptied.
 
-#### Making rules from traces
+### Making rules from traces
 
 The debug build of AMPR Emu (for example the 0.4.2.1 test-debug-pack) records every file the game reads
 through AMPR. MkPFS turns those recordings into rules.
@@ -329,42 +405,39 @@ through AMPR. MkPFS turns those recordings into rules.
    run, so the emulator can write into the game folder.
 2. Play a session, then quit the game from the PS5 menu.
 3. Copy `ampr_commands.bin` and `ampr_emu.index` into a subfolder of a trace folder (for example
-   `traces/session1/`), then delete them from the game folder. Repeat for more sessions: each one covers
-   more of the game.
+   `traces/session1/`) and delete them from the game folder. More sessions cover more of the game.
 4. Put the normal emulator back and set `mount_read_only=1` again.
-5. Pick the trace folder in **Trace folder** (command line: `--traces traces`). The page shows how many
-   sessions it found.
+5. Pick the trace folder in **Trace folder** (`--traces traces`); the page shows how many sessions it found.
 
-Only files that a session read are packed; everything else stays loose. To also pack the files no session
-reached, tick **Also pack files no session read** under the trace folder (`--pack-untraced-types`). This packs every other file
-of the same types (extensions) as the traced files. Test the parts of the game those files belong to before
-deleting the original.
+Only files a session read are packed. To also pack the other files of the same types (extensions), tick
+**Also pack files no session read** (`--pack-untraced-types`), then test the parts of the game they belong to.
 
 To save the rules as a profile you can edit and share:
 
 ```bash
-mkpfs ampr profile generate --trace traces/session1/ampr_commands.bin traces/session1/ampr_emu.index \
-  --trace traces/session2/ampr_commands.bin traces/session2/ampr_emu.index --output game.toml --pack-untraced-types
+mkpfs ampr profile generate \
+  --trace traces/session1/ampr_commands.bin traces/session1/ampr_emu.index \
+  --trace traces/session2/ampr_commands.bin traces/session2/ampr_emu.index \
+  --output game.toml --pack-untraced-types
 ```
 
-#### When a packed game crashes
+### When a packed game crashes
 
 The normal AMPR Emu writes no log. To find the file that fails:
 
 1. Build again with **Free space inside the image** set to `2GiB` (`--exfat-free-space 2GiB`).
 2. Put the debug `libSceAmpr.sprx` into the packed game's `fakelib/`.
-3. Mount the image read-write (`image_rw=<image file name>` in ShadowMountPlus's `config.ini`) and start
-   the game.
-4. Read `ampr_emu.log` in the image: `apr.pack.open` lines show the packed files the game opened, and
-   `apr.pack.open.fail` lines show the ones it could not open. Keep those files loose in the profile.
+3. Mount the image read-write (`image_rw=<image file name>` in ShadowMountPlus's `config.ini`) and start the game.
+4. Read `ampr_emu.log` in the image: `apr.pack.open` lines are the packed files the game opened,
+   `apr.pack.open.fail` lines the ones it could not open. Keep those loose in the profile.
 
-When you report a game, include its title, ID and version, the profile or traces used, what happened, and
-for a crash the ShadowMountPlus log (`/data/shadowmount/debug.log`) and the console log.
+When you report a game, include its title, ID and version, the profile or traces used, what happened, and for
+a crash the ShadowMountPlus log (`/data/shadowmount/debug.log`) and the console log.
 
-#### Profile format
+### Profile format
 
 Profiles use ampr_emu's TOML format (see its `tools/ampr_pack.example.toml`). Rules are checked in order and
-the last match wins; `*` also matches `/`.
+**the last match wins**; `*` also matches `/`.
 
 ```toml
 [pack]
@@ -379,22 +452,23 @@ action = "loose"                # always keep executables, modules and system fi
 include = ["eboot.bin", "*.prx", "*.sprx", "sce_sys/*", "sce_module/*", "fakelib/*"]
 ```
 
-#### Command reference
+### `ampr` reference
 
-| Subcommand | Required options | Purpose |
+| Subcommand | Required | Purpose |
 |---|---|---|
-| `game` | `--root <app0> --output <dir>`, and `--config` or `--traces` | Build a folder that runs from packs as is. |
-| `pack` | `--root <app0> --ampr-index <ampr_emu.index> --output <dir>` | Write only the pack set (manifest, volumes, CRC sidecar). |
-| `verify` | `--index <manifest>` | Decode every chunk; `--root <app0>` also compares with the source. |
-| `unpack` | `--index <manifest> --output <dir>` | Extract packed files (`--file <glob>`, `--overwrite`, `--no-preserve-mtime`). |
-| `list` | `--index <manifest>` | One line per file (`--json` for details). |
-| `inspect` | `--index <manifest>` | Manifest summary, volumes and runtime settings. |
-| `runtime-config` | `--index <manifest> --config <toml>` | Replace the runtime settings from a `[runtime]` section without repacking. |
-| `remove-sources` | `--index <manifest> --root <app0>` | Show which source files the packs replace; `--confirm` verifies and deletes them. |
-| `profile generate` | `[<session folder>] --output <toml>` | Rules from traces (`--trace COMMANDS INDEX` per session, repeatable); `--report`, `--metrics`, `--runtime-header`. |
-| `profile batch` | `<folder or ZIP> --output-dir <dir>` | One profile per trace session and a `summary.json`. |
+| `game` | `--root --output`, and `--config` or `--traces` | Build a folder that runs from packs as is. |
+| `pack` | `--root --ampr-index --output` | Write only the pack set (manifest, volumes, CRC file). |
+| `verify` | `--index` | Decode every chunk; `--root` also compares with the source. |
+| `unpack` | `--index --output` | Extract packed files (`--file <glob>`, `--overwrite`, `--no-preserve-mtime`). |
+| `list` | `--index` | One line per file (`--json` for details). |
+| `inspect` | `--index` | Manifest summary, volumes and runtime settings. |
+| `runtime-config` | `--index --config` | Replace the runtime settings from a `[runtime]` section without repacking. |
+| `remove-sources` | `--index --root` | Show the source files the packs replace; `--confirm` verifies and deletes them. |
+| `profile generate` | `--output`, and a session folder or `--trace` | Rules from traces; `--report`, `--metrics`, `--runtime-header`. |
+| `profile batch` | `<folder or ZIP> --output-dir` | One profile per trace session and a `summary.json`. |
 
-Options of `game` and `pack`:
+<details>
+<summary><b>Options of <code>ampr game</code> and <code>ampr pack</code></b></summary>
 
 | Option | Default | Meaning |
 |---|---|---|
@@ -404,7 +478,7 @@ Options of `game` and `pack`:
 | `--workers <n>` | min(8, cores) | Compression threads (1 to 256). |
 | `--self-contained` | off | Never leave selected files loose; store incompressible blocks uncompressed. |
 | `--fakelib <dir>` | none | `game`: AMPR Emu and other libraries to add to `fakelib/`. |
-| `--exfat <file or folder>` | none | `game`: also build an exFAT image (`<titleId>.exfat` in a folder). |
+| `--exfat <file or folder>` | none | `game`: also build an exFAT image. |
 | `--exfat-free-space <size>` | 0 | `game`: free space inside the image, for a debug run. |
 | `--skip-verify` | off | `game`: skip the final checks. |
 | `--include`, `--exclude`, `--include-from`, `--exclude-from` | none | `pack`: narrow the rules; `--exclude` forces files loose. |
@@ -412,215 +486,93 @@ Options of `game` and `pack`:
 | `--allow-missing` | off | `pack`: leave selected files missing from `--root` loose. |
 | `--no-progress` | off | Hide progress. |
 
-Notes:
+</details>
 
-- `ampr pack` and `ampr profile` are ports of ampr_emu's `tools/ampr_pack.py` (4.0) and
-  `tools/ampr_pack_profile.py` (4.1), with the same output byte for byte. `game`, `--traces` and
-  `--pack-untraced-types` are MkPFS additions.
-- The release emulator loads at most 2,000,000 files, 16,000,000 chunks and 1,024 volumes; `pack` warns
-  when a set goes over a limit.
-- Deploy `ampr_emu.index`, the manifest, its `.runtime` file and every volume from the same build. The
-  `.crc` file is only used by `verify` and `unpack`.
-- Use an exFAT image or the plain folder, not `.ffpfsc`: zlib on top of LZ4 makes loading slower.
-- Errors print `error: <message>` and exit with code 2.
-
-### Reading and extracting images
-
-Encrypted read commands accept `--ekpfs-key <64-hex>` (default: all-zero key) and `--new-crypt`
-(default: off) to select the alternate EKPFS derivation. `verify`, `tree`, and `unpack` also take
-`--format <auto|pfs|exfat>`; the default `auto` detects the format from the input.
-
-| Command | Options | Default | Meaning |
-|---|---|---|---|
-| `inspect <image_file>` | `--format <text\|json>` | `text` | Select a human-readable or JSON metadata report. |
-| `tree <image_file>` | `--deep` | off | For a PFS that wraps one exFAT image, list the files inside that exFAT. |
-| `unpack <image_file> <output_dir>` | `--overwrite` | off | Replace an existing output path. |
-|  | `--deep` | off | Extract files from an inner exFAT image instead of only the outer PFS contents. |
-|  | `--only <inner-path>` | none; repeatable | With `--deep`, extract only the named inner exFAT file or directory. |
-|  | `--no-progress` | off | Hide extraction progress on standard error. |
-| `verify <image_file>` | `--source-dir <dir>` | none | Compare hierarchy and payloads against a source folder. Cannot be combined with `--source-file`. |
-|  | `--source-file <file>` | none | Compare a single-file image to the source file; not supported for exFAT input. |
-|  | `--expect-crc32 <hex>` | none | Require this cumulative payload CRC32. |
-|  | `--expect-manifest-sha256 <64-hex>` | none | Require this manifest SHA256 digest. |
-|  | `--require-game-files` | off | Warn when `sce_sys/param.json`, `eboot.bin`, or `pfs-version.dat` is missing. |
-
-### `repair`
-
-`repair` operates on an unsigned, unencrypted, single-file `.ffpfsc`. By default it scans for risky
-compressed blocks, stores replacements raw, verifies their decoded content, and cleans unused bytes
-in the outer PFS wrapper.
-
-| Option | Default | Meaning |
-|---|---|---|
-| `--scan` | off | Report only; do not modify the image. Returns exit code 3 if blocks need repair. |
-| `--bad-blocks <file>` | none | Repair the block numbers in a PS5 Game Compressor `bad_blocks.tsv` instead of the scan's risky-block selection. |
-| `--recompress` | off | Re-encode repaired blocks with zlib level 7 instead of storing them raw. |
-| `--mode <auto\|in-place\|copy>` | `auto` | `auto` copy-replaces when free space is at least 1.2× the image, otherwise rewrites in place. `in-place` can leave an interrupted image corrupt; `copy` always uses a replacement copy. |
-| `--report-dir <dir>` | none | Write `summary.json` and `bad_blocks.tsv` to this directory. |
-| `--no-slack-cleanup` | off | Leave unused bytes in the outer PFS wrapper unchanged. |
-| `--cpu-count <n>` | `0` (all cores) | Worker count for scanning and repair. |
-| `--no-progress` | off | Hide progress output. |
-
-Exit code `0` means success, `1` means an operation failed, `2` means invalid command-line usage,
-and `repair --scan` uses `3` when it finds blocks that need repair.
-
-### GUI
-
-`mkpfs-gui` runs the same commands from a window and shows their output and progress. From a
-source checkout:
-
-```bash
-dotnet run --project src/MkPFS.Gui -c Release
-```
-
-- The BUILD section follows the recommended order: **Pack exFAT** turns a game folder into an exFAT
-  image, **Pack FFPFSC** compresses that image into a `.ffpfsc`, and **AMPR Packs** builds LZ4 asset packs.
-  `pack folder` and `batch` are available on the command line only.
-- Pick a game folder or image to see its cover, title, IDs, version, region, and APR Emu marker.
-- Pack exFAT has an APR Emu section: the libraries folder, download links, and every
-  [APR Emu option](#apr-emu).
-- The packing pages have a collapsed Advanced section with the remaining CLI options, such as the
-  cluster size, signing, verification, and verbose output.
-- The check pages cover the CLI options too: Verify takes a source file, the image format, and the
-  game-file checklist; Unpack extracts inside a wrapped exFAT (`--deep`, `--only`); Tree and Unpack
-  take the image format; Inspect, Tree, Verify, and Unpack take newCrypt keys.
-- Closing the window while a job runs asks first; Stop and Close cancels the job and waits for its
-  cleanup (an in-place repair finishes its rewrite) before the window closes.
-- Pack FFPFSC has compression presets (Fast, Balanced, Max, Low RAM) and
-  settings for the zlib level, CPU cores (Auto uses every physical core of the computer, not the logical processors), block size, and when to keep
-  blocks uncompressed. Hover over a Compression Tuning or Advanced option to see what it does.
-- The progress bar covers the whole run: when a run has several steps (pack, then verify and compare), the
-  bar keeps counting through them instead of starting over, and the label shows the step, for example
-  `verify (2/3)`.
-- The Repair page scans an image and draws a block map (zlib, raw, risky); click a cell for its
-  offset, stored size, and largest back-reference distance.
-- The AMPR Packs page runs every `ampr` subcommand. Its default action, Build playable game, runs
-  `ampr game` with the game's TOML profile or a trace folder.
+> [!NOTE]
+> - `ampr pack` and `ampr profile` are ports of ampr_emu's `tools/ampr_pack.py` (4.0) and
+>   `tools/ampr_pack_profile.py` (4.1), with the same output byte for byte. `game`, `--traces` and
+>   `--pack-untraced-types` are MkPFS additions.
+> - The release emulator loads at most 2,000,000 files, 16,000,000 chunks and 1,024 volumes; `pack` warns
+>   when a set goes over a limit.
+> - Deploy `ampr_emu.index`, the manifest, its `.runtime` file and every volume from the same build. The
+>   `.crc` file is only used by `verify` and `unpack`.
+> - Use an exFAT image or the plain folder, not `.ffpfsc`: zlib on top of LZ4 makes loading slower.
 
 ## Differences from Python MkPFS
 
-- Same inputs give the same images as Python MkPFS 1.0.0 run with its zlib backend. Set
-  `SOURCE_DATE_EPOCH` for reproducible timestamps.
-- Compression always uses zlib 1.3.1 at level 7. `--compression-backend` is accepted but ignored:
-  ISA-L output uses back-references the PS5 decodes wrongly.
-- `repair` is new.
-- `pack exfat` and `batch` also build `ampr_emu.index` (Python only does it in `pack folder`), and
-  `--ampr-libs`/`--ampr-title` are new. `--ampr-skip-regen-if-exists` checks every path and size, not
-  just the file count.
-- `ampr_emu.index` matches ampr_emu's `build_ampr_index.py` and the console lookup: Python MkPFS folds
-  every letter and hashes code points, so on the console it cannot find files with non-ASCII names. The
-  index also skips the emulator's `ampr_commands.bin` and `apr_emu.log`, and `fakelib2/libSceAmpr.sprx`
-  also triggers it. ASCII-only folders give the same index as before.
-- Bugs found in the Python version while porting are listed in
-  [tools/oracle/README.md](tools/oracle/README.md); some are fixed here.
-- Switching from Python MkPFS: see [MIGRATION.md](MIGRATION.md).
+| Area | MkPFS.CSharp |
+|---|---|
+| Output | The same images as Python MkPFS 1.0.0 with its zlib backend. Set `SOURCE_DATE_EPOCH` for reproducible timestamps. |
+| Compression | Always zlib 1.3.1 (level 7 by default). `--compression-backend` is ignored: ISA-L output uses back-references the PS5 decodes wrongly. |
+| New commands | `repair` and `ampr`. |
+| APR Emu | `pack exfat` and `batch` also build `ampr_emu.index`; `--ampr-libs` and `--ampr-title` are new; `--ampr-skip-regen-if-exists` checks every path and size. |
+| `ampr_emu.index` | Matches ampr_emu and the console lookup, so files with non-ASCII names are found; skips the emulator's own trace and log files; `fakelib2/` also counts. |
+| Fixed bugs | Listed in [tools/oracle/README.md](tools/oracle/README.md). |
+
+Switching from Python MkPFS? See [MIGRATION.md](MIGRATION.md).
 
 ## Build from source
 
-Requirements:
-
-- .NET SDK 10.0.401 or a newer 10.0.4xx (see `global.json`).
-- Windows: Visual Studio 2026 with "Desktop development with C++" (native zlib and Native AOT).
-- Linux and macOS: CMake and a C compiler; Linux Native AOT also needs `clang` and `zlib1g-dev`.
-
-Build and test:
+| Requirement | Details |
+|---|---|
+| .NET SDK | 10.0.401 or a newer 10.0.4xx (see `global.json`). |
+| Windows | Visual Studio 2026 with *Desktop development with C++* (native zlib and Native AOT). |
+| Linux, macOS | CMake and a C compiler; Linux Native AOT also needs `clang` and `zlib1g-dev`. |
 
 ```bash
-dotnet build MkPFS.slnx
+dotnet build MkPFS.slnx                                # the first build compiles zlib and lz4 in native/
+dotnet test --solution MkPFS.slnx                      # parity tests skip without the oracle corpus
+dotnet publish src/MkPFS.Cli -r win-x64 -c Release     # native command line
+dotnet publish src/MkPFS.Gui -r win-x64 -c Release     # native desktop app
 ```
 
-```bash
-dotnet test --solution MkPFS.slnx
-```
-
-The first build compiles the bundled zlib in `native/`. Parity tests skip when the oracle corpus
-(`tests/fixtures/generated`) is missing.
-
-Publish native executables:
-
-```bash
-dotnet publish src/MkPFS.Cli -r win-x64 -c Release
-```
-
-```bash
-dotnet publish src/MkPFS.Gui -r win-x64 -c Release
-```
-
-Use `linux-x64` or `osx-arm64` on those systems. On Windows, Native AOT linking needs the Visual
-Studio Installer folder (`C:\Program Files (x86)\Microsoft Visual Studio\Installer`) on `PATH`.
+Use `linux-x64` or `osx-arm64` on those systems. On Windows, Native AOT linking needs the Visual Studio
+Installer folder (`C:\Program Files (x86)\Microsoft Visual Studio\Installer`) on `PATH`.
 
 ### Project layout
 
 | Path | Content |
 |---|---|
-| `src/MkPFS.Core` | Formats and codecs: PFS, PFSC, exFAT, AMPR, crypto, readers, validators |
-| `src/MkPFS.Build` | Image builders, compression planner, batch |
-| `src/MkPFS.Repair` | PFSC repair (Game Compressor port) |
-| `src/MkPFS.Cli` | `mkpfs` command line |
-| `src/MkPFS.Gui` | `mkpfs-gui` desktop app (Avalonia) |
-| `native/` | zlib 1.3.1, lz4 1.9.4, and the `mkpfs_zlib` shim |
-| `tests/MkPFS.Tests` | Unit tests |
-| `tests/MkPFS.Parity` | Byte-for-byte tests against the Python oracle corpus |
-| `tests/MkPFS.Gui.Tests` | GUI view model and headless UI tests |
-| `tools/oracle` | Python oracle scripts ([README](tools/oracle/README.md)) |
+| `src/MkPFS.Core` | Formats and codecs: PFS, PFSC, exFAT, AMPR, crypto, readers, validators. |
+| `src/MkPFS.Build` | Image builders, compression planner, batch, AMPR packer. |
+| `src/MkPFS.Repair` | PFSC repair (Game Compressor port). |
+| `src/MkPFS.Cli` | The `mkpfs` command line. |
+| `src/MkPFS.Gui` | The `mkpfs-gui` desktop app (Avalonia). |
+| `native/` | zlib 1.3.1, lz4 1.9.4 and the `mkpfs_zlib` shim. |
+| `tests/` | Unit tests, byte-for-byte parity tests and headless GUI tests. |
+| `tools/oracle` | Python oracle scripts ([README](tools/oracle/README.md)). |
 
 ### Oracle corpus
 
-The parity tests compare against images and logs made by Python MkPFS. With Python MkPFS checked
-out at `../MkPFS` and `uv` installed:
+The parity tests compare against images and logs made by the Python tools. See
+[tools/oracle/README.md](tools/oracle/README.md) for setup.
 
 ```bash
-uv run --project ../MkPFS python tools/oracle/build_goldens.py --check
-```
-
-The `ampr` tests use a second corpus made by ampr_emu's `ampr_pack.py` (checked out at `../ampr_emu`;
-needs python-lz4 4.4.5):
-
-```bash
-python tools/oracle/build_ampr_goldens.py --check
-```
-
-`ampr profile` is checked against `ampr_pack_profile.py` on synthetic traces (every output file,
-byte for byte; build MkPFS first):
-
-```bash
+uv run --project ../MkPFS python tools/oracle/build_goldens.py --check        # Python MkPFS
+python tools/oracle/build_ampr_goldens.py --check                             # ampr_emu ampr_pack.py
 uv run --no-project --python 3.12 --with lz4==4.4.5 python tools/oracle/check_ampr_profile.py
 ```
 
 ### Releases
 
-Push a version tag to publish a release. The workflow reruns CI, then uploads the archives,
-`SHA256SUMS.txt`, and release notes, and marks the release as latest. With a `VT_API_KEY` repository
-secret (a VirusTotal API key), it also scans every archive and links the reports in the notes.
+Push a version tag (`git tag v2.0.0` then `git push origin v2.0.0`). The release workflow reruns CI, uploads
+the archives, `SHA256SUMS.txt` and release notes, and marks the release as latest. With a `VT_API_KEY`
+repository secret (a VirusTotal API key) it also scans every archive and links the reports.
 
-```bash
-git tag v2.0.0
-```
+## Credits and license
 
-```bash
-git push origin v2.0.0
-```
+| Project | Used for |
+|---|---|
+| [MkPFS](https://github.com/PSBrew/MkPFS) by PSBrew | The Python original this port follows. |
+| PS5 Game Compressor by Juma Sayeh | The PFSC repair logic. |
+| [APR Emu](https://github.com/drakmor/ampr_emu) by Drakmor | `ampr_emu.index` and the asset-pack format and tools that `ampr` ports. |
+| [PlayGo stub](https://github.com/drakmor/pgo_stub) by Drakmor | `libScePlayGo.sprx`. |
 
-## Credits
+Third-party components: [zlib](https://zlib.net) 1.3.1 (zlib license), [LZ4](https://github.com/lz4/lz4)
+1.9.4 and [Tomlyn](https://github.com/xoofx/Tomlyn) (BSD-2-Clause), [Avalonia](https://avaloniaui.net),
+[CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet),
+[System.CommandLine](https://github.com/dotnet/command-line-api) and [Spectre.Console](https://spectreconsole.net)
+(MIT), and [Material Design Icons](https://pictogrammers.com/library/mdi/) (Apache-2.0).
 
-- [MkPFS](https://github.com/PSBrew/MkPFS) by PSBrew: the Python original this port follows.
-- PS5 Game Compressor by Juma Sayeh: the PFSC repair logic.
-- Drakmor's [APR Emu](https://github.com/drakmor/ampr_emu): the `ampr_emu.index` format and the asset-pack
-  format and tools that `ampr` ports.
-- Drakmor's [PlayGo stub](https://github.com/drakmor/pgo_stub): `libScePlayGo.sprx`.
-
-Third-party components:
-
-- [zlib](https://zlib.net) 1.3.1 (zlib license)
-- [LZ4](https://github.com/lz4/lz4) 1.9.4 (BSD-2-Clause)
-- [Tomlyn](https://github.com/xoofx/Tomlyn) (BSD-2-Clause)
-- [Avalonia](https://avaloniaui.net), [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet),
-  [System.CommandLine](https://github.com/dotnet/command-line-api), and
-  [Spectre.Console](https://spectreconsole.net) (MIT)
-- [Material Design Icons](https://pictogrammers.com/library/mdi/) (Apache-2.0)
-
-## License
-
-GPL-3.0-only, same as MkPFS. See [LICENSE.md](LICENSE.md).
-
-This project is not affiliated with Sony Interactive Entertainment.
+Licensed under **GPL-3.0-only**, like MkPFS; see [LICENSE.md](LICENSE.md). This project is not affiliated with
+Sony Interactive Entertainment.

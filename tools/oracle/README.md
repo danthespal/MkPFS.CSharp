@@ -1,7 +1,15 @@
-# Python oracle (Phase 0)
+# Oracle corpus
 
-Builds reference images with Python MkPFS so the C# port can be checked byte for byte.
-Python MkPFS (`D:\TOOLS\PS5\MkPFS`, expected at `../MkPFS`) stays the oracle until parity sign-off.
+The parity tests check MkPFS.CSharp **byte for byte** against the Python tools it ports. These scripts run
+the Python tools on generated inputs and record what they produce.
+
+| Oracle | Checked out at | What it checks |
+|---|---|---|
+| [Python MkPFS](https://github.com/PSBrew/MkPFS) 1.0.0 | `../MkPFS` | Images, logs and game metadata (`build_goldens.py`). |
+| [ampr_emu](https://github.com/drakmor/ampr_emu) `tools/ampr_pack.py` 4.0 | `../ampr_emu` | AMPR asset packs (`build_ampr_goldens.py`). |
+| ampr_emu `tools/ampr_pack_profile.py` 4.1 | `../ampr_emu` | `mkpfs ampr profile` (`check_ampr_profile.py`). |
+
+The generated corpus lives in `tests/fixtures/generated/` (git-ignored). Without it, the parity tests skip.
 
 ## Files
 
@@ -14,7 +22,7 @@ Python MkPFS (`D:\TOOLS\PS5\MkPFS`, expected at `../MkPFS`) stays the oracle unt
 | `build_ampr_goldens.py` | AMPR asset-pack corpus from ampr_emu's `ampr_pack.py` (second oracle, see the last section) |
 | `check_ampr_profile.py` | Runs ampr_emu's `ampr_pack_profile.py` and `mkpfs ampr profile` (`generate` and `batch`) on synthetic APR traces and ZIP bundles and compares every output byte for byte (45 cases) |
 
-## Run
+## Python MkPFS corpus
 
 Run from the repo root. `uv` uses the Python repo's environment.
 
@@ -51,8 +59,7 @@ Both default to `tests/fixtures/generated/` (git-ignored, about 270 MB).
 | `batch` | folder + exFAT file: convert, rerun (skipped), dry run; output images hashed |
 | Game metadata | `metadata.json` / `metadata_src.json`: Python `read_game_metadata` for each image and its source |
 
-Logs (`*.log`) are UTF-8 with `
-` line endings: Python runs with `PYTHONIOENCODING=utf-8` and
+Logs (`*.log`) are UTF-8 with `\n` line endings: Python runs with `PYTHONIOENCODING=utf-8` and
 `MKPFS_NO_UTF8=1` (ASCII icons such as `WARN`). They contain Windows path separators; compare them
 only on Windows or normalize `\` first.
 Images are platform independent.
@@ -66,6 +73,11 @@ Images are platform independent.
   `pack folder` 1.14 s, `pack folder --raw` 1.51 s, `verify` 1.37 s, `unpack --deep` 0.66 s.
 
 ## Findings to carry into the port
+
+Differences between Python MkPFS and the port. **Bug** marks a Python bug that the port fixes.
+
+<details>
+<summary><b>Show the 21 findings</b></summary>
 
 1. **Bug:** `--skip-verification` alone always fails ("--verify-structure and
    --skip-verification cannot be used together") because `--verify-structure` defaults on
@@ -126,9 +138,11 @@ Images are platform independent.
     with `RecursionError`. Port: walks PFS trees without recursion and reports directories nested deeper than
     1024 levels (PFS and exFAT) as errors instead of ending the process.
 
-## AMPR asset-pack oracle (`build_ampr_goldens.py`)
+</details>
 
-Second oracle for `docs/AMPR_PACK_PLAN.md`: ampr_emu `tools/ampr_pack.py` (tool version 4.0) at commit
+## AMPR asset-pack corpus (`build_ampr_goldens.py`)
+
+Second oracle, for the `ampr` commands: ampr_emu `tools/ampr_pack.py` (tool version 4.0) at commit
 `cfa85df379f6eeeb165d7badf9b648e266fe77b7`, checked out clean at `../ampr_emu`. It needs python-lz4
 4.4.5 (bundles liblz4 1.9.4), which the `../MkPFS` environment lacks, so run it with a Python that has it:
 
@@ -179,3 +193,13 @@ byte-identical, `--workers 1` and `8` produce identical packs. Build time about 
    mtime, `false` the AMPRIDX3 mtime (`mtime_preserved` vs `no_preserve_mtime`).
 5. MkPFS's `ampr_emu.index` and ampr_emu's `build_ampr_index.py` produce the same bytes for the same tree
    (checked on the `ampr` tree; only mtimes differ when the copy does not keep them).
+
+## `ampr profile` check (`check_ampr_profile.py`)
+
+Generates synthetic APR traces and ZIP support bundles, runs ampr_emu's `ampr_pack_profile.py` and
+`mkpfs ampr profile` (`generate` and `batch`) on each, and compares every output file byte for byte
+(45 cases). Build MkPFS first; `--python`, `--mkpfs`, `--ampr-emu` and `--out` override the defaults.
+
+```bash
+uv run --no-project --python 3.12 --with lz4==4.4.5 python tools/oracle/check_ampr_profile.py
+```
