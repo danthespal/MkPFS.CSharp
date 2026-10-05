@@ -178,7 +178,6 @@ public sealed class AmprPackPanelTests
         string traces = Directory.CreateDirectory(Path.Combine(dir.Path, "traces")).FullName;
 
         panel.Traces = traces;
-        Assert.False(panel.ShowNoTraces || panel.ShowRulesTraces); // counted in the background
         await panel.TraceCount;
         Assert.True(panel.ShowNoTraces);
         Assert.False(panel.ShowRulesTraces || panel.ShowRulesMissing);

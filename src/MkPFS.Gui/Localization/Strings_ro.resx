@@ -16,8 +16,6 @@
   <data name="adv_keep_ext" xml:space="preserve"><value>Păstrează extensia de ieșire</value></data>
   <data name="adv_keep_inner" xml:space="preserve"><value>Păstrează numele fișierului intern</value></data>
   <data name="adv_new_crypt" xml:space="preserve"><value>Derivare alternativă a cheii (newCrypt)</value></data>
-  <data name="adv_raw" xml:space="preserve"><value>Imagine PFS brută (.ffpfs)</value></data>
-  <data name="adv_require" xml:space="preserve"><value>Cere fișierele jocului</value></data>
   <data name="adv_skip_check" xml:space="preserve"><value>Omite verificarea după împachetare</value></data>
   <data name="adv_spool" xml:space="preserve"><value>Folosește constructorul cu spool</value></data>
   <data name="adv_title" xml:space="preserve"><value>Avansat</value></data>
@@ -89,24 +87,6 @@
   <data name="browse" xml:space="preserve"><value>Răsfoiește</value></data>
   <data name="browse_file" xml:space="preserve"><value>Fișier</value></data>
   <data name="browse_folder" xml:space="preserve"><value>Folder</value></data>
-  <data name="bt_compress" xml:space="preserve"><value>Compresie PFSC</value></data>
-  <data name="bt_dry" xml:space="preserve"><value>Simulare</value></data>
-  <data name="bt_err_out" xml:space="preserve"><value>✗ Folderul de ieșire este obligatoriu.</value></data>
-  <data name="bt_err_src" xml:space="preserve"><value>✗ Folderul sursă este obligatoriu.</value></data>
-  <data name="bt_out_label" xml:space="preserve"><value>Folder de ieșire</value></data>
-  <data name="bt_out_ph" xml:space="preserve"><value>Alege folderul de ieșire…</value></data>
-  <data name="bt_overwrite" xml:space="preserve"><value>Suprascrie existente</value></data>
-  <data name="bt_preview_count" xml:space="preserve"><value>{0} element(e): {1} folder(e), {2} fișier(e)</value></data>
-  <data name="bt_preview_empty" xml:space="preserve"><value>Alege un folder sursă pentru a previzualiza coada.</value></data>
-  <data name="bt_preview_error" xml:space="preserve"><value>Nu se poate scana folderul: {0}</value></data>
-  <data name="bt_preview_invalid" xml:space="preserve"><value>Alege un folder existent pentru a previzualiza coada.</value></data>
-  <data name="bt_preview_none" xml:space="preserve"><value>Nu s-au găsit elemente de împachetat.</value></data>
-  <data name="bt_preview_scanning" xml:space="preserve"><value>Se scanează elementele...</value></data>
-  <data name="bt_queue" xml:space="preserve"><value>Coadă lot</value></data>
-  <data name="bt_src_label" xml:space="preserve"><value>Folder sursă</value></data>
-  <data name="bt_src_ph" xml:space="preserve"><value>Alege folderul sursă…</value></data>
-  <data name="bt_subtitle" xml:space="preserve"><value>Convertește mai multe jocuri deodată în imagini PFS</value></data>
-  <data name="bt_title" xml:space="preserve"><value>Conversie în lot</value></data>
   <data name="bt_version" xml:space="preserve"><value>Versiune</value></data>
   <data name="cancel" xml:space="preserve"><value>Anulează</value></data>
   <data name="cancelled" xml:space="preserve"><value>✗ Anulat.</value></data>
@@ -159,11 +139,9 @@ Ieșirea scrisă parțial este ștearsă; o reparare pe loc își termină mai �
   <data name="lang_label" xml:space="preserve"><value>Limbă</value></data>
   <data name="meta_import" xml:space="preserve"><value>Previzualizare import</value></data>
   <data name="nav_ampr" xml:space="preserve"><value>Pachete AMPR</value></data>
-  <data name="nav_batch" xml:space="preserve"><value>Lot</value></data>
   <data name="nav_inspect" xml:space="preserve"><value>Inspectare</value></data>
   <data name="nav_pack_exfat" xml:space="preserve"><value>Împachetare exFAT</value></data>
-  <data name="nav_pack_file" xml:space="preserve"><value>Împachetare fișier</value></data>
-  <data name="nav_pack_folder" xml:space="preserve"><value>Împachetare folder</value></data>
+  <data name="nav_pack_file" xml:space="preserve"><value>Împachetare FFPFSC</value></data>
   <data name="nav_repair" xml:space="preserve"><value>Reparare</value></data>
   <data name="nav_tree" xml:space="preserve"><value>Arbore</value></data>
   <data name="nav_unpack" xml:space="preserve"><value>Despachetare</value></data>
@@ -173,19 +151,8 @@ Ieșirea scrisă parțial este ștearsă; o reparare pe loc își termină mai �
   <data name="options" xml:space="preserve"><value>Opțiuni</value></data>
   <data name="output_log" xml:space="preserve"><value>Jurnal de ieșire</value></data>
   <data name="paths" xml:space="preserve"><value>Căi</value></data>
-  <data name="pf_compress" xml:space="preserve"><value>Compresie PFSC</value></data>
   <data name="pf_dry" xml:space="preserve"><value>Simulare</value></data>
-  <data name="pf_err_out" xml:space="preserve"><value>✗ Calea imaginii de ieșire este obligatorie.</value></data>
-  <data name="pf_err_src" xml:space="preserve"><value>✗ Folderul sursă este obligatoriu.</value></data>
-  <data name="pf_out_label" xml:space="preserve"><value>Imagine de ieșire</value></data>
-  <data name="pf_out_ph" xml:space="preserve"><value>Alege calea de ieșire…</value></data>
   <data name="pf_signed" xml:space="preserve"><value>Imagine semnată</value></data>
-  <data name="pf_src_label" xml:space="preserve"><value>Folder sursă</value></data>
-  <data name="pf_src_ph" xml:space="preserve"><value>Alege folderul sursă…</value></data>
-  <data name="pf_subtitle" xml:space="preserve"><value>Creează o imagine PFS dintr-un director sursă</value></data>
-  <data name="pf_temp" xml:space="preserve"><value>Folder temporar (opțional)</value></data>
-  <data name="pf_temp_ph" xml:space="preserve"><value>Folder temporar personalizat…</value></data>
-  <data name="pf_title" xml:space="preserve"><value>Împachetare folder</value></data>
   <data name="pf_verify" xml:space="preserve"><value>Verifică după împachetare</value></data>
   <data name="pf_version" xml:space="preserve"><value>Versiune</value></data>
   <data name="pkf_compress" xml:space="preserve"><value>Compresie PFSC</value></data>
@@ -207,7 +174,7 @@ Ieșirea scrisă parțial este ștearsă; o reparare pe loc își termină mai �
   <data name="pkf_subtitle" xml:space="preserve"><value>Împachetează un singur fișier într-o imagine comprimată PFSC</value></data>
   <data name="pkf_temp" xml:space="preserve"><value>Folder temporar (opțional)</value></data>
   <data name="pkf_temp_ph" xml:space="preserve"><value>Folder temporar personalizat…</value></data>
-  <data name="pkf_title" xml:space="preserve"><value>Împachetare fișier</value></data>
+  <data name="pkf_title" xml:space="preserve"><value>Împachetare FFPFSC</value></data>
   <data name="pkf_version" xml:space="preserve"><value>Versiune</value></data>
   <data name="r_bad_blocks" xml:space="preserve"><value>Listă blocuri defecte (opțional — TSV Game Compressor)</value></data>
   <data name="r_bad_blocks_ph" xml:space="preserve"><value>bad_blocks.tsv…</value></data>

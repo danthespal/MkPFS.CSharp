@@ -57,8 +57,6 @@ public sealed record NavSection(string TitleKey, IReadOnlyList<NavItem> Items)
 public sealed partial class MainWindowViewModel : ObservableObject
 {
     // Python theme.py neon palette; Repair is new and takes the error red, AMPR Packs a new lime.
-    private static readonly Color Teal = Color.Parse("#00E5A0");
-    private static readonly Color Blue = Color.Parse("#00C8FF");
     private static readonly Color Orange = Color.Parse("#FF6B3D");
     private static readonly Color Cyan = Color.Parse("#00FFD4");
     private static readonly Color Green = Color.Parse("#39FF8A");
@@ -75,8 +73,6 @@ public sealed partial class MainWindowViewModel : ObservableObject
         [
             new("section_build",
             [
-                Item("batch", "nav_batch", Icons.Batch, new BatchPanelViewModel(Teal)),
-                Item("pack_folder", "nav_pack_folder", Icons.PackFolder, new PackFolderPanelViewModel(Blue)),
                 Item("pack_exfat", "nav_pack_exfat", Icons.PackExfat, new PackExfatPanelViewModel(Orange)),
                 Item("pack_file", "nav_pack_file", Icons.PackFile, new PackFilePanelViewModel(Cyan)),
                 Item("ampr", "nav_ampr", Icons.AmprPack, new AmprPackPanelViewModel(Lime)),

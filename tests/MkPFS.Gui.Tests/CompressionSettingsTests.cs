@@ -73,7 +73,7 @@ public sealed class CompressionSettingsTests
     }
 
     [Fact]
-    public void Batch_offers_no_auto_fit_and_files_no_executables_option()
+    public void Auto_fit_and_the_executables_option_can_be_left_out()
     {
         CompressionSettingsViewModel batch = new(allowAutoFit: false, offerSkipExecutables: true);
         CompressionSettingsViewModel file = new(allowAutoFit: true, offerSkipExecutables: false) { SkipExecutables = true };
@@ -101,13 +101,11 @@ public sealed class CompressionSettingsTests
         file.Compression.Preset = file.Compression.Presets.Single(p => p.Value == "fast");
         Assert.Equal(["pack", "file", "D:/a.exfat", "D:/a.ffpfsc", "--compression-level", "1"], file.BuildArguments(out _));
 
-        BatchPanelViewModel batch = new(Colors.Teal, sync) { Source = "D:/in", Output = "D:/out" };
-        batch.Compression.CpuCount = 2;
-        Assert.Equal(["batch", "D:/in", "D:/out", "--cpu-count", "2"], batch.BuildArguments(out _));
+        file.Compression.CpuCount = 2;
+        Assert.Equal(["pack", "file", "D:/a.exfat", "D:/a.ffpfsc", "--compression-level", "1", "--cpu-count", "2"], file.BuildArguments(out _));
 
-        PackFolderPanelViewModel folder = new(Colors.Blue, sync) { Source = "D:/g", Output = "D:/g.ffpfsc" };
-        folder.Compression.MinCompressSize = "x";
-        Assert.Null(folder.BuildArguments(out string? error));
+        file.Compression.MinCompressSize = "x";
+        Assert.Null(file.BuildArguments(out string? error));
         Assert.Equal("✗ Store Files Smaller Than must be a whole number of bytes.", error);
     }
 }

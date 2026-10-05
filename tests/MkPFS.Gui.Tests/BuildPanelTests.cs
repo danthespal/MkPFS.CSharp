@@ -24,28 +24,6 @@ public sealed class BuildPanelTests
     }
 
     [Fact]
-    public void Pack_folder_builds_python_arguments_and_validates()
-    {
-        PackFolderPanelViewModel panel = new(Colors.Blue, Sync());
-
-        Assert.Null(Build(panel, out string? error));
-        Assert.Equal("✗ Source folder is required.", error);
-        panel.Source = "D:/games/x";
-        Assert.Null(Build(panel, out error));
-        Assert.Equal("✗ Output image path is required.", error);
-
-        panel.Output = " D:/out/x.ffpfsc ";
-        Assert.Equal(["pack", "folder", "D:/games/x", "D:/out/x.ffpfsc"], Build(panel, out _));
-        panel.Compress = false;
-        panel.Signed = panel.VerifyAfter = panel.DryRun = true;
-        panel.TempFolder = "T:/tmp";
-        panel.Ampr.LibsDir = "L:/ampr";
-        Assert.Equal(
-            ["pack", "folder", "D:/games/x", "D:/out/x.ffpfsc", "--no-compress", "--signed", "--verify", "--dry-run", "--temp-folder", "T:/tmp", "--ampr-libs", "L:/ampr"],
-            Build(panel, out _));
-    }
-
-    [Fact]
     public void Pack_exfat_output_is_optional()
     {
         PackExfatPanelViewModel panel = new(Colors.Orange, Sync());
@@ -61,7 +39,7 @@ public sealed class BuildPanelTests
     }
 
     [Fact]
-    public void Pack_file_and_batch_build_python_arguments()
+    public void Pack_file_builds_python_arguments()
     {
         PackFilePanelViewModel file = new(Colors.Cyan, Sync()) { Source = "D:/a.exfat" };
         Assert.Null(Build(file, out string? error));
@@ -70,36 +48,11 @@ public sealed class BuildPanelTests
         file.Compress = false;
         file.TempFolder = "T:/";
         Assert.Equal(["pack", "file", "D:/a.exfat", "D:/a.ffpfsc", "--no-compress", "--temp-folder", "T:/"], Build(file, out _));
-
-        BatchPanelViewModel batch = new(Colors.Teal, Sync()) { Output = "D:/out" };
-        Assert.Null(Build(batch, out error));
-        Assert.Equal("✗ Source folder is required.", error);
-        batch.Source = "D:/in";
-        batch.Compress = false;
-        batch.Overwrite = batch.DryRun = batch.VerifyAfter = true;
-        batch.Ampr.LibsDir = "L:/ampr";
-        Assert.Equal(["batch", "D:/in", "D:/out", "--no-compress", "--overwrite", "--dry-run", "--verify", "--ampr-libs", "L:/ampr"], Build(batch, out _));
     }
 
     [Fact]
     public void Advanced_options_map_to_cli_flags()
     {
-        PackFolderPanelViewModel folder = new(Colors.Blue, Sync()) { Source = "D:/g", Output = "D:/g.ffpfs" };
-        folder.PFS.InodeBits = folder.PFS.InodeWidths[1];
-        folder.PFS.Version = folder.PFS.Versions[1];
-        folder.PFS.Encrypted = folder.PFS.CaseSensitive = folder.PFS.Verbose = true;
-        folder.PFS.EkpfsKey = " ab ";
-        folder.RequireGameFiles = folder.SkipVerification = folder.KeepExtension = true;
-        Assert.Equal(
-            ["pack", "folder", "D:/g", "D:/g.ffpfs", "--require-game-files", "--skip-verification", "--no-adjust-output-file-extension",
-             "--version", "PS4", "--case-sensitive", "--encrypted", "--ekpfs-key", "ab", "--verbose"],
-            Build(folder, out _)); // 64-bit inodes need --raw
-        folder.Raw = folder.VerifyAfter = true;
-        Assert.Equal(
-            ["pack", "folder", "D:/g", "D:/g.ffpfs", "--verify", "--raw", "--require-game-files", "--no-adjust-output-file-extension",
-             "--version", "PS4", "--inode-bits", "64", "--case-sensitive", "--encrypted", "--ekpfs-key", "ab", "--verbose"],
-            Build(folder, out _)); // --skip-verification conflicts with --verify
-
         PackExfatPanelViewModel exfat = new(Colors.Orange, Sync()) { Source = "D:/g", Output = "D:/g.exfat" };
         Assert.Equal("auto", exfat.ClusterSize.Value);
         exfat.ClusterSize = exfat.ClusterSizes.Single(c => c.Label == "32 MiB");
@@ -112,13 +65,6 @@ public sealed class BuildPanelTests
         Assert.Equal(
             ["pack", "file", "D:/a.exfat", "D:/a.ffpfsc", "--signed", "--dry-run", "--use-spool", "--no-rename-inner-image", "--inode-bits", "64"],
             Build(file, out _));
-
-        BatchPanelViewModel batch = new(Colors.Teal, Sync()) { Source = "D:/in", Output = "D:/out" };
-        batch.PFS.NewCrypt = true; // only with --encrypted
-        Assert.Equal(["batch", "D:/in", "D:/out"], Build(batch, out _));
-        batch.PFS.Encrypted = true;
-        batch.PFS.InodeBits = batch.PFS.InodeWidths[1]; // not offered by batch
-        Assert.Equal(["batch", "D:/in", "D:/out", "--encrypted", "--new-crypt"], Build(batch, out _));
     }
 
     [Fact]
@@ -155,16 +101,11 @@ public sealed class BuildPanelTests
         exfat.Source = plain; // the automatic choice follows the source
         Assert.False(exfat.Ampr.HasExistingIndex);
         Assert.False(exfat.Ampr.KeepValidIndex);
-
-        PackFolderPanelViewModel folder = new(Colors.Blue, Sync());
-        folder.Ampr.KeepValidIndex = true; // the user's choice stays
-        folder.Source = indexed;
-        folder.Source = plain;
-        Assert.True(folder.Ampr.KeepValidIndex);
-
-        BatchPanelViewModel batch = new(Colors.Teal, Sync()) { Source = dir.Path };
-        Assert.True(batch.Ampr.HasExistingIndex);
-        Assert.True(batch.Ampr.KeepValidIndex);
+        PackExfatPanelViewModel chosen = new(Colors.Orange, Sync());
+        chosen.Ampr.KeepValidIndex = true; // the user's choice stays
+        chosen.Source = indexed;
+        chosen.Source = plain;
+        Assert.True(chosen.Ampr.KeepValidIndex);
     }
 
     [AvaloniaFact]
@@ -174,16 +115,14 @@ public sealed class BuildPanelTests
         string game = Game(dir, "My Game (EU)!");
         string exfat = dir.File("Data [v2].exfat");
 
-        PackFolderPanelViewModel folder = new(Colors.Blue, Sync()) { Source = game };
-        Assert.Equal(Path.Combine(dir.Path, "My Game EU.ffpfsc"), folder.Output);
-        folder.Source = Path.Combine(dir.Path, "other");
-        Assert.Equal(Path.Combine(dir.Path, "My Game EU.ffpfsc"), folder.Output); // a filled output is kept
+        PackExfatPanelViewModel image = new(Colors.Orange, Sync()) { Source = game + Path.DirectorySeparatorChar };
+        Assert.Equal(Path.Combine(dir.Path, "My Game EU.exfat"), image.Output);
+        image.Source = Path.Combine(dir.Path, "other");
+        Assert.Equal(Path.Combine(dir.Path, "My Game EU.exfat"), image.Output); // a filled output is kept
 
-        Assert.Equal(Path.Combine(dir.Path, "My Game EU.exfat"), new PackExfatPanelViewModel(Colors.Orange, Sync()) { Source = game + Path.DirectorySeparatorChar }.Output);
         Assert.Equal(Path.Combine(dir.Path, "Data v2.ffpfsc"), new PackFilePanelViewModel(Colors.Cyan, Sync()) { Source = exfat }.Output);
         Assert.Equal(string.Empty, new PackFilePanelViewModel(Colors.Cyan, Sync()) { Source = game }.Output); // folder: not a file
-        Assert.Equal(dir.Path, new BatchPanelViewModel(Colors.Teal, Sync()) { Source = dir.Path }.Output);
-        Assert.Equal(string.Empty, new PackFolderPanelViewModel(Colors.Blue, Sync()) { Source = Path.Combine(dir.Path, "missing") }.Output);
+        Assert.Equal(string.Empty, new PackExfatPanelViewModel(Colors.Orange, Sync()) { Source = Path.Combine(dir.Path, "missing") }.Output);
     }
 
     [Fact]

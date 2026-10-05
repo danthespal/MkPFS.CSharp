@@ -16,8 +16,6 @@
   <data name="adv_keep_ext" xml:space="preserve"><value>Manter Extensão de Saída</value></data>
   <data name="adv_keep_inner" xml:space="preserve"><value>Manter Nome do Arquivo Interno</value></data>
   <data name="adv_new_crypt" xml:space="preserve"><value>Derivação de Chave Alternativa (newCrypt)</value></data>
-  <data name="adv_raw" xml:space="preserve"><value>Imagem PFS Bruta (.ffpfs)</value></data>
-  <data name="adv_require" xml:space="preserve"><value>Exigir Arquivos do Jogo</value></data>
   <data name="adv_skip_check" xml:space="preserve"><value>Pular Verificação Final</value></data>
   <data name="adv_spool" xml:space="preserve"><value>Usar Construtor com Spool</value></data>
   <data name="adv_title" xml:space="preserve"><value>Avançado</value></data>
@@ -89,24 +87,6 @@
   <data name="browse" xml:space="preserve"><value>Procurar</value></data>
   <data name="browse_file" xml:space="preserve"><value>Arquivo</value></data>
   <data name="browse_folder" xml:space="preserve"><value>Pasta</value></data>
-  <data name="bt_compress" xml:space="preserve"><value>Compressão PFSC</value></data>
-  <data name="bt_dry" xml:space="preserve"><value>Simulação</value></data>
-  <data name="bt_err_out" xml:space="preserve"><value>✗ A pasta de saída é obrigatória.</value></data>
-  <data name="bt_err_src" xml:space="preserve"><value>✗ A pasta fonte é obrigatória.</value></data>
-  <data name="bt_out_label" xml:space="preserve"><value>Pasta de Saída</value></data>
-  <data name="bt_out_ph" xml:space="preserve"><value>Selecione a pasta de saída…</value></data>
-  <data name="bt_overwrite" xml:space="preserve"><value>Sobrescrever Existente</value></data>
-  <data name="bt_preview_count" xml:space="preserve"><value>{0} item(ns): {1} pasta(s), {2} arquivo(s)</value></data>
-  <data name="bt_preview_empty" xml:space="preserve"><value>Selecione uma pasta fonte para pré-visualizar a fila do lote.</value></data>
-  <data name="bt_preview_error" xml:space="preserve"><value>Não foi possível escanear a pasta do lote: {0}</value></data>
-  <data name="bt_preview_invalid" xml:space="preserve"><value>Selecione uma pasta existente para pré-visualizar a fila do lote.</value></data>
-  <data name="bt_preview_none" xml:space="preserve"><value>Nenhum item empacotável encontrado.</value></data>
-  <data name="bt_preview_scanning" xml:space="preserve"><value>Escaneando itens do lote...</value></data>
-  <data name="bt_queue" xml:space="preserve"><value>Fila do Lote</value></data>
-  <data name="bt_src_label" xml:space="preserve"><value>Pasta Fonte</value></data>
-  <data name="bt_src_ph" xml:space="preserve"><value>Selecione a pasta fonte…</value></data>
-  <data name="bt_subtitle" xml:space="preserve"><value>Converter vários jogos de uma vez em imagens PFS</value></data>
-  <data name="bt_title" xml:space="preserve"><value>Converter em Lote</value></data>
   <data name="bt_version" xml:space="preserve"><value>Versão</value></data>
   <data name="cancel" xml:space="preserve"><value>Cancelar</value></data>
   <data name="cancelled" xml:space="preserve"><value>✗ Cancelado.</value></data>
@@ -159,11 +139,9 @@ A saída escrita pela metade é removida; um reparo no local termina sua regrava
   <data name="lang_label" xml:space="preserve"><value>Idioma</value></data>
   <data name="meta_import" xml:space="preserve"><value>Prévia da Importação</value></data>
   <data name="nav_ampr" xml:space="preserve"><value>Pacotes AMPR</value></data>
-  <data name="nav_batch" xml:space="preserve"><value>Lote</value></data>
   <data name="nav_inspect" xml:space="preserve"><value>Inspecionar</value></data>
   <data name="nav_pack_exfat" xml:space="preserve"><value>Empacotar EXFAT</value></data>
-  <data name="nav_pack_file" xml:space="preserve"><value>Empacotar Arquivo</value></data>
-  <data name="nav_pack_folder" xml:space="preserve"><value>Empacotar Pasta</value></data>
+  <data name="nav_pack_file" xml:space="preserve"><value>Empacotar FFPFSC</value></data>
   <data name="nav_repair" xml:space="preserve"><value>Reparar</value></data>
   <data name="nav_tree" xml:space="preserve"><value>Árvore</value></data>
   <data name="nav_unpack" xml:space="preserve"><value>Desempacotar</value></data>
@@ -173,19 +151,8 @@ A saída escrita pela metade é removida; um reparo no local termina sua regrava
   <data name="options" xml:space="preserve"><value>Opções</value></data>
   <data name="output_log" xml:space="preserve"><value>Log de Saída</value></data>
   <data name="paths" xml:space="preserve"><value>Caminhos</value></data>
-  <data name="pf_compress" xml:space="preserve"><value>Compressão PFSC</value></data>
   <data name="pf_dry" xml:space="preserve"><value>Simulação (Dry Run)</value></data>
-  <data name="pf_err_out" xml:space="preserve"><value>✗ O caminho de saída é obrigatório.</value></data>
-  <data name="pf_err_src" xml:space="preserve"><value>✗ A pasta fonte é obrigatória.</value></data>
-  <data name="pf_out_label" xml:space="preserve"><value>Imagem de Saída</value></data>
-  <data name="pf_out_ph" xml:space="preserve"><value>Selecione o caminho de saída…</value></data>
   <data name="pf_signed" xml:space="preserve"><value>Imagem Assinada</value></data>
-  <data name="pf_src_label" xml:space="preserve"><value>Pasta Fonte</value></data>
-  <data name="pf_src_ph" xml:space="preserve"><value>Selecione a pasta fonte…</value></data>
-  <data name="pf_subtitle" xml:space="preserve"><value>Construir uma imagem PFS a partir de um diretório fonte</value></data>
-  <data name="pf_temp" xml:space="preserve"><value>Pasta Temporária (opcional)</value></data>
-  <data name="pf_temp_ph" xml:space="preserve"><value>Pasta temp personalizada…</value></data>
-  <data name="pf_title" xml:space="preserve"><value>Empacotar Pasta</value></data>
   <data name="pf_verify" xml:space="preserve"><value>Verificar Após Empacotar</value></data>
   <data name="pf_version" xml:space="preserve"><value>Versão</value></data>
   <data name="pkf_compress" xml:space="preserve"><value>Compressão PFSC</value></data>
@@ -207,7 +174,7 @@ A saída escrita pela metade é removida; um reparo no local termina sua regrava
   <data name="pkf_subtitle" xml:space="preserve"><value>Encapsular um único arquivo em uma imagem PFSC comprimida</value></data>
   <data name="pkf_temp" xml:space="preserve"><value>Pasta Temporária (opcional)</value></data>
   <data name="pkf_temp_ph" xml:space="preserve"><value>Pasta temp personalizada…</value></data>
-  <data name="pkf_title" xml:space="preserve"><value>Empacotar Arquivo</value></data>
+  <data name="pkf_title" xml:space="preserve"><value>Empacotar FFPFSC</value></data>
   <data name="pkf_version" xml:space="preserve"><value>Versão</value></data>
   <data name="r_bad_blocks" xml:space="preserve"><value>Lista de Blocos Ruins (opcional — TSV do Game Compressor)</value></data>
   <data name="r_bad_blocks_ph" xml:space="preserve"><value>bad_blocks.tsv…</value></data>

@@ -16,8 +16,6 @@
   <data name="adv_keep_ext" xml:space="preserve"><value>Ausgabe-Endung beibehalten</value></data>
   <data name="adv_keep_inner" xml:space="preserve"><value>Inneren Dateinamen beibehalten</value></data>
   <data name="adv_new_crypt" xml:space="preserve"><value>Alternative Schlüsselableitung (newCrypt)</value></data>
-  <data name="adv_raw" xml:space="preserve"><value>Rohes PFS-Image (.ffpfs)</value></data>
-  <data name="adv_require" xml:space="preserve"><value>Spieldateien erforderlich</value></data>
   <data name="adv_skip_check" xml:space="preserve"><value>Prüfung nach dem Packen überspringen</value></data>
   <data name="adv_spool" xml:space="preserve"><value>Spool-Builder verwenden</value></data>
   <data name="adv_title" xml:space="preserve"><value>Erweitert</value></data>
@@ -89,24 +87,6 @@
   <data name="browse" xml:space="preserve"><value>Durchsuchen</value></data>
   <data name="browse_file" xml:space="preserve"><value>Datei</value></data>
   <data name="browse_folder" xml:space="preserve"><value>Ordner</value></data>
-  <data name="bt_compress" xml:space="preserve"><value>PFSC-Komprimierung</value></data>
-  <data name="bt_dry" xml:space="preserve"><value>Probelauf</value></data>
-  <data name="bt_err_out" xml:space="preserve"><value>✗ Ausgabeordner ist erforderlich.</value></data>
-  <data name="bt_err_src" xml:space="preserve"><value>✗ Quellordner ist erforderlich.</value></data>
-  <data name="bt_out_label" xml:space="preserve"><value>Ausgabeordner</value></data>
-  <data name="bt_out_ph" xml:space="preserve"><value>Ausgabeordner wählen…</value></data>
-  <data name="bt_overwrite" xml:space="preserve"><value>Vorhandene überschreiben</value></data>
-  <data name="bt_preview_count" xml:space="preserve"><value>{0} Element(e): {1} Ordner, {2} Datei(en)</value></data>
-  <data name="bt_preview_empty" xml:space="preserve"><value>Wähle einen Quellordner für die Vorschau der Warteschlange.</value></data>
-  <data name="bt_preview_error" xml:space="preserve"><value>Stapelordner kann nicht gelesen werden: {0}</value></data>
-  <data name="bt_preview_invalid" xml:space="preserve"><value>Wähle einen vorhandenen Ordner für die Vorschau der Warteschlange.</value></data>
-  <data name="bt_preview_none" xml:space="preserve"><value>Keine packbaren Elemente gefunden.</value></data>
-  <data name="bt_preview_scanning" xml:space="preserve"><value>Elemente werden gesucht...</value></data>
-  <data name="bt_queue" xml:space="preserve"><value>Stapel-Warteschlange</value></data>
-  <data name="bt_src_label" xml:space="preserve"><value>Quellordner</value></data>
-  <data name="bt_src_ph" xml:space="preserve"><value>Quellordner wählen…</value></data>
-  <data name="bt_subtitle" xml:space="preserve"><value>Mehrere Spiele auf einmal in PFS-Images umwandeln</value></data>
-  <data name="bt_title" xml:space="preserve"><value>Stapelkonvertierung</value></data>
   <data name="bt_version" xml:space="preserve"><value>Version</value></data>
   <data name="cancel" xml:space="preserve"><value>Abbrechen</value></data>
   <data name="cancelled" xml:space="preserve"><value>✗ Abgebrochen.</value></data>
@@ -159,11 +139,9 @@ Teilweise geschriebene Ausgaben werden entfernt; eine Reparatur vor Ort beendet 
   <data name="lang_label" xml:space="preserve"><value>Sprache</value></data>
   <data name="meta_import" xml:space="preserve"><value>Import-Vorschau</value></data>
   <data name="nav_ampr" xml:space="preserve"><value>AMPR-Pakete</value></data>
-  <data name="nav_batch" xml:space="preserve"><value>Stapel</value></data>
   <data name="nav_inspect" xml:space="preserve"><value>Untersuchen</value></data>
   <data name="nav_pack_exfat" xml:space="preserve"><value>exFAT packen</value></data>
-  <data name="nav_pack_file" xml:space="preserve"><value>Datei packen</value></data>
-  <data name="nav_pack_folder" xml:space="preserve"><value>Ordner packen</value></data>
+  <data name="nav_pack_file" xml:space="preserve"><value>FFPFSC packen</value></data>
   <data name="nav_repair" xml:space="preserve"><value>Reparieren</value></data>
   <data name="nav_tree" xml:space="preserve"><value>Baum</value></data>
   <data name="nav_unpack" xml:space="preserve"><value>Entpacken</value></data>
@@ -173,19 +151,8 @@ Teilweise geschriebene Ausgaben werden entfernt; eine Reparatur vor Ort beendet 
   <data name="options" xml:space="preserve"><value>Optionen</value></data>
   <data name="output_log" xml:space="preserve"><value>Ausgabeprotokoll</value></data>
   <data name="paths" xml:space="preserve"><value>Pfade</value></data>
-  <data name="pf_compress" xml:space="preserve"><value>PFSC-Komprimierung</value></data>
   <data name="pf_dry" xml:space="preserve"><value>Probelauf</value></data>
-  <data name="pf_err_out" xml:space="preserve"><value>✗ Ausgabe-Image-Pfad ist erforderlich.</value></data>
-  <data name="pf_err_src" xml:space="preserve"><value>✗ Quellordner ist erforderlich.</value></data>
-  <data name="pf_out_label" xml:space="preserve"><value>Ausgabe-Image</value></data>
-  <data name="pf_out_ph" xml:space="preserve"><value>Ausgabepfad wählen…</value></data>
   <data name="pf_signed" xml:space="preserve"><value>Signiertes Image</value></data>
-  <data name="pf_src_label" xml:space="preserve"><value>Quellordner</value></data>
-  <data name="pf_src_ph" xml:space="preserve"><value>Quellordner wählen…</value></data>
-  <data name="pf_subtitle" xml:space="preserve"><value>Ein PFS-Image aus einem Quellverzeichnis erstellen</value></data>
-  <data name="pf_temp" xml:space="preserve"><value>Temp-Ordner (optional)</value></data>
-  <data name="pf_temp_ph" xml:space="preserve"><value>Eigener Temp-Ordner…</value></data>
-  <data name="pf_title" xml:space="preserve"><value>Ordner packen</value></data>
   <data name="pf_verify" xml:space="preserve"><value>Nach dem Packen prüfen</value></data>
   <data name="pf_version" xml:space="preserve"><value>Version</value></data>
   <data name="pkf_compress" xml:space="preserve"><value>PFSC-Komprimierung</value></data>
@@ -207,7 +174,7 @@ Teilweise geschriebene Ausgaben werden entfernt; eine Reparatur vor Ort beendet 
   <data name="pkf_subtitle" xml:space="preserve"><value>Eine einzelne Datei in ein PFSC-komprimiertes Image packen</value></data>
   <data name="pkf_temp" xml:space="preserve"><value>Temp-Ordner (optional)</value></data>
   <data name="pkf_temp_ph" xml:space="preserve"><value>Eigener Temp-Ordner…</value></data>
-  <data name="pkf_title" xml:space="preserve"><value>Datei packen</value></data>
+  <data name="pkf_title" xml:space="preserve"><value>FFPFSC packen</value></data>
   <data name="pkf_version" xml:space="preserve"><value>Version</value></data>
   <data name="r_bad_blocks" xml:space="preserve"><value>Liste defekter Blöcke (optional — Game-Compressor-TSV)</value></data>
   <data name="r_bad_blocks_ph" xml:space="preserve"><value>bad_blocks.tsv…</value></data>

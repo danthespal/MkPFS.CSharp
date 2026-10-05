@@ -34,7 +34,7 @@ public sealed partial class LocalizerTests
     {
         Assert.Equal("no_such_key", Localizer.Instance["no_such_key"]);
         Assert.Equal("✗ Process exited with code 3.", Localizer.Instance.Format("err_process", 3));
-        Assert.Equal("3 item(s): 1 folder(s), 2 file(s)", Localizer.Instance.Format("bt_preview_count", 3, 1, 2));
+        Assert.StartsWith("✓ Rules from traces: 2 recorded run(s) found.", Localizer.Instance.Format("ap_rules_traces", 2), StringComparison.Ordinal);
     }
 
     [AvaloniaTheory]

@@ -16,8 +16,6 @@
   <data name="adv_keep_ext" xml:space="preserve"><value>Keep Output Extension</value></data>
   <data name="adv_keep_inner" xml:space="preserve"><value>Keep Inner File Name</value></data>
   <data name="adv_new_crypt" xml:space="preserve"><value>Alternate Key Derivation (newCrypt)</value></data>
-  <data name="adv_raw" xml:space="preserve"><value>Raw PFS Image (.ffpfs)</value></data>
-  <data name="adv_require" xml:space="preserve"><value>Require Game Files</value></data>
   <data name="adv_skip_check" xml:space="preserve"><value>Skip Post-Pack Check</value></data>
   <data name="adv_spool" xml:space="preserve"><value>Use Spool Builder</value></data>
   <data name="adv_title" xml:space="preserve"><value>Advanced</value></data>
@@ -89,24 +87,6 @@
   <data name="browse" xml:space="preserve"><value>Browse</value></data>
   <data name="browse_file" xml:space="preserve"><value>File</value></data>
   <data name="browse_folder" xml:space="preserve"><value>Folder</value></data>
-  <data name="bt_compress" xml:space="preserve"><value>PFSC Compression</value></data>
-  <data name="bt_dry" xml:space="preserve"><value>Dry Run</value></data>
-  <data name="bt_err_out" xml:space="preserve"><value>✗ Output folder is required.</value></data>
-  <data name="bt_err_src" xml:space="preserve"><value>✗ Source folder is required.</value></data>
-  <data name="bt_out_label" xml:space="preserve"><value>Output Folder</value></data>
-  <data name="bt_out_ph" xml:space="preserve"><value>Select output folder…</value></data>
-  <data name="bt_overwrite" xml:space="preserve"><value>Overwrite Existing</value></data>
-  <data name="bt_preview_count" xml:space="preserve"><value>{0} item(s): {1} folder(s), {2} file(s)</value></data>
-  <data name="bt_preview_empty" xml:space="preserve"><value>Select a source folder to preview the batch queue.</value></data>
-  <data name="bt_preview_error" xml:space="preserve"><value>Unable to scan batch folder: {0}</value></data>
-  <data name="bt_preview_invalid" xml:space="preserve"><value>Select an existing folder to preview the batch queue.</value></data>
-  <data name="bt_preview_none" xml:space="preserve"><value>No packable items found.</value></data>
-  <data name="bt_preview_scanning" xml:space="preserve"><value>Scanning batch items...</value></data>
-  <data name="bt_queue" xml:space="preserve"><value>Batch Queue</value></data>
-  <data name="bt_src_label" xml:space="preserve"><value>Source Folder</value></data>
-  <data name="bt_src_ph" xml:space="preserve"><value>Select source folder…</value></data>
-  <data name="bt_subtitle" xml:space="preserve"><value>Convert multiple games at once into PFS images</value></data>
-  <data name="bt_title" xml:space="preserve"><value>Batch Convert</value></data>
   <data name="bt_version" xml:space="preserve"><value>Version</value></data>
   <data name="cancel" xml:space="preserve"><value>Cancel</value></data>
   <data name="cancelled" xml:space="preserve"><value>✗ Cancelled.</value></data>
@@ -159,11 +139,9 @@ Partly written output is removed; an in-place repair finishes its rewrite first 
   <data name="lang_label" xml:space="preserve"><value>Language</value></data>
   <data name="meta_import" xml:space="preserve"><value>Import Preview</value></data>
   <data name="nav_ampr" xml:space="preserve"><value>AMPR Packs</value></data>
-  <data name="nav_batch" xml:space="preserve"><value>Batch</value></data>
   <data name="nav_inspect" xml:space="preserve"><value>Inspect</value></data>
   <data name="nav_pack_exfat" xml:space="preserve"><value>Pack exFAT</value></data>
-  <data name="nav_pack_file" xml:space="preserve"><value>Pack File</value></data>
-  <data name="nav_pack_folder" xml:space="preserve"><value>Pack Folder</value></data>
+  <data name="nav_pack_file" xml:space="preserve"><value>Pack FFPFSC</value></data>
   <data name="nav_repair" xml:space="preserve"><value>Repair</value></data>
   <data name="nav_tree" xml:space="preserve"><value>Tree</value></data>
   <data name="nav_unpack" xml:space="preserve"><value>Unpack</value></data>
@@ -173,19 +151,8 @@ Partly written output is removed; an in-place repair finishes its rewrite first 
   <data name="options" xml:space="preserve"><value>Options</value></data>
   <data name="output_log" xml:space="preserve"><value>Output Log</value></data>
   <data name="paths" xml:space="preserve"><value>Paths</value></data>
-  <data name="pf_compress" xml:space="preserve"><value>PFSC Compression</value></data>
   <data name="pf_dry" xml:space="preserve"><value>Dry Run</value></data>
-  <data name="pf_err_out" xml:space="preserve"><value>✗ Output image path is required.</value></data>
-  <data name="pf_err_src" xml:space="preserve"><value>✗ Source folder is required.</value></data>
-  <data name="pf_out_label" xml:space="preserve"><value>Output Image</value></data>
-  <data name="pf_out_ph" xml:space="preserve"><value>Select output path…</value></data>
   <data name="pf_signed" xml:space="preserve"><value>Signed Image</value></data>
-  <data name="pf_src_label" xml:space="preserve"><value>Source Folder</value></data>
-  <data name="pf_src_ph" xml:space="preserve"><value>Select source folder…</value></data>
-  <data name="pf_subtitle" xml:space="preserve"><value>Build a PFS image from a source directory</value></data>
-  <data name="pf_temp" xml:space="preserve"><value>Temp Folder (optional)</value></data>
-  <data name="pf_temp_ph" xml:space="preserve"><value>Custom temp folder…</value></data>
-  <data name="pf_title" xml:space="preserve"><value>Pack Folder</value></data>
   <data name="pf_verify" xml:space="preserve"><value>Verify After Pack</value></data>
   <data name="pf_version" xml:space="preserve"><value>Version</value></data>
   <data name="pkf_compress" xml:space="preserve"><value>PFSC Compression</value></data>
@@ -207,7 +174,7 @@ Partly written output is removed; an in-place repair finishes its rewrite first 
   <data name="pkf_subtitle" xml:space="preserve"><value>Wrap a single file into a PFSC compressed image</value></data>
   <data name="pkf_temp" xml:space="preserve"><value>Temp Folder (optional)</value></data>
   <data name="pkf_temp_ph" xml:space="preserve"><value>Custom temp folder…</value></data>
-  <data name="pkf_title" xml:space="preserve"><value>Pack File</value></data>
+  <data name="pkf_title" xml:space="preserve"><value>Pack FFPFSC</value></data>
   <data name="pkf_version" xml:space="preserve"><value>Version</value></data>
   <data name="r_bad_blocks" xml:space="preserve"><value>Bad Blocks List (optional — Game Compressor TSV)</value></data>
   <data name="r_bad_blocks_ph" xml:space="preserve"><value>bad_blocks.tsv…</value></data>

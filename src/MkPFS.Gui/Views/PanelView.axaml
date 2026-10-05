@@ -21,8 +21,6 @@
                page template on MainWindow, which also matches it. -->
           <ContentControl Name="FormHost" Content="{Binding Form}" Foreground="{StaticResource TextSecondary}">
             <ContentControl.DataTemplates>
-              <DataTemplate DataType="vm:BatchPanelViewModel"><panels:BatchForm /></DataTemplate>
-              <DataTemplate DataType="vm:PackFolderPanelViewModel"><panels:PackFolderForm /></DataTemplate>
               <DataTemplate DataType="vm:PackExfatPanelViewModel"><panels:PackExfatForm /></DataTemplate>
               <DataTemplate DataType="vm:PackFilePanelViewModel"><panels:PackFileForm /></DataTemplate>
               <DataTemplate DataType="vm:VerifyPanelViewModel"><panels:VerifyForm /></DataTemplate>

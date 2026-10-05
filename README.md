@@ -30,8 +30,8 @@ offline PFSC block repair ported from PS5 Game Compressor.
   like ampr_emu's `ampr_pack.py`, and `ampr game` turns a game folder into a smaller one that runs from
   them ([how it works](#ampr-asset-packs)). `ampr profile`
   turns traces recorded on the console into pack rules, like ampr_emu's `ampr_pack_profile.py`.
-- **GUI**: `mkpfs-gui` with a page per command, cover and metadata preview, batch queue, and a PFSC
-  block map; English, Português (BR), Español, Română, Deutsch, and Français.
+- **GUI**: `mkpfs-gui` with pages to build exFAT, FFPFSC and AMPR packs and to check and read images,
+  cover and metadata preview, and a PFSC block map; English, Português (BR), Español, Română, Deutsch, and Français.
 
 ## Download
 
@@ -473,19 +473,20 @@ source checkout:
 dotnet run --project src/MkPFS.Gui -c Release
 ```
 
+- The BUILD section follows the recommended order: **Pack exFAT** turns a game folder into an exFAT
+  image, **Pack FFPFSC** compresses that image into a `.ffpfsc`, and **AMPR Packs** builds LZ4 asset packs.
+  `pack folder` and `batch` are available on the command line only.
 - Pick a game folder or image to see its cover, title, IDs, version, region, and APR Emu marker.
-- The Batch page lists every item it will pack before you run it.
-- Pack Folder, Pack exFAT, and Batch have an APR Emu section: the libraries folder, download links,
-  and every [APR Emu option](#apr-emu).
-- The packing pages have a collapsed Advanced section with the remaining CLI options: raw PFS, PFS
-  version, inode size, case sensitivity, encryption and EKPFS key, verification, cluster size, and
-  verbose output.
+- Pack exFAT has an APR Emu section: the libraries folder, download links, and every
+  [APR Emu option](#apr-emu).
+- The packing pages have a collapsed Advanced section with the remaining CLI options, such as the
+  cluster size, signing, verification, and verbose output.
 - The check pages cover the CLI options too: Verify takes a source file, the image format, and the
   game-file checklist; Unpack extracts inside a wrapped exFAT (`--deep`, `--only`); Tree and Unpack
   take the image format; Inspect, Tree, Verify, and Unpack take newCrypt keys.
 - Closing the window while a job runs asks first; Stop and Close cancels the job and waits for its
   cleanup (an in-place repair finishes its rewrite) before the window closes.
-- Pack File, Pack Folder, and Batch have compression presets (Fast, Balanced, Max, Low RAM) and
+- Pack FFPFSC has compression presets (Fast, Balanced, Max, Low RAM) and
   settings for the zlib level, CPU cores, block size, and when to keep blocks uncompressed.
 - The Repair page scans an image and draws a block map (zlib, raw, risky); click a cell for its
   offset, stored size, and largest back-reference distance.

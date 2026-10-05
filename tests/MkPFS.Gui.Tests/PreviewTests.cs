@@ -44,42 +44,4 @@ public sealed class PreviewTests
         Assert.Equal("-", preview.TitleId);
         Assert.Equal("-", preview.Title);
     }
-
-    [AvaloniaFact]
-    public async Task Batch_queue_lists_folders_and_images_with_metadata()
-    {
-        using TempDir dir = new();
-        string games = Path.Combine(dir.Path, "games");
-        string game = BuildPanelTests.Game(dir, "games/PPSA01234-app");
-        Assert.Equal(0, MkPFSCli.Run(["pack", "exfat", game, Path.Combine(games, "Data.exfat")], new CliContext(TextWriter.Null, TextWriter.Null, false, false, false)));
-        dir.File("games/readme.txt");
-        BatchQueueViewModel queue = new(Brushes.Teal);
-
-        await queue.LoadAsync(games);
-
-        Assert.Equal("2 item(s): 1 folder(s), 1 file(s)", queue.Summary);
-        Assert.False(queue.IsEmpty);
-        Assert.Equal(["Astro Test", "Astro Test"], queue.Rows.Select(r => r.Title)); // the exFAT holds the same game
-        Assert.Equal(["FILE", "FOLDER"], queue.Rows.Select(r => r.Kind));
-        BatchQueueRow folder = queue.Rows[1];
-        Assert.StartsWith("Title ID: PPSA01234  |  Version: 01.004.000  |  ", folder.Details, StringComparison.Ordinal);
-        Assert.Equal("Content ID: UP0001-PPSA01234_00-ASTROBOT00000000", folder.ContentId);
-        Assert.True(folder.HasCover);
-        Assert.Null(folder.AprEmu);
-    }
-
-    [AvaloniaFact]
-    public async Task Batch_queue_explains_empty_and_invalid_sources()
-    {
-        using TempDir dir = new();
-        BatchQueueViewModel queue = new(Brushes.Teal);
-
-        await queue.LoadAsync(string.Empty);
-        Assert.Equal("Select a source folder to preview the batch queue.", queue.Summary);
-        await queue.LoadAsync(Path.Combine(dir.Path, "missing"));
-        Assert.Equal("Select an existing folder to preview the batch queue.", queue.Summary);
-        await queue.LoadAsync(dir.Path);
-        Assert.Equal("No packable items found.", queue.Summary);
-        Assert.True(queue.IsEmpty);
-    }
 }

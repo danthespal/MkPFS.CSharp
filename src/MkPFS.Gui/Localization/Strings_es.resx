@@ -16,8 +16,6 @@
   <data name="adv_keep_ext" xml:space="preserve"><value>Conservar Extensión de Salida</value></data>
   <data name="adv_keep_inner" xml:space="preserve"><value>Conservar Nombre del Archivo Interno</value></data>
   <data name="adv_new_crypt" xml:space="preserve"><value>Derivación de Clave Alternativa (newCrypt)</value></data>
-  <data name="adv_raw" xml:space="preserve"><value>Imagen PFS Sin Envoltura (.ffpfs)</value></data>
-  <data name="adv_require" xml:space="preserve"><value>Exigir Archivos del Juego</value></data>
   <data name="adv_skip_check" xml:space="preserve"><value>Omitir Comprobación Final</value></data>
   <data name="adv_spool" xml:space="preserve"><value>Usar Constructor con Spool</value></data>
   <data name="adv_title" xml:space="preserve"><value>Avanzado</value></data>
@@ -89,24 +87,6 @@
   <data name="browse" xml:space="preserve"><value>Buscar</value></data>
   <data name="browse_file" xml:space="preserve"><value>Archivo</value></data>
   <data name="browse_folder" xml:space="preserve"><value>Carpeta</value></data>
-  <data name="bt_compress" xml:space="preserve"><value>Compresión PFSC</value></data>
-  <data name="bt_dry" xml:space="preserve"><value>Simulación</value></data>
-  <data name="bt_err_out" xml:space="preserve"><value>✗ La carpeta de salida es obligatoria.</value></data>
-  <data name="bt_err_src" xml:space="preserve"><value>✗ La carpeta fuente es obligatoria.</value></data>
-  <data name="bt_out_label" xml:space="preserve"><value>Carpeta de Salida</value></data>
-  <data name="bt_out_ph" xml:space="preserve"><value>Seleccionar carpeta de salida…</value></data>
-  <data name="bt_overwrite" xml:space="preserve"><value>Sobrescribir Existente</value></data>
-  <data name="bt_preview_count" xml:space="preserve"><value>{0} elemento(s): {1} carpeta(s), {2} archivo(s)</value></data>
-  <data name="bt_preview_empty" xml:space="preserve"><value>Selecciona una carpeta fuente para previsualizar la cola del lote.</value></data>
-  <data name="bt_preview_error" xml:space="preserve"><value>No fue posible escanear la carpeta del lote: {0}</value></data>
-  <data name="bt_preview_invalid" xml:space="preserve"><value>Selecciona una carpeta existente para previsualizar la cola del lote.</value></data>
-  <data name="bt_preview_none" xml:space="preserve"><value>No se encontraron elementos empaquetables.</value></data>
-  <data name="bt_preview_scanning" xml:space="preserve"><value>Escaneando elementos del lote...</value></data>
-  <data name="bt_queue" xml:space="preserve"><value>Cola del Lote</value></data>
-  <data name="bt_src_label" xml:space="preserve"><value>Carpeta Fuente</value></data>
-  <data name="bt_src_ph" xml:space="preserve"><value>Seleccionar carpeta fuente…</value></data>
-  <data name="bt_subtitle" xml:space="preserve"><value>Convertir varios juegos a la vez en imágenes PFS</value></data>
-  <data name="bt_title" xml:space="preserve"><value>Convertir en Lote</value></data>
   <data name="bt_version" xml:space="preserve"><value>Versión</value></data>
   <data name="cancel" xml:space="preserve"><value>Cancelar</value></data>
   <data name="cancelled" xml:space="preserve"><value>✗ Cancelado.</value></data>
@@ -159,11 +139,9 @@ La salida escrita a medias se elimina; una reparación in situ termina su reescr
   <data name="lang_label" xml:space="preserve"><value>Idioma</value></data>
   <data name="meta_import" xml:space="preserve"><value>Vista Previa de Importación</value></data>
   <data name="nav_ampr" xml:space="preserve"><value>Paquetes AMPR</value></data>
-  <data name="nav_batch" xml:space="preserve"><value>Lote</value></data>
   <data name="nav_inspect" xml:space="preserve"><value>Inspeccionar</value></data>
   <data name="nav_pack_exfat" xml:space="preserve"><value>Empaquetar EXFAT</value></data>
-  <data name="nav_pack_file" xml:space="preserve"><value>Empaquetar Archivo</value></data>
-  <data name="nav_pack_folder" xml:space="preserve"><value>Empaquetar Carpeta</value></data>
+  <data name="nav_pack_file" xml:space="preserve"><value>Empaquetar FFPFSC</value></data>
   <data name="nav_repair" xml:space="preserve"><value>Reparar</value></data>
   <data name="nav_tree" xml:space="preserve"><value>Árbol</value></data>
   <data name="nav_unpack" xml:space="preserve"><value>Desempaquetar</value></data>
@@ -173,19 +151,8 @@ La salida escrita a medias se elimina; una reparación in situ termina su reescr
   <data name="options" xml:space="preserve"><value>Opciones</value></data>
   <data name="output_log" xml:space="preserve"><value>Registro de Salida</value></data>
   <data name="paths" xml:space="preserve"><value>Rutas</value></data>
-  <data name="pf_compress" xml:space="preserve"><value>Compresión PFSC</value></data>
   <data name="pf_dry" xml:space="preserve"><value>Simulación (Dry Run)</value></data>
-  <data name="pf_err_out" xml:space="preserve"><value>✗ La ruta de salida es obligatoria.</value></data>
-  <data name="pf_err_src" xml:space="preserve"><value>✗ La carpeta fuente es obligatoria.</value></data>
-  <data name="pf_out_label" xml:space="preserve"><value>Imagen de Salida</value></data>
-  <data name="pf_out_ph" xml:space="preserve"><value>Seleccionar ruta de salida…</value></data>
   <data name="pf_signed" xml:space="preserve"><value>Imagen Firmada</value></data>
-  <data name="pf_src_label" xml:space="preserve"><value>Carpeta Fuente</value></data>
-  <data name="pf_src_ph" xml:space="preserve"><value>Seleccionar carpeta fuente…</value></data>
-  <data name="pf_subtitle" xml:space="preserve"><value>Construir una imagen PFS desde un directorio fuente</value></data>
-  <data name="pf_temp" xml:space="preserve"><value>Carpeta Temporal (opcional)</value></data>
-  <data name="pf_temp_ph" xml:space="preserve"><value>Carpeta temp personalizada…</value></data>
-  <data name="pf_title" xml:space="preserve"><value>Empaquetar Carpeta</value></data>
   <data name="pf_verify" xml:space="preserve"><value>Verificar Tras Empaquetar</value></data>
   <data name="pf_version" xml:space="preserve"><value>Versión</value></data>
   <data name="pkf_compress" xml:space="preserve"><value>Compresión PFSC</value></data>
@@ -207,7 +174,7 @@ La salida escrita a medias se elimina; una reparación in situ termina su reescr
   <data name="pkf_subtitle" xml:space="preserve"><value>Envolver un solo archivo en una imagen PFSC comprimida</value></data>
   <data name="pkf_temp" xml:space="preserve"><value>Carpeta Temporal (opcional)</value></data>
   <data name="pkf_temp_ph" xml:space="preserve"><value>Carpeta temp personalizada…</value></data>
-  <data name="pkf_title" xml:space="preserve"><value>Empaquetar Archivo</value></data>
+  <data name="pkf_title" xml:space="preserve"><value>Empaquetar FFPFSC</value></data>
   <data name="pkf_version" xml:space="preserve"><value>Versión</value></data>
   <data name="r_bad_blocks" xml:space="preserve"><value>Lista de Bloques Dañados (opcional — TSV de Game Compressor)</value></data>
   <data name="r_bad_blocks_ph" xml:space="preserve"><value>bad_blocks.tsv…</value></data>
