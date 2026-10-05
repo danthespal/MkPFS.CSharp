@@ -487,7 +487,7 @@ dotnet run --project src/MkPFS.Gui -c Release
 - Closing the window while a job runs asks first; Stop and Close cancels the job and waits for its
   cleanup (an in-place repair finishes its rewrite) before the window closes.
 - Pack FFPFSC has compression presets (Fast, Balanced, Max, Low RAM) and
-  settings for the zlib level, CPU cores (Auto uses every core of the computer), block size, and when to keep
+  settings for the zlib level, CPU cores (Auto uses every physical core of the computer, not the logical processors), block size, and when to keep
   blocks uncompressed. Hover over a Compression Tuning or Advanced option to see what it does.
 - The progress bar covers the whole run: when a run has several steps (pack, then verify and compare), the
   bar keeps counting through them instead of starting over, and the label shows the step, for example

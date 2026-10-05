@@ -87,8 +87,8 @@ public sealed partial class CompressionSettingsViewModel : ObservableObject
     /// <summary>Show the executables option.</summary>
     public bool OfferSkipExecutables { get; }
 
-    /// <summary>CPU cores of this machine: what Auto uses, and the most the picker offers.</summary>
-    public int MaxCpu { get; } = Environment.ProcessorCount;
+    /// <summary>Physical CPU cores of this machine (not logical processors): what Auto uses, and the most the picker offers.</summary>
+    public int MaxCpu { get; } = MkPFS.Core.Util.CpuTopology.PhysicalCores;
 
     /// <summary>The CPU core picker: Auto (every core of this machine), then 1 to <see cref="MaxCpu"/>.</summary>
     public System.Collections.ObjectModel.ObservableCollection<Choice> CpuChoices { get; }
