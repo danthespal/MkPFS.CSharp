@@ -331,17 +331,6 @@ What the profiles of the tested games learned:
 - **Every file but executables, modules and system files**: no game has run with this yet, and both the
   Unity and the Insomniac game failed with it.
 
-**Tested games.** Results on a PS5 with ShadowMountPlus 1.7 beta 4 and AMPR Emu 0.4.2.1:
-
-| Game | Version | Engine | Rules | Result |
-|---|---|---|---|---|
-| God of War Sons of Sparta (PPSA28997) | 01.008.001 | Unity (IL2CPP) | `StreamingAssets/` only | Runs: menu, saves, gameplay. |
-| God of War Sons of Sparta (PPSA28997) | 01.008.001 | Unity (IL2CPP) | every file but executables | Aborts at startup (`SYSTEM_ABNORMAL_TERMINATION_REQUEST`). |
-| PPSA03671 | 01.001.005 | Insomniac | `d/` archives but boot, movie and audio | Runs. |
-| PPSA03671 | 01.001.005 | Insomniac | every file but executables | Crashes 2 s after start (`SIGSEGV`, null read in `eboot.bin`). |
-| EA SPORTS UFC 6 (PPSA23566) | | Frostbite | all 292 `.cas` archives (traces plus untraced `.cas`) | Runs; 166 GB to about 98 GB. |
-| EA SPORTS UFC 6 (PPSA23566) | | Frostbite | traces plus untraced types, `.toc`, `initfs_Ps5`, `chunkmanifest` packed | Crashes about 40 s after start (`SIGSEGV` in `Job0`). |
-
 **Recommended steps.**
 
 1. Make sure the unpacked game runs with AMPR Emu 0.4.2.1 in its `fakelib/`.
