@@ -13,8 +13,7 @@ offline PFSC block repair ported from PS5 Game Compressor.
 > [!WARNING]
 > **AMPR packing (`ampr`, the AMPR Packs page) is experimental.** It can shrink a game a lot, but whether
 > the packed game runs depends on how that game reads its files, and only a test on the PS5 shows that.
-> Keep the original game until the packed one has been played. See
-> [AMPR packing: what it is and why it is experimental](#ampr-packing-what-it-is-and-why-it-is-experimental).
+> Keep the original game until the packed one has been played. See [`ampr`](#ampr-asset-packs).
 
 ## Features
 
@@ -29,7 +28,7 @@ offline PFSC block repair ported from PS5 Game Compressor.
   `ampr_emu.index` when `pack folder`, `pack exfat`, or `batch` packs a game that has them.
 - **AMPR packs (experimental)**: `ampr` builds, checks, and extracts AMPR Emu seekable LZ4 asset packs, byte for byte
   like ampr_emu's `ampr_pack.py`, and `ampr game` turns a game folder into a smaller one that runs from
-  them ([what it is and its limits](#ampr-packing-what-it-is-and-why-it-is-experimental)). `ampr profile`
+  them ([how it works](#ampr-asset-packs)). `ampr profile`
   turns traces recorded on the console into pack rules, like ampr_emu's `ampr_pack_profile.py`.
 - **GUI**: `mkpfs-gui` with a page per command, cover and metadata preview, batch queue, and a PFSC
   block map; English, Português (BR), Español, Română, Deutsch, and Français.
@@ -273,214 +272,157 @@ rebuild a missing index from the remaining files, with the same result.
 
 ### `ampr` (asset packs)
 
-#### AMPR packing: what it is and why it is experimental
-
 > [!WARNING]
-> Experimental. Only a few games have been tested. Keep the original, unpacked game until the packed one
-> has been played on the PS5, and report the games you try (see [Reporting a game](#reporting-a-game)).
+> Experimental. Keep the original, unpacked game until the packed one has been played on the PS5.
 
-**What it does.** Most of a game's size is data files: levels, textures, audio, video. `ampr` compresses
-selected data files with LZ4 into a few large pack files (`ampr_assets-*.pak`) plus a manifest
-(`ampr_assets.index`). On the PS5, Drakmor's [AMPR Emu](https://github.com/drakmor/ampr_emu) (the
-`libSceAmpr.sprx` in the game's `fakelib/`) sits between the game and the file system: when the game
-opens a packed file, AMPR Emu reads the matching blocks from the packs and decompresses them, so the game
-sees the original bytes. Nothing else changes: `eboot.bin`, modules and `sce_sys` stay as they are, and
-the PS5 kernel never sees LZ4. Packed files are not stored a second time, which is where the space goes.
+#### How it works
 
-**What a game needs.**
+`ampr` compresses a game's data files (levels, textures, audio, video) with LZ4 into a few pack files
+(`ampr_assets-*.pak`) and a manifest (`ampr_assets.index`). On the PS5, Drakmor's
+[AMPR Emu](https://github.com/drakmor/ampr_emu) (`libSceAmpr.sprx` in the game's `fakelib/`) decompresses
+them on the fly, so the game reads the original bytes. Executables, modules and `sce_sys` are not touched.
 
-- A jailbroken PS5 running [ShadowMountPlus](https://github.com/drakmor/ShadowMountPlus), which mounts
-  the game's `fakelib/` (or `fakelib2/`) into the running game.
-- A game that loads `libSceAmpr` (AMPR/APR titles; these carry `fakelib/libSceAmpr.sprx` once set up for
-  AMPR Emu). AMPR Emu is only loaded by such games, so packs in any other game are never read.
-- AMPR Emu **0.4.2.1 or newer**: the first release that reads packs. `ampr game` checks the library and
-  refuses older ones.
-- The image or folder mounted read-only (ShadowMountPlus `mount_read_only=1`, the default), so AMPR Emu
-  never rebuilds `ampr_emu.index`.
+AMPR Emu only serves files that the game reads in ways it intercepts (AMPR reads and ordinary
+`open`/`read`/`stat` calls). If a game memory-maps a packed file, or reads it some other way, the game
+usually crashes. That is why each game needs its own rules, and why only a test on the console proves that
+a packed game works.
 
-**Why it is experimental.** AMPR Emu serves packed files only to the ways of reading files it intercepts:
-AMPR reads, `open`/`sceKernelOpen`, `read`/`pread`, `stat`/`fstat`, directory listing, and asynchronous
-reads. A game that reads a file any other way, most likely by memory-mapping it (`mmap`), gets nothing
-back and usually stops at startup. Which files a game reads which way cannot be seen from the files on a
-PC, so the only real check is to start the packed game on the console. `ampr game` verifies on the PC
-that every packed byte decodes to the original, but that proves the packs are correct, not that the game
-reads them in a supported way.
+#### Requirements
 
-**Game profiles.** What to pack is decided per game by a TOML profile (`--config`, the **TOML
-Configuration** field), or by the traces of the game recorded on the console (see [Rules from
-traces](#rules-from-traces)). MkPFS has no built-in rules: `ampr game` needs one or the other. Profiles are
-plain TOML files in ampr_emu's format (see below), one per game, shared and improved by the people
-who test them. A profile's header says which game and version it was tested with and whether it runs.
-The build log names the rules used:
+- A jailbroken PS5 with [ShadowMountPlus](https://github.com/drakmor/ShadowMountPlus).
+- A game that loads `libSceAmpr` (AMPR/APR titles).
+- AMPR Emu **0.4.2.1 or newer**, the first release that reads packs. `ampr game` refuses older builds.
+- The game mounted read-only (`mount_read_only=1` in ShadowMountPlus, the default).
 
-```
-Rules: TOML profile D:\PS5\profiles\ufc6-PPSA23566.toml
-```
+#### Packing a game
 
-**Recommended steps.**
+You need the rules for the game: either a **TOML profile** (a file that lists what to pack, shared for
+each game) or **traces** you record yourself (see [Making rules from traces](#making-rules-from-traces)).
 
-1. Make sure the unpacked game runs with AMPR Emu 0.4.2.1 in its `fakelib/`.
-2. On the AMPR Packs page, choose **Build playable game** (the default), pick the game folder, a new
-   output folder, the folder with AMPR Emu's `libSceAmpr.sprx` and the game's TOML profile (no profile yet:
-   record traces, see below). Optionally tick the exFAT image box. On the command line:
-   `mkpfs ampr game --root <game> --output <new folder> --fakelib <AMPR Emu folder> --config <profile.toml> --exfat .`
+1. Check that the unpacked game runs with AMPR Emu in its `fakelib/`.
+2. On the **AMPR Packs** page, choose **Build playable game** and fill in:
+   - the game folder and a new, empty output folder;
+   - the folder with AMPR Emu's `libSceAmpr.sprx`;
+   - the game's TOML profile in **TOML Configuration**, or a **Trace folder**;
+   - optionally, **Also build an exFAT image**.
+
+   On the command line:
+
+   ```bash
+   mkpfs ampr game --root PPSA12345-app --output PPSA12345-packed --fakelib ampr-emu --config game.toml --exfat .
+   ```
+
 3. Copy the output folder or the `.exfat` image to the PS5 and start the game. Play past the menu and load
-   a save or a level: some files are only read later.
+   a save or a level, since some files are only read later.
 4. Delete the original only after that.
 
-##### Rules from traces
+`ampr game` copies the libraries, writes `ampr_emu.index`, packs, copies the files that stay loose, and
+checks that every packed file decodes to the original. The game folder is only read; if a step fails, the
+output folder is emptied.
 
-For a game without a profile, the most reliable rules come from
-watching the game on the console: the debug build of AMPR Emu (`Prospero_DebugHooksPackedStdio`, for
-example the 0.4.2.1 test-debug-pack) records every read the game makes through AMPR into
-`/app0/ampr_commands.bin`. MkPFS reads those traces and packs exactly the files the game read that way,
-with block sizes fitted to how it read them, like ampr_emu's `ampr_pack_profile.py`.
+#### Making rules from traces
 
-1. Put the debug `libSceAmpr.sprx` into the **unpacked** game's `fakelib/` (keep the normal one to put
-   back), and set `mount_read_only=0` in ShadowMountPlus for this run: the emulator writes its trace into
-   the game folder. Run from the folder, not an exFAT image.
-2. Play a session: start-up to the menu and loading a save, then other sessions for different levels,
-   cutscenes, fast travel. Quit the game normally from the PS5 menu; a crash can cut the trace short.
-3. After each session, copy `ampr_commands.bin` and `ampr_emu.index` (and `ampr_emu.log`) into a
-   subfolder of one trace folder, for example `traces/startup/`, `traces/level2/`, and delete them from
-   the game folder.
-4. Put the normal emulator back and `mount_read_only=1`.
-5. On the AMPR Packs page, pick that trace folder in **Trace folder** (leave the TOML field empty); the
-   page says how many runs it found. On the command line: `mkpfs ampr game ... --traces traces`. The log
-   says `Rules: from N trace runs ...; M files the game read through APR are packed`.
+The debug build of AMPR Emu (for example the 0.4.2.1 test-debug-pack) records every file the game reads
+through AMPR. MkPFS turns those recordings into rules.
 
-What traces can and cannot show:
+1. Put the debug `libSceAmpr.sprx` into the unpacked game's `fakelib/` and set `mount_read_only=0` for this
+   run, so the emulator can write into the game folder.
+2. Play a session, then quit the game from the PS5 menu.
+3. Copy `ampr_commands.bin` and `ampr_emu.index` into a subfolder of a trace folder (for example
+   `traces/session1/`), then delete them from the game folder. Repeat for more sessions: each one covers
+   more of the game.
+4. Put the normal emulator back and set `mount_read_only=1` again.
+5. Pick the trace folder in **Trace folder** (command line: `--traces traces`). The page shows how many
+   sessions it found.
 
-- A file in a trace was read through AMPR, so AMPR Emu can serve it from the packs.
-- Files no session touched (other levels, languages, DLC) stay loose: safe, but they save no space. More
-  sessions cover more.
-- Files the game memory-maps (`mmap`) or reads with plain reads never appear in a trace, so they stay loose
-  too.
+Only files that a session read are packed; everything else stays loose. To also pack the files no session
+reached, tick **Also pack files no session read** under the trace folder (`--pack-untraced-types`). This packs every other file
+of the same types (extensions) as the traced files. Test the parts of the game those files belong to before
+deleting the original.
 
-To pack the rest as well, tick **Also pack files no session read…** under the trace folder
-(`--pack-untraced-types`, a MkPFS extension). Every untraced file whose type (extension) a traced file has is
-packed with the settings most traced files of that type got: with traces of an EA SPORTS UFC 6 session, the
-111 `.cas` archives no session reached are packed like the 181 that were, and only executables, modules,
-`sce_sys`, `fakelib` and small files of other types stay loose. Those files were not seen being read, so play
-the parts of the game they belong to before deleting the original. Files without an extension are never added.
+To save the rules as a profile you can edit and share:
 
-`mkpfs ampr profile generate <trace run> --output rules.toml --report rules.md` (or `--trace COMMANDS
-INDEX`, repeatable) writes the same rules as a TOML file to review, edit and share as the game's profile, plus a report, a metrics JSON
-and a runtime header; `mkpfs ampr profile batch` makes one profile per run of a folder or ZIP bundle. The
-output matches `ampr_pack_profile.py` byte for byte.
+```bash
+mkpfs ampr profile generate --trace traces/session1/ampr_commands.bin traces/session1/ampr_emu.index \
+  --trace traces/session2/ampr_commands.bin traces/session2/ampr_emu.index --output game.toml --pack-untraced-types
+```
 
-##### When a packed game crashes
+#### When a packed game crashes
 
-The release AMPR Emu logs nothing, so the crash log alone does not say which file failed. Build the packed game
-again with **Free space inside the image** (`--exfat-free-space 2GiB`), put the debug `libSceAmpr.sprx` into the
-packed game's `fakelib/`, mount the image read-write (`image_rw=<image name>` in ShadowMountPlus's
-`config.ini`) and start it until it crashes. `ampr_emu.log` in the image then lists every packed file the game
-opened (`apr.pack.open`) and every open it refused (`apr.pack.open.fail … reason=…`), which points at the file
-to leave loose.
+The normal AMPR Emu writes no log. To find the file that fails:
 
-##### Reporting a game
+1. Build again with **Free space inside the image** set to `2GiB` (`--exfat-free-space 2GiB`).
+2. Put the debug `libSceAmpr.sprx` into the packed game's `fakelib/`.
+3. Mount the image read-write (`image_rw=<image file name>` in ShadowMountPlus's `config.ini`) and start
+   the game.
+4. Read `ampr_emu.log` in the image: `apr.pack.open` lines show the packed files the game opened, and
+   `apr.pack.open.fail` lines show the ones it could not open. Keep those files loose in the profile.
 
-Whether it works or not, please report: the game title, ID and version, the profile or traces used,
-what happened on the console, and for a game that fails, the ShadowMountPlus log
-(`/data/shadowmount/debug.log`) and the console log around the crash. A failing game can often still be
-packed with a TOML file that leaves more files loose (see the TOML format below); share the profile that
-works so others can use it.
+When you report a game, include its title, ID and version, the profile or traces used, what happened, and
+for a crash the ShadowMountPlus log (`/data/shadowmount/debug.log`) and the console log.
 
-#### How the packs are made
+#### Profile format
 
-`mkpfs ampr` is a port of ampr_emu's `tools/ampr_pack.py` (tool version 4.0): the same options, the same
-JSON on standard output, and byte-identical packs. `ampr profile` is a port of
-`tools/ampr_pack_profile.py` (4.1, `generate` and `batch`): the same TOML, report, metrics JSON and runtime
-header. A pack set is the manifest `ampr_assets.index`, data
-volumes `ampr_assets-*.pak`, optional runtime settings `ampr_assets.index.runtime`, and an offline CRC
-sidecar `ampr_assets.index.crc`.
+Profiles use ampr_emu's TOML format (see its `tools/ampr_pack.example.toml`). Rules are checked in order and
+the last match wins; `*` also matches `/`.
 
-`pack` writes only the pack set (`ampr_assets.index`, `.pak` volumes, `.crc`) into `--output`, exactly
-like `ampr_pack.py`. For a folder to copy to the PS5, use [`ampr game`](#ampr-game-a-folder-to-copy-to-the-ps5).
+```toml
+[pack]
+default_action = "loose"        # files no rule matches stay as they are
 
-The default emulator build loads at most 2,000,000 files, 16,000,000 chunks, and 1,024 volumes, and
-rejects the whole set beyond that; `pack` warns on standard error when a set exceeds a limit (larger
-blocks or more loose files bring it down). Deploy `ampr_emu.index`, the manifest, its `.runtime`, and every
-volume from one build together; the `.crc` sidecar is only for `verify` and `unpack`.
+[[rule]]
+action = "compress"             # LZ4, 64 KiB blocks by default
+include = ["data/*"]
+
+[[rule]]
+action = "loose"                # always keep executables, modules and system files loose
+include = ["eboot.bin", "*.prx", "*.sprx", "sce_sys/*", "sce_module/*", "fakelib/*"]
+```
 
 #### Command reference
 
 | Subcommand | Required options | Purpose |
 |---|---|---|
-| `game` | `--root <app0> --output <dir>` | Build a folder that runs from packs as is (see below; not in `ampr_pack.py`). |
-| `pack` | `--root <app0> --ampr-index <ampr_emu.index> --output <dir>` | Build the manifest, volumes, CRC sidecar, and optional runtime settings. |
-| `verify` | `--index <manifest>` | Decode every chunk and check its CRC; `--root <app0>` also compares every byte with the source. |
+| `game` | `--root <app0> --output <dir>`, and `--config` or `--traces` | Build a folder that runs from packs as is. |
+| `pack` | `--root <app0> --ampr-index <ampr_emu.index> --output <dir>` | Write only the pack set (manifest, volumes, CRC sidecar). |
+| `verify` | `--index <manifest>` | Decode every chunk; `--root <app0>` also compares with the source. |
 | `unpack` | `--index <manifest> --output <dir>` | Extract packed files (`--file <glob>`, `--overwrite`, `--no-preserve-mtime`). |
 | `list` | `--index <manifest>` | One line per file (`--json` for details). |
-| `inspect` | `--index <manifest>` | Manifest summary, volumes, and runtime settings. |
-| `runtime-config` | `--index <manifest> --config <toml>` | Replace `<manifest>.runtime` from a `[runtime]` section without repacking. |
-| `remove-sources` | `--index <manifest> --root <app0>` | Show which sources the packs replace; with `--confirm`, verify everything and delete them. Also `remove-packed-sources`. |
-| `profile generate` | `[<trace run>] --output <toml>` | Pack rules from APR traces (`--trace COMMANDS INDEX`, repeatable); `--report`, `--metrics` (JSON, `--full-metrics` for every block-size candidate), `--runtime-header` and every tuning option of `ampr_pack_profile.py generate`. |
-| `profile batch` | `<folder or ZIP> --output-dir <dir>` | One profile per trace run found (TOML, report, metrics JSON, runtime header) and a `summary.json`; a ZIP support bundle is read for its trace files only. Defaults to `--pattern-mode hybrid` without the cache simulation; `--batch-jobs`, `--summary`. |
+| `inspect` | `--index <manifest>` | Manifest summary, volumes and runtime settings. |
+| `runtime-config` | `--index <manifest> --config <toml>` | Replace the runtime settings from a `[runtime]` section without repacking. |
+| `remove-sources` | `--index <manifest> --root <app0>` | Show which source files the packs replace; `--confirm` verifies and deletes them. |
+| `profile generate` | `[<session folder>] --output <toml>` | Rules from traces (`--trace COMMANDS INDEX` per session, repeatable); `--report`, `--metrics`, `--runtime-header`. |
+| `profile batch` | `<folder or ZIP> --output-dir <dir>` | One profile per trace session and a `summary.json`. |
 
-`pack` options:
+Options of `game` and `pack`:
 
 | Option | Default | Meaning |
 |---|---|---|
-| `--config <toml>` | none | Pack rules (the game's profile). Without a config or `--traces` every file stays loose, and `pack` prints a warning on standard error. |
-| `--traces <folder>` | none | Rules from APR traces instead of `--config` (see [Rules from traces](#rules-from-traces)); also for `ampr game`. |
-| `--pack-untraced-types` | off | With `--traces`: also pack untraced files of the traced file types, like the traced ones (also for `ampr game` and `profile generate`). |
-| `--include <glob>`, `--exclude <glob>` | none; repeatable | Narrow the rule selection; `--exclude` forces files loose. |
-| `--include-from <file>`, `--exclude-from <file>` | none | Glob lists, one per line, `#` comments. |
-| `--workers <n>` | config, else min(8, cores) | Compression threads (1 to 256). |
-| `--self-contained` | off | Never auto-loose selected files; incompressible blocks are stored uncompressed. |
-| `--require-packed <glob>` | none; repeatable | Fail if a matching file would stay loose. |
-| `--allow-missing` | off | Leave selected files that are missing from `--root` loose. |
-| `--no-progress` | off | Hide progress on standard error. |
+| `--config <toml>` | none | The game's profile. |
+| `--traces <folder>` | none | Rules from traces instead of a profile. |
+| `--pack-untraced-types` | off | With `--traces`: also pack untraced files of the traced types. |
+| `--workers <n>` | min(8, cores) | Compression threads (1 to 256). |
+| `--self-contained` | off | Never leave selected files loose; store incompressible blocks uncompressed. |
+| `--fakelib <dir>` | none | `game`: AMPR Emu and other libraries to add to `fakelib/`. |
+| `--exfat <file or folder>` | none | `game`: also build an exFAT image (`<titleId>.exfat` in a folder). |
+| `--exfat-free-space <size>` | 0 | `game`: free space inside the image, for a debug run. |
+| `--skip-verify` | off | `game`: skip the final checks. |
+| `--include`, `--exclude`, `--include-from`, `--exclude-from` | none | `pack`: narrow the rules; `--exclude` forces files loose. |
+| `--require-packed <glob>` | none | `pack`: fail if a matching file would stay loose. |
+| `--allow-missing` | off | `pack`: leave selected files missing from `--root` loose. |
+| `--no-progress` | off | Hide progress. |
 
-#### `ampr game`: a folder to copy to the PS5
+Notes:
 
-`ampr game` turns an unpacked game folder into a new folder that runs from the packs as is. The game
-folder is only read, and the output folder must be new or empty:
-
-```bash
-mkpfs ampr game --root PPSA12345-app --output PPSA12345-packed --fakelib ampr-emu-libs --exfat .
-```
-
-1. **Libraries.** Copies the game's `fakelib/` into the output, then every file of `--fakelib` over it.
-   Identical files are left alone, and the log says which ones were added or replaced. If the game has
-   `fakelib2/`, ShadowMountPlus mounts that one instead of `fakelib/`, so the libraries go there. The
-   resulting `libSceAmpr.sprx` must be AMPR Emu 0.4.2.1 or newer (the first release that reads packs; its
-   [release](https://github.com/drakmor/ampr_emu/releases) `libSceAmpr.sprx` does). Older builds are
-   rejected before anything is written.
-2. **Index.** Writes `ampr_emu.index` for the final tree: the game's files plus the new libraries with
-   their real sizes. This must come before packing, because the manifest addresses files by their row
-   in this index.
-3. **Packs.** Packs from the game folder with the rules of `--config` (the game's TOML profile) or
-   `--traces`; one of them is required.
-4. **Loose files.** Copies every file that stays loose, keeping its modification time, and every folder,
-   including empty ones. This runs after packing because the packer only then decides which large,
-   incompressible files to leave loose.
-5. **Checks.** Decodes every chunk, compares every packed file with the game folder, and checks that every
-   loose file is in the output with its indexed size (`--skip-verify` skips this).
-
-If a step fails, the output folder is emptied so a retry starts clean. `--exfat <file or folder>` then
-builds an exFAT image of the output (64 KiB clusters, `<titleId>.exfat` in a folder); `--exfat-free-space 2GiB`
-leaves room inside it, which a test run with the debug AMPR Emu needs for its log (the image is otherwise
-exactly full). Use an exFAT
-image or the plain folder, and keep ShadowMountPlus's `mount_read_only=1` (the default) so AMPR Emu
-never rebuilds the index. A `.ffpfsc` would put zlib (about 150–250 MB/s on the PS5) on top of the LZ4
-packs. The output also keeps `ampr_assets.index.crc`: the game never reads it, and `verify` and
-`unpack` need it.
-
-The TOML format is ampr_emu's (see its `tools/ampr_pack.example.toml`). A minimal config:
-
-```toml
-[pack]
-default_action = "compress"   # LZ4 HC level 12, 64 KiB blocks
-
-[[rule]]                       # last match wins: keep modules and system files loose
-action = "loose"
-include = ["eboot.bin", "**/*.prx", "**/*.sprx", "sce_sys/**", "sce_module/**", "fakelib/**"]
-```
-
-`ampr_pack.py` has no built-in exclusions, so a config without that last rule packs `eboot.bin` and
-modules too; `remove-sources` then refuses to run. Errors print `error: <message>` and exit with code 2.
+- `ampr pack` and `ampr profile` are ports of ampr_emu's `tools/ampr_pack.py` (4.0) and
+  `tools/ampr_pack_profile.py` (4.1), with the same output byte for byte. `game`, `--traces` and
+  `--pack-untraced-types` are MkPFS additions.
+- The release emulator loads at most 2,000,000 files, 16,000,000 chunks and 1,024 volumes; `pack` warns
+  when a set goes over a limit.
+- Deploy `ampr_emu.index`, the manifest, its `.runtime` file and every volume from the same build. The
+  `.crc` file is only used by `verify` and `unpack`.
+- Use an exFAT image or the plain folder, not `.ffpfsc`: zlib on top of LZ4 makes loading slower.
+- Errors print `error: <message>` and exit with code 2.
 
 ### Reading and extracting images
 
@@ -547,10 +489,8 @@ dotnet run --project src/MkPFS.Gui -c Release
   settings for the zlib level, CPU cores, block size, and when to keep blocks uncompressed.
 - The Repair page scans an image and draws a block map (zlib, raw, risky); click a cell for its
   offset, stored size, and largest back-reference distance.
-- The AMPR Packs page runs every `ampr` subcommand and shows only the fields the chosen action needs. Its
-  default action, Build playable game, runs `ampr game` with a library folder and an optional exFAT image.
-  Its optional trace folder takes the rules from console traces.
-  Building and packing need the game's TOML profile or a trace folder; the page asks for one until it is set.
+- The AMPR Packs page runs every `ampr` subcommand. Its default action, Build playable game, runs
+  `ampr game` with the game's TOML profile or a trace folder.
 
 ## Differences from Python MkPFS
 
