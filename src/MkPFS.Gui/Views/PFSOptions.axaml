@@ -6,7 +6,7 @@
              x:DataType="vm:PFSOptionsViewModel">
   <StackPanel Spacing="8">
     <Grid ColumnDefinitions="*,12,*">
-      <StackPanel Grid.Column="0" Spacing="3">
+      <StackPanel Grid.Column="0" Spacing="3" ToolTip.Tip="{l:Tr tip_adv_version}">
         <TextBlock Text="{l:Tr adv_version}" Classes="fieldlabel" />
         <ComboBox Name="VersionPicker" ItemsSource="{Binding Versions}" SelectedItem="{Binding Version}" HorizontalAlignment="Stretch">
           <ComboBox.ItemTemplate>
@@ -14,7 +14,7 @@
           </ComboBox.ItemTemplate>
         </ComboBox>
       </StackPanel>
-      <StackPanel Grid.Column="2" Spacing="3" IsVisible="{Binding OfferInodeBits}" IsEnabled="{Binding InodeBitsEnabled}">
+      <StackPanel Grid.Column="2" Spacing="3" ToolTip.Tip="{l:Tr tip_adv_inode}" ToolTip.ShowOnDisabled="True" IsVisible="{Binding OfferInodeBits}" IsEnabled="{Binding InodeBitsEnabled}">
         <TextBlock Text="{l:Tr adv_inode}" Classes="fieldlabel" />
         <ComboBox Name="InodePicker" ItemsSource="{Binding InodeWidths}" SelectedItem="{Binding InodeBits}" HorizontalAlignment="Stretch">
           <ComboBox.ItemTemplate>
@@ -24,13 +24,13 @@
       </StackPanel>
     </Grid>
     <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto">
-      <CheckBox Grid.Row="0" Grid.Column="0" Content="{l:Tr adv_case}" IsChecked="{Binding CaseSensitive}" />
-      <CheckBox Grid.Row="0" Grid.Column="1" Content="{l:Tr adv_verbose}" IsChecked="{Binding Verbose}" />
-      <CheckBox Grid.Row="1" Grid.Column="0" Content="{l:Tr adv_encrypted}" IsChecked="{Binding Encrypted}" />
-      <CheckBox Grid.Row="1" Grid.Column="1" Content="{l:Tr adv_new_crypt}" IsChecked="{Binding NewCrypt}"
+      <CheckBox Grid.Row="0" Grid.Column="0" Content="{l:Tr adv_case}" ToolTip.Tip="{l:Tr tip_adv_case}" IsChecked="{Binding CaseSensitive}" />
+      <CheckBox Grid.Row="0" Grid.Column="1" Content="{l:Tr adv_verbose}" ToolTip.Tip="{l:Tr tip_adv_verbose}" IsChecked="{Binding Verbose}" />
+      <CheckBox Grid.Row="1" Grid.Column="0" Content="{l:Tr adv_encrypted}" ToolTip.Tip="{l:Tr tip_adv_encrypted}" IsChecked="{Binding Encrypted}" />
+      <CheckBox Grid.Row="1" Grid.Column="1" Content="{l:Tr adv_new_crypt}" ToolTip.Tip="{l:Tr tip_adv_new_crypt}" ToolTip.ShowOnDisabled="True" IsChecked="{Binding NewCrypt}"
                 IsVisible="{Binding OfferNewCrypt}" IsEnabled="{Binding Encrypted}" />
     </Grid>
-    <StackPanel Spacing="3" IsEnabled="{Binding Encrypted}">
+    <StackPanel Spacing="3" ToolTip.Tip="{l:Tr tip_adv_ekpfs}" ToolTip.ShowOnDisabled="True" IsEnabled="{Binding Encrypted}">
       <TextBlock Text="{l:Tr adv_ekpfs}" Classes="fieldlabel" />
       <TextBox Text="{Binding EkpfsKey}" PlaceholderText="{l:Tr adv_ekpfs_ph}" />
     </StackPanel>

@@ -63,7 +63,7 @@ public sealed class BuildPanelTests
         file.Signed = file.DryRun = file.UseSpool = file.KeepInnerName = true;
         file.PFS.InodeBits = file.PFS.InodeWidths[1];
         Assert.Equal(
-            ["pack", "file", "D:/a.exfat", "D:/a.ffpfsc", "--signed", "--dry-run", "--use-spool", "--no-rename-inner-image", "--inode-bits", "64"],
+            ["pack", "file", "D:/a.exfat", "D:/a.ffpfsc", "--signed", "--dry-run", "--use-spool", "--no-rename-inner-image", "--inode-bits", "64", .. CompressionSettingsTests.AutoCpu],
             Build(file, out _));
     }
 

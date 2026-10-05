@@ -31,7 +31,7 @@
     <Rectangle Classes="separator" />
     <Expander Name="AdvancedExpander" Header="{l:Tr adv_title}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
       <StackPanel Spacing="8">
-        <StackPanel Spacing="3">
+        <StackPanel Spacing="3" ToolTip.Tip="{l:Tr tip_adv_image_format}">
           <TextBlock Text="{l:Tr adv_image_format}" Classes="fieldlabel" />
           <ComboBox Name="FormatPicker" ItemsSource="{Binding ImageFormats}" SelectedItem="{Binding ImageFormat}" HorizontalAlignment="Stretch">
             <ComboBox.ItemTemplate>

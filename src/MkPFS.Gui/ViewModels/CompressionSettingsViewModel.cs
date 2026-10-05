@@ -1,6 +1,5 @@
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
-using MkPFS.Core.PFSC;
 using MkPFS.Gui.Localization;
 
 namespace MkPFS.Gui.ViewModels;
@@ -66,10 +65,18 @@ public sealed partial class CompressionSettingsViewModel : ObservableObject
         }
 
         BlockSizes = sizes;
+        CpuChoices = [AutoCpuChoice(), .. Enumerable.Range(1, MaxCpu).Select(n => new Choice(n.ToString(CultureInfo.InvariantCulture), null, n.ToString(CultureInfo.InvariantCulture)))];
         Preset = Presets[1];
         BlockSize = BlockSizes[0];
-        Localizer.Instance.PropertyChanged += (_, _) => OnPropertyChanged(nameof(CpuLabel));
+        Localizer.Instance.PropertyChanged += (_, _) =>
+        {
+            // The Auto label carries the core count, so it is rebuilt for the new language.
+            CpuChoices[0] = AutoCpuChoice();
+            OnPropertyChanged(nameof(CpuChoice));
+        };
     }
+
+    private Choice AutoCpuChoice() => new("0", null, Localizer.Instance.Format("ct_cpu_auto", MaxCpu));
 
     /// <summary>Presets in picker order.</summary>
     public IReadOnlyList<Choice> Presets { get; }
@@ -80,11 +87,24 @@ public sealed partial class CompressionSettingsViewModel : ObservableObject
     /// <summary>Show the executables option.</summary>
     public bool OfferSkipExecutables { get; }
 
-    /// <summary>Most CPU cores the picker allows.</summary>
-    public decimal MaxCpu { get; } = Environment.ProcessorCount;
+    /// <summary>CPU cores of this machine: what Auto uses, and the most the picker offers.</summary>
+    public int MaxCpu { get; } = Environment.ProcessorCount;
 
-    /// <summary>"CPU Cores (0 = auto: N)".</summary>
-    public string CpuLabel => Localizer.Instance.Format("ct_cpu", PFSCEncoder.ResolveWorkerCount(0));
+    /// <summary>The CPU core picker: Auto (every core of this machine), then 1 to <see cref="MaxCpu"/>.</summary>
+    public System.Collections.ObjectModel.ObservableCollection<Choice> CpuChoices { get; }
+
+    /// <summary>The selected entry of <see cref="CpuChoices"/>, kept in step with <see cref="CpuCount"/>.</summary>
+    public Choice CpuChoice
+    {
+        get => CpuChoices[Math.Clamp(Whole(CpuCount, 0), 0, MaxCpu)];
+        set
+        {
+            if (value is not null)
+            {
+                CpuCount = int.Parse(value.Value, CultureInfo.InvariantCulture);
+            }
+        }
+    }
 
     /// <summary>Selected preset; "custom" once a value no longer matches one.</summary>
     [ObservableProperty]
@@ -94,7 +114,7 @@ public sealed partial class CompressionSettingsViewModel : ObservableObject
     [ObservableProperty]
     public partial decimal? Level { get; set; } = DefaultLevel;
 
-    /// <summary><c>--cpu-count</c> (0 = auto).</summary>
+    /// <summary><c>--cpu-count</c>; 0 is Auto, which uses every core of this machine.</summary>
     [ObservableProperty]
     public partial decimal? CpuCount { get; set; } = 0;
 
@@ -136,7 +156,10 @@ public sealed partial class CompressionSettingsViewModel : ObservableObject
         if (compress)
         {
             Add(args, "--compression-level", Whole(Level, DefaultLevel), DefaultLevel);
-            Add(args, "--cpu-count", Whole(CpuCount, 0), 0);
+            // The CLI's own default leaves a core free and stops at 16; Auto here means every core.
+            int cpu = Whole(CpuCount, 0);
+            args.Add("--cpu-count");
+            args.Add((cpu > 0 ? cpu : MaxCpu).ToString(CultureInfo.InvariantCulture));
             Add(args, "--threshold-gain", Whole(ThresholdGain, 0), 0);
             Add(args, "--max-compressed-ratio", Whole(MaxRatio, 100), 100);
             if (MinCompressSize.Trim().Length > 0)
@@ -183,7 +206,11 @@ public sealed partial class CompressionSettingsViewModel : ObservableObject
 
     partial void OnLevelChanged(decimal? value) => MatchPreset();
 
-    partial void OnCpuCountChanged(decimal? value) => MatchPreset();
+    partial void OnCpuCountChanged(decimal? value)
+    {
+        OnPropertyChanged(nameof(CpuChoice));
+        MatchPreset();
+    }
 
     // A hand-edited level or core count selects the preset it equals, or Custom.
     private void MatchPreset()

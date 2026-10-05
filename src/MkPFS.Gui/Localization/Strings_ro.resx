@@ -98,7 +98,8 @@ Ieșirea scrisă parțial este ștearsă; o reparare pe loc își termină mai �
   <data name="ct_block" xml:space="preserve"><value>Dimensiune bloc (jocurile PS5 folosesc 64 KiB)</value></data>
   <data name="ct_block_auto" xml:space="preserve"><value>Auto (64 KiB)</value></data>
   <data name="ct_block_fit" xml:space="preserve"><value>Auto-potrivire (umplere minimă)</value></data>
-  <data name="ct_cpu" xml:space="preserve"><value>Nuclee CPU (0 = auto: {0})</value></data>
+  <data name="ct_cpu" xml:space="preserve"><value>Nuclee CPU</value></data>
+  <data name="ct_cpu_auto" xml:space="preserve"><value>Automat ({0} nuclee)</value></data>
   <data name="ct_err_min_size" xml:space="preserve"><value>✗ „Stochează fișierele mai mici de” trebuie să fie un număr întreg de octeți.</value></data>
   <data name="ct_level" xml:space="preserve"><value>Nivel de compresie (0–9)</value></data>
   <data name="ct_max_ratio" xml:space="preserve"><value>Dimensiune comprimată max. (% din original)</value></data>
@@ -253,4 +254,29 @@ Ieșirea scrisă parțial este ștearsă; o reparare pe loc își termină mai �
   <data name="v_subtitle" xml:space="preserve"><value>Validează structura imaginii, inode-urile și sumele de control</value></data>
   <data name="v_title" xml:space="preserve"><value>Verificare</value></data>
   <data name="version_footer" xml:space="preserve"><value>v{0}</value></data>
+  <data name="tip_ct_preset" xml:space="preserve"><value>Setări rapide pentru nivelul de compresie și nucleele CPU. Dacă schimbi oricare valoare, se alege presetarea potrivită sau Personalizat.</value></data>
+  <data name="tip_ct_level" xml:space="preserve"><value>Nivelul zlib pentru fiecare bloc: 1 este cel mai rapid, 9 dă cea mai mică imagine, 0 păstrează blocurile necomprimate. Implicit este 7.</value></data>
+  <data name="tip_ct_cpu" xml:space="preserve"><value>Câte nuclee CPU comprimă blocuri în același timp. Automat folosește toate nucleele acestui calculator; alege mai puține ca să rămână calculatorul responsiv sau să folosească mai puțină memorie.</value></data>
+  <data name="tip_ct_block" xml:space="preserve"><value>Dimensiunea blocurilor în care este împărțită imaginea și comprimată bloc cu bloc. Jocurile PS5 folosesc 64 KiB; schimb-o doar dacă știi că ținta are nevoie de altă dimensiune.</value></data>
+  <data name="tip_ct_threshold" xml:space="preserve"><value>Un bloc comprimat este păstrat doar dacă economisește cel puțin acest procent; altfel este stocat necomprimat. 0 păstrează orice bloc care devine mai mic.</value></data>
+  <data name="tip_ct_max_ratio" xml:space="preserve"><value>Un fișier rămâne necomprimat dacă dimensiunea comprimată ar depăși acest procent din original. 100 comprimă orice fișier care devine mai mic.</value></data>
+  <data name="tip_ct_min_size" xml:space="preserve"><value>Fișierele mai mici decât acest număr de octeți sunt stocate necomprimate, fără încercare. Gol înseamnă dimensiunea blocului.</value></data>
+  <data name="tip_ct_skip_exec" xml:space="preserve"><value>Stochează necomprimate executabilele și modulele (eboot.bin, .prx, .sprx).</value></data>
+  <data name="tip_adv_signed" xml:space="preserve"><value>Creează o imagine PFS semnată, cu cheie EKPFS și seed zero.</value></data>
+  <data name="tip_adv_dry" xml:space="preserve"><value>Verifică sursa și arată ce s-ar scrie, fără să scrie imaginea.</value></data>
+  <data name="tip_adv_verify" xml:space="preserve"><value>După împachetare, decodează toată imaginea și o compară cu sursa. Mai lent, dar dovedește că imaginea este corectă.</value></data>
+  <data name="tip_adv_skip_check" xml:space="preserve"><value>Sari peste verificarea rapidă a structurii de după împachetare.</value></data>
+  <data name="tip_adv_keep_ext" xml:space="preserve"><value>Folosește numele de ieșire exact cum a fost scris. Altfel, extensia este potrivită formatului (.ffpfsc sau .ffpfs).</value></data>
+  <data name="tip_adv_keep_inner" xml:space="preserve"><value>Păstrează în imagine numele fișierului sursă. Altfel, este redenumit cu un nume sigur, normalizat.</value></data>
+  <data name="tip_adv_spool" xml:space="preserve"><value>Construiește printr-un fișier temporar intermediar în loc să scrie direct în imagine. Mai lent; folosește-l doar dacă modul implicit eșuează.</value></data>
+  <data name="tip_adv_version" xml:space="preserve"><value>Profilul formatului PFS: PS5 pentru jocuri PS5, PS4 pentru imagini PS4.</value></data>
+  <data name="tip_adv_inode" xml:space="preserve"><value>Lățimea intrărilor inode: 32 de biți (implicit) sau 64 de biți.</value></data>
+  <data name="tip_adv_case" xml:space="preserve"><value>Numele fișierelor din imagine țin cont de majuscule. Implicit nu țin.</value></data>
+  <data name="tip_adv_verbose" xml:space="preserve"><value>Scrie mai multe detalii în jurnal.</value></data>
+  <data name="tip_adv_encrypted" xml:space="preserve"><value>Criptează blocurile imaginii cu AES-XTS.</value></data>
+  <data name="tip_adv_new_crypt" xml:space="preserve"><value>Derivă cheile de criptare cu metoda alternativă newCrypt.</value></data>
+  <data name="tip_adv_ekpfs" xml:space="preserve"><value>64 de caractere hexazecimale: cheia EKPFS pentru criptare sau semnare. Gol înseamnă doar zerouri.</value></data>
+  <data name="tip_adv_cluster" xml:space="preserve"><value>Dimensiunea clusterului exFAT. Automat (64 KiB) merge cel mai bine cu ShadowMountPlus; clusterele mai mici irosesc mai puțin spațiu la fișiere mici, dar citesc mai încet.</value></data>
+  <data name="tip_adv_image_format" xml:space="preserve"><value>Cum se citește imaginea: Automat detectează PFS sau exFAT; alege unul ca să-l forțezi.</value></data>
+  <data name="tip_v_require" xml:space="preserve"><value>Avertizează dacă jocului îi lipsește sce_sys/param.json, eboot.bin sau pfs-version.dat.</value></data>
 </root>

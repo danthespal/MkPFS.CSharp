@@ -101,6 +101,8 @@ public sealed partial class JobRunner : ObservableObject
     private string _label = string.Empty;
     private long _done;
     private long _total;
+    private IReadOnlyList<ProgressPhase>? _plan;
+    private double _overall;
 
     /// <summary>Create a runner that applies updates on the UI thread.</summary>
     public JobRunner()
@@ -122,7 +124,7 @@ public sealed partial class JobRunner : ObservableObject
     [ObservableProperty]
     public partial bool IsRunning { get; private set; }
 
-    /// <summary>Progress of the current phase, 0 to 1.</summary>
+    /// <summary>Progress of the whole run, 0 to 1 (of the current phase for a run with one phase).</summary>
     [ObservableProperty]
     public partial double Progress { get; private set; }
 
@@ -140,11 +142,13 @@ public sealed partial class JobRunner : ObservableObject
     /// <summary>Run <c>mkpfs</c> in-process with <paramref name="args"/>, echoing the command line first.</summary>
     /// <param name="args">CLI arguments.</param>
     /// <returns>Outcome.</returns>
-    public Task<JobOutcome> RunCliAsync(IReadOnlyList<string> args) => RunAsync(job =>
-    {
-        Echo(args);
-        return MkPFSCli.Run([.. args], job.CreateCliContext());
-    });
+    public Task<JobOutcome> RunCliAsync(IReadOnlyList<string> args) => RunAsync(
+        job =>
+        {
+            Echo(args);
+            return MkPFSCli.Run([.. args], job.CreateCliContext());
+        },
+        ProgressPlan.For(args));
 
     /// <summary>Log the equivalent <c>mkpfs</c> command line (callable from the job thread).</summary>
     /// <param name="args">CLI arguments.</param>
@@ -152,9 +156,11 @@ public sealed partial class JobRunner : ObservableObject
 
     /// <summary>Run <paramref name="work"/> on a background thread; its return value is the exit code.</summary>
     /// <param name="work">Job body.</param>
+    /// <param name="plan">The phases the job reports, so the bar covers the whole run (<see cref="ProgressPlan.For"/>);
+    /// <see langword="null"/> shows the current phase.</param>
     /// <returns>Outcome, once the final lines are in <see cref="Lines"/>.</returns>
     /// <exception cref="InvalidOperationException">A job is already running.</exception>
-    public async Task<JobOutcome> RunAsync(Func<JobContext, int> work)
+    public async Task<JobOutcome> RunAsync(Func<JobContext, int> work, IReadOnlyList<ProgressPhase>? plan = null)
     {
         if (IsRunning)
         {
@@ -165,8 +171,14 @@ public sealed partial class JobRunner : ObservableObject
         _cancel = cancel;
         TaskCompletionSource idle = new(TaskCreationOptions.RunContinuationsAsynchronously);
         _idle = idle;
-        _phase = string.Empty;
-        _label = string.Empty;
+        lock (_gate)
+        {
+            _phase = string.Empty;
+            _label = string.Empty;
+            _plan = plan;
+            _overall = 0;
+        }
+
         IsRunning = true;
         IsIndeterminate = true;
         Progress = 0;
@@ -307,7 +319,7 @@ public sealed partial class JobRunner : ObservableObject
             progressDirty = _progressDirty;
             _progressDirty = false;
             _flushQueued = false;
-            ratio = _total > 0 ? Math.Clamp((double)_done / _total, 0, 1) : 0;
+            ratio = _plan is null ? (_total > 0 ? Math.Clamp((double)_done / _total, 0, 1) : 0) : _overall;
             label = _label;
         }
 
@@ -342,6 +354,13 @@ public sealed partial class JobRunner : ObservableObject
             _label = phase;
             _done = done;
             _total = total;
+            if (_plan is { } plan && ProgressPlan.Index(plan, phase) is int index and >= 0)
+            {
+                // One bar for the whole run: it never moves back when the next phase starts at 0%.
+                _overall = Math.Max(_overall, ProgressPlan.Overall(plan, phase, total > 0 ? (double)done / total : 0) ?? _overall);
+                _label = $"{phase} ({index + 1}/{plan.Count})";
+            }
+
             _progressDirty = true;
             QueueFlush();
         }

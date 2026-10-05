@@ -7,6 +7,9 @@ namespace MkPFS.Gui.Tests;
 [Collection(GuiCollection.Name)]
 public sealed class CompressionSettingsTests
 {
+    // Auto passes every core of this machine (the CLI's own default leaves one free and stops at 16).
+    internal static readonly string[] AutoCpu = ["--cpu-count", Environment.ProcessorCount.ToString(System.Globalization.CultureInfo.InvariantCulture)];
+
     private static List<string> Args(CompressionSettingsViewModel settings, bool compress = true)
     {
         List<string> args = [];
@@ -15,26 +18,43 @@ public sealed class CompressionSettingsTests
     }
 
     [Fact]
-    public void Defaults_add_no_arguments()
+    public void Defaults_add_only_the_core_count()
     {
         CompressionSettingsViewModel settings = new(allowAutoFit: true, offerSkipExecutables: true);
 
         Assert.Equal("balanced", settings.Preset.Value);
-        Assert.Empty(Args(settings));
+        Assert.Equal(AutoCpu, Args(settings));
+    }
+
+    [Fact]
+    public void Cpu_picker_offers_auto_then_every_core()
+    {
+        CompressionSettingsViewModel settings = new(allowAutoFit: true, offerSkipExecutables: true);
+
+        Assert.Equal(Environment.ProcessorCount + 1, settings.CpuChoices.Count);
+        Assert.Equal($"Auto ({Environment.ProcessorCount} cores)", settings.CpuChoices[0].Label);
+        Assert.Equal("1", settings.CpuChoices[1].Label);
+        Assert.Same(settings.CpuChoices[0], settings.CpuChoice);
+
+        settings.CpuChoice = settings.CpuChoices[1];
+        Assert.Equal(1, settings.CpuCount);
+        Assert.Equal("low_ram", settings.Preset.Value);
+        settings.Preset = settings.Presets.Single(p => p.Value == "balanced");
+        Assert.Same(settings.CpuChoices[0], settings.CpuChoice);
     }
 
     [Theory]
-    [InlineData("fast", new[] { "--compression-level", "1" })]
-    [InlineData("balanced", new string[0])]
-    [InlineData("max", new[] { "--compression-level", "9" })]
-    [InlineData("low_ram", new[] { "--cpu-count", "1" })]
-    public void Presets_set_level_and_cores(string preset, string[] expected)
+    [InlineData("fast", new[] { "--compression-level", "1" }, true)]
+    [InlineData("balanced", new string[0], true)]
+    [InlineData("max", new[] { "--compression-level", "9" }, true)]
+    [InlineData("low_ram", new[] { "--cpu-count", "1" }, false)]
+    public void Presets_set_level_and_cores(string preset, string[] expected, bool autoCpu)
     {
         CompressionSettingsViewModel settings = new(allowAutoFit: true, offerSkipExecutables: true);
 
         settings.Preset = settings.Presets.Single(p => p.Value == preset);
 
-        Assert.Equal(expected, Args(settings));
+        Assert.Equal(autoCpu ? [.. expected, .. AutoCpu] : expected, Args(settings));
     }
 
     [Fact]
@@ -65,7 +85,7 @@ public sealed class CompressionSettingsTests
         settings.BlockSize = settings.BlockSizes.Single(b => b.Value == "auto-fit");
 
         Assert.Equal(
-            ["--threshold-gain", "5", "--max-compressed-ratio", "90", "--min-compress-size", "32768", "--skip-executable-compression", "--block-size", "auto-fit"],
+            [.. AutoCpu, "--threshold-gain", "5", "--max-compressed-ratio", "90", "--min-compress-size", "32768", "--skip-executable-compression", "--block-size", "auto-fit"],
             Args(settings));
 
         // Without compression only the block size still applies.
@@ -81,7 +101,7 @@ public sealed class CompressionSettingsTests
         Assert.DoesNotContain(batch.BlockSizes, b => b.Value == "auto-fit");
         Assert.Equal(["auto", "4096", "8192", "16384", "32768", "65536", "131072", "262144", "524288", "1048576", "2097152"], batch.BlockSizes.Select(b => b.Value));
         Assert.Equal("64 KiB", batch.BlockSizes.Single(b => b.Value == "65536").Label);
-        Assert.Empty(Args(file));
+        Assert.Equal(AutoCpu, Args(file));
     }
 
     [Fact]
@@ -99,7 +119,7 @@ public sealed class CompressionSettingsTests
         JobRunner sync = new(action => action());
         PackFilePanelViewModel file = new(Colors.Cyan, sync) { Source = "D:/a.exfat", Output = "D:/a.ffpfsc" };
         file.Compression.Preset = file.Compression.Presets.Single(p => p.Value == "fast");
-        Assert.Equal(["pack", "file", "D:/a.exfat", "D:/a.ffpfsc", "--compression-level", "1"], file.BuildArguments(out _));
+        Assert.Equal(["pack", "file", "D:/a.exfat", "D:/a.ffpfsc", "--compression-level", "1", .. AutoCpu], file.BuildArguments(out _));
 
         file.Compression.CpuCount = 2;
         Assert.Equal(["pack", "file", "D:/a.exfat", "D:/a.ffpfsc", "--compression-level", "1", "--cpu-count", "2"], file.BuildArguments(out _));

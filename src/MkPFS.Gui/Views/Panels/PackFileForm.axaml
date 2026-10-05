@@ -24,13 +24,13 @@
     <Expander Name="AdvancedExpander" Header="{l:Tr adv_title}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
       <StackPanel Spacing="8">
         <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto">
-          <CheckBox Grid.Row="0" Grid.Column="0" Content="{l:Tr pf_signed}" IsChecked="{Binding Signed}" />
-          <CheckBox Grid.Row="0" Grid.Column="1" Content="{l:Tr pf_dry}" IsChecked="{Binding DryRun}" />
-          <CheckBox Grid.Row="1" Grid.Column="0" Content="{l:Tr pf_verify}" IsChecked="{Binding VerifyAfter}" />
-          <CheckBox Grid.Row="1" Grid.Column="1" Content="{l:Tr adv_skip_check}" IsChecked="{Binding SkipVerification}" IsEnabled="{Binding !VerifyAfter}" />
-          <CheckBox Grid.Row="2" Grid.Column="0" Content="{l:Tr adv_keep_ext}" IsChecked="{Binding KeepExtension}" />
-          <CheckBox Grid.Row="2" Grid.Column="1" Content="{l:Tr adv_keep_inner}" IsChecked="{Binding KeepInnerName}" />
-          <CheckBox Grid.Row="3" Grid.Column="0" Content="{l:Tr adv_spool}" IsChecked="{Binding UseSpool}" />
+          <CheckBox Grid.Row="0" Grid.Column="0" Content="{l:Tr pf_signed}" ToolTip.Tip="{l:Tr tip_adv_signed}" IsChecked="{Binding Signed}" />
+          <CheckBox Grid.Row="0" Grid.Column="1" Content="{l:Tr pf_dry}" ToolTip.Tip="{l:Tr tip_adv_dry}" IsChecked="{Binding DryRun}" />
+          <CheckBox Grid.Row="1" Grid.Column="0" Content="{l:Tr pf_verify}" ToolTip.Tip="{l:Tr tip_adv_verify}" IsChecked="{Binding VerifyAfter}" />
+          <CheckBox Grid.Row="1" Grid.Column="1" Content="{l:Tr adv_skip_check}" ToolTip.Tip="{l:Tr tip_adv_skip_check}" ToolTip.ShowOnDisabled="True" IsChecked="{Binding SkipVerification}" IsEnabled="{Binding !VerifyAfter}" />
+          <CheckBox Grid.Row="2" Grid.Column="0" Content="{l:Tr adv_keep_ext}" ToolTip.Tip="{l:Tr tip_adv_keep_ext}" IsChecked="{Binding KeepExtension}" />
+          <CheckBox Grid.Row="2" Grid.Column="1" Content="{l:Tr adv_keep_inner}" ToolTip.Tip="{l:Tr tip_adv_keep_inner}" IsChecked="{Binding KeepInnerName}" />
+          <CheckBox Grid.Row="3" Grid.Column="0" Content="{l:Tr adv_spool}" ToolTip.Tip="{l:Tr tip_adv_spool}" IsChecked="{Binding UseSpool}" />
         </Grid>
         <v:PFSOptions DataContext="{Binding PFS}" />
       </StackPanel>

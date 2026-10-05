@@ -23,7 +23,7 @@
     <Expander Name="AdvancedExpander" Header="{l:Tr adv_title}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
       <StackPanel Spacing="8">
         <Grid ColumnDefinitions="*,12,*">
-          <StackPanel Grid.Column="0" Spacing="3">
+          <StackPanel Grid.Column="0" Spacing="3" ToolTip.Tip="{l:Tr tip_adv_cluster}">
             <TextBlock Text="{l:Tr adv_cluster}" Classes="fieldlabel" />
             <ComboBox Name="ClusterPicker" ItemsSource="{Binding ClusterSizes}" SelectedItem="{Binding ClusterSize}" HorizontalAlignment="Stretch">
               <ComboBox.ItemTemplate>
@@ -31,7 +31,7 @@
               </ComboBox.ItemTemplate>
             </ComboBox>
           </StackPanel>
-          <CheckBox Grid.Column="2" Content="{l:Tr adv_verbose}" IsChecked="{Binding Verbose}" VerticalAlignment="Bottom" />
+          <CheckBox Grid.Column="2" Content="{l:Tr adv_verbose}" ToolTip.Tip="{l:Tr tip_adv_verbose}" IsChecked="{Binding Verbose}" VerticalAlignment="Bottom" />
         </Grid>
       </StackPanel>
     </Expander>

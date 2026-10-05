@@ -154,6 +154,24 @@ public sealed class MainWindowTests
     }
 
     [AvaloniaFact]
+    public void Tuning_and_advanced_options_explain_themselves_on_hover()
+    {
+        (MainWindow window, _) = Open();
+        Nav(window, "pack_file").IsChecked = true;
+        Dispatcher.UIThread.RunJobs();
+        window.GetVisualDescendants().OfType<Expander>().Single(e => e.Name == "AdvancedExpander").IsExpanded = true;
+        Dispatcher.UIThread.RunJobs();
+
+        string[] tips = [.. window.GetVisualDescendants().OfType<Control>().Select(ToolTip.GetTip).OfType<string>()];
+
+        // 8 compression tuning fields, 7 packing options and 7 PFS options.
+        Assert.Equal(22, tips.Length);
+        Assert.All(tips, t => Assert.DoesNotContain("tip_", t, StringComparison.Ordinal));
+        Assert.Contains(tips, t => t.StartsWith("How many CPU cores compress blocks", StringComparison.Ordinal));
+        window.Close();
+    }
+
+    [AvaloniaFact]
     public void Clicking_an_entry_shows_its_page()
     {
         (MainWindow window, MainWindowViewModel model) = Open();

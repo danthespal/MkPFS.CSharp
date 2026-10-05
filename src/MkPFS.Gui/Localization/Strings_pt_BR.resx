@@ -98,7 +98,8 @@ A saída escrita pela metade é removida; um reparo no local termina sua regrava
   <data name="ct_block" xml:space="preserve"><value>Tamanho do Bloco (jogos de PS5 usam 64 KiB)</value></data>
   <data name="ct_block_auto" xml:space="preserve"><value>Automático (64 KiB)</value></data>
   <data name="ct_block_fit" xml:space="preserve"><value>Ajuste automático (menos preenchimento)</value></data>
-  <data name="ct_cpu" xml:space="preserve"><value>Núcleos de CPU (0 = auto: {0})</value></data>
+  <data name="ct_cpu" xml:space="preserve"><value>Núcleos de CPU</value></data>
+  <data name="ct_cpu_auto" xml:space="preserve"><value>Automático ({0} núcleos)</value></data>
   <data name="ct_err_min_size" xml:space="preserve"><value>✗ Armazenar Arquivos Menores Que deve ser um número inteiro de bytes.</value></data>
   <data name="ct_level" xml:space="preserve"><value>Nível de Compressão (0–9)</value></data>
   <data name="ct_max_ratio" xml:space="preserve"><value>Tamanho Comprimido Máx. (% do original)</value></data>
@@ -253,4 +254,29 @@ A saída escrita pela metade é removida; um reparo no local termina sua regrava
   <data name="v_subtitle" xml:space="preserve"><value>Validar estrutura da imagem, inodes e checksums</value></data>
   <data name="v_title" xml:space="preserve"><value>Verificar</value></data>
   <data name="version_footer" xml:space="preserve"><value>v{0}</value></data>
+  <data name="tip_ct_preset" xml:space="preserve"><value>Ajustes rápidos do nível de compressão e dos núcleos de CPU. Alterar qualquer um dos valores seleciona a predefinição correspondente, ou Personalizado.</value></data>
+  <data name="tip_ct_level" xml:space="preserve"><value>Nível zlib de cada bloco: 1 é o mais rápido, 9 gera a menor imagem e 0 guarda os blocos sem compressão. O padrão é 7.</value></data>
+  <data name="tip_ct_cpu" xml:space="preserve"><value>Quantos núcleos de CPU comprimem blocos ao mesmo tempo. Automático usa todos os núcleos deste computador; escolha menos para manter o computador responsivo ou usar menos memória.</value></data>
+  <data name="tip_ct_block" xml:space="preserve"><value>Tamanho dos blocos em que a imagem é dividida e comprimida um a um. Jogos de PS5 usam 64 KiB; altere apenas se souber que o destino precisa de outro tamanho.</value></data>
+  <data name="tip_ct_threshold" xml:space="preserve"><value>Um bloco comprimido só é mantido se economizar pelo menos esta porcentagem; caso contrário, é guardado sem compressão. 0 mantém todo bloco que ficar menor.</value></data>
+  <data name="tip_ct_max_ratio" xml:space="preserve"><value>Um arquivo fica sem compressão quando o tamanho comprimido ultrapassaria esta porcentagem do original. 100 comprime todo arquivo que ficar menor.</value></data>
+  <data name="tip_ct_min_size" xml:space="preserve"><value>Arquivos menores que este número de bytes são guardados sem compressão, sem tentar. Vazio usa o tamanho do bloco.</value></data>
+  <data name="tip_ct_skip_exec" xml:space="preserve"><value>Guardar sem compressão os executáveis e módulos (eboot.bin, .prx, .sprx).</value></data>
+  <data name="tip_adv_signed" xml:space="preserve"><value>Criar uma imagem PFS assinada, com chave EKPFS e semente zeradas.</value></data>
+  <data name="tip_adv_dry" xml:space="preserve"><value>Verificar a origem e mostrar o que seria gravado, sem gravar a imagem.</value></data>
+  <data name="tip_adv_verify" xml:space="preserve"><value>Depois de empacotar, decodificar a imagem inteira e compará-la com a origem. Mais lento, mas comprova que a imagem está correta.</value></data>
+  <data name="tip_adv_skip_check" xml:space="preserve"><value>Pular a verificação rápida de estrutura feita após empacotar.</value></data>
+  <data name="tip_adv_keep_ext" xml:space="preserve"><value>Usar o nome de saída exatamente como digitado. Caso contrário, a extensão é ajustada ao formato (.ffpfsc ou .ffpfs).</value></data>
+  <data name="tip_adv_keep_inner" xml:space="preserve"><value>Manter dentro da imagem o nome do arquivo de origem. Caso contrário, ele é renomeado para um nome seguro e normalizado.</value></data>
+  <data name="tip_adv_spool" xml:space="preserve"><value>Criar por meio de um arquivo temporário intermediário em vez de gravar direto na imagem. Mais lento; use apenas se o modo padrão falhar.</value></data>
+  <data name="tip_adv_version" xml:space="preserve"><value>Perfil do formato PFS: PS5 para jogos de PS5, PS4 para imagens de PS4.</value></data>
+  <data name="tip_adv_inode" xml:space="preserve"><value>Largura das entradas de inode: 32 bits (padrão) ou 64 bits.</value></data>
+  <data name="tip_adv_case" xml:space="preserve"><value>Fazer os nomes de arquivo da imagem diferenciarem maiúsculas e minúsculas. Por padrão, não diferenciam.</value></data>
+  <data name="tip_adv_verbose" xml:space="preserve"><value>Gravar mais detalhes no registro.</value></data>
+  <data name="tip_adv_encrypted" xml:space="preserve"><value>Criptografar os blocos da imagem com AES-XTS.</value></data>
+  <data name="tip_adv_new_crypt" xml:space="preserve"><value>Derivar as chaves de criptografia com o método alternativo newCrypt.</value></data>
+  <data name="tip_adv_ekpfs" xml:space="preserve"><value>64 caracteres hexadecimais: a chave EKPFS para criptografar ou assinar. Vazio usa somente zeros.</value></data>
+  <data name="tip_adv_cluster" xml:space="preserve"><value>Tamanho do cluster exFAT. Automático (64 KiB) funciona melhor com o ShadowMountPlus; clusters menores desperdiçam menos espaço em arquivos pequenos, mas leem mais devagar.</value></data>
+  <data name="tip_adv_image_format" xml:space="preserve"><value>Como ler a imagem: Automático detecta PFS ou exFAT; escolha um para forçá-lo.</value></data>
+  <data name="tip_v_require" xml:space="preserve"><value>Avisar quando faltar sce_sys/param.json, eboot.bin ou pfs-version.dat no jogo.</value></data>
 </root>
