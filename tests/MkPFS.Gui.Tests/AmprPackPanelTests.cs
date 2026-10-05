@@ -184,8 +184,14 @@ public sealed class AmprPackPanelTests
         Assert.True(panel.ShowNoTraces);
         Assert.False(panel.ShowRulesTraces || panel.ShowRulesNone || panel.ShowRulesFound);
 
+        // Runs copied in after the folder was picked are found when the page runs; hidden files count.
         dir.File("traces/startup/ampr_commands.bin");
-        dir.File("traces/startup/ampr_emu.index");
+        string index = dir.File("traces/startup/ampr_emu.index");
+        File.SetAttributes(index, FileAttributes.Hidden);
+        Assert.NotNull(panel.BuildArguments(out _));
+        Assert.True(panel.ShowRulesTraces);
+        Assert.StartsWith("✓ Rules from traces: 1 recorded run(s) found.", panel.RulesTracesText, StringComparison.Ordinal);
+
         dir.File("traces/level1/ampr_commands.bin");
         dir.File("traces/level1/ampr_emu.index");
         panel.Traces = traces + Path.DirectorySeparatorChar;

@@ -196,6 +196,8 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
     /// <inheritdoc />
     protected internal override IReadOnlyList<string>? BuildArguments(out string? error)
     {
+        // Files may have been copied into the folders since they were picked.
+        RefreshDetection();
         string root = Root.Trim();
         string manifest = Manifest.Trim();
         string output = Output.Trim();
@@ -274,14 +276,32 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
     }
 
     /// <summary>Detect the rules for the chosen game folder (a few folder levels, so it stays quick).</summary>
-    partial void OnRootChanged(string value)
+    partial void OnRootChanged(string value) => DetectRules(value);
+
+    /// <summary>Count the trace runs in the chosen folder (each needs ampr_commands.bin and ampr_emu.index).</summary>
+    partial void OnTracesChanged(string value) => CountTraceRuns(value);
+
+    /// <summary>Look at the game and trace folders again and update the rules lines.</summary>
+    public void RefreshDetection()
+    {
+        DetectRules(Root);
+        CountTraceRuns(Traces);
+        OnPropertyChanged(nameof(ShowRulesFound));
+        OnPropertyChanged(nameof(ShowRulesNone));
+        OnPropertyChanged(nameof(RulesFoundText));
+        OnPropertyChanged(nameof(ShowRulesTraces));
+        OnPropertyChanged(nameof(ShowNoTraces));
+        OnPropertyChanged(nameof(RulesTracesText));
+    }
+
+    // The built-in rules for the game folder (a few folder levels, so it stays quick).
+    private void DetectRules(string value)
     {
         string root = value.Trim();
         _detected = root.Length > 0 && Directory.Exists(root) ? Build.AMPRPack.AMPRPackConfig.DetectPreset(root) : null;
     }
 
-    /// <summary>Count the trace runs in the chosen folder (each needs ampr_commands.bin and ampr_emu.index).</summary>
-    partial void OnTracesChanged(string value)
+    private void CountTraceRuns(string value)
     {
         string folder = value.Trim();
         if (folder.Length == 0)

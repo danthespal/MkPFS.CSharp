@@ -365,7 +365,9 @@ public static class AMPRProfiler
         }
 
         List<AMPRTraceSpec> pairs = [];
-        EnumerationOptions options = new() { RecurseSubdirectories = true, IgnoreInaccessible = true, MatchCasing = MatchCasing.CaseSensitive };
+        // Like Path.rglob: hidden and system files count too (copies off the console can carry those attributes),
+        // and names match with the platform's case rules.
+        EnumerationOptions options = new() { RecurseSubdirectories = true, IgnoreInaccessible = true, AttributesToSkip = 0, MatchCasing = MatchCasing.PlatformDefault };
         List<string[]> found = [.. Directory.EnumerateFiles(root, "ampr_commands.bin", options)
             .Select(f => Path.GetRelativePath(root, f).Split(Path.DirectorySeparatorChar))];
         found.Sort(ComparePathParts);
