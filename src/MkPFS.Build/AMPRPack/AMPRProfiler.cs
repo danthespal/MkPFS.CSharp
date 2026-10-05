@@ -1043,7 +1043,13 @@ public static class AMPRProfiler
                     continue;
                 }
 
-                string target = Path.Combine([destination, .. parts]);
+                // On Windows a part can still hold "..\" or a drive ("C:"); the target must stay inside the folder.
+                string target = Path.GetFullPath(Path.Combine([destination, .. parts]));
+                if (!target.StartsWith(Path.GetFullPath(destination) + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+                {
+                    throw new AMPRPackException($"unsafe archive member: {PythonText.Repr(name)}");
+                }
+
                 Directory.CreateDirectory(Path.GetDirectoryName(target)!);
                 member.ExtractToFile(target, overwrite: true);
                 extracted++;

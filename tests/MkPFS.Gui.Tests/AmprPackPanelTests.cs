@@ -168,15 +168,18 @@ public sealed class AmprPackPanelTests
     }
 
     [Fact]
-    public void Page_takes_rules_from_a_trace_folder()
+    public async Task Page_takes_rules_from_a_trace_folder()
     {
         using TempDir dir = new();
         AmprPackPanelViewModel panel = Panel("game");
+        panel.TraceCountDebounce = TimeSpan.Zero;
         panel.Root = Directory.CreateDirectory(Path.Combine(dir.Path, "game")).FullName;
         panel.Output = Path.Combine(dir.Path, "out");
         string traces = Directory.CreateDirectory(Path.Combine(dir.Path, "traces")).FullName;
 
         panel.Traces = traces;
+        Assert.False(panel.ShowNoTraces || panel.ShowRulesTraces); // counted in the background
+        await panel.TraceCount;
         Assert.True(panel.ShowNoTraces);
         Assert.False(panel.ShowRulesTraces || panel.ShowRulesMissing);
 
@@ -191,6 +194,7 @@ public sealed class AmprPackPanelTests
         dir.File("traces/level1/ampr_commands.bin");
         dir.File("traces/level1/ampr_emu.index");
         panel.Traces = traces + Path.DirectorySeparatorChar;
+        await panel.TraceCount;
         Assert.True(panel.ShowRulesTraces);
         Assert.False(panel.ShowNoTraces);
         Assert.StartsWith("✓ Rules from traces: 2 recorded run(s) found.", panel.RulesTracesText, StringComparison.Ordinal);

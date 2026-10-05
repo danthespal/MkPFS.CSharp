@@ -259,33 +259,87 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
     }
 
     /// <summary>Count the trace runs in the chosen folder (each needs ampr_commands.bin and ampr_emu.index).</summary>
-    partial void OnTracesChanged(string value) => CountTraceRuns(value);
+    /// <remarks>
+    /// The folder is searched recursively, so the count runs off the UI thread after typing pauses: a
+    /// half-typed path such as a drive root would otherwise freeze the window.
+    /// </remarks>
+    partial void OnTracesChanged(string value)
+    {
+        _traceCount?.Cancel();
+        _traceRuns = null;
+        TraceCount = CountTraceRunsLaterAsync(value);
+    }
+
+    /// <summary>Wait after the last trace folder change before counting its runs.</summary>
+    public TimeSpan TraceCountDebounce { get; set; } = TimeSpan.FromMilliseconds(250);
+
+    /// <summary>The pending background count of the trace folder (tests await it).</summary>
+    internal Task TraceCount { get; private set; } = Task.CompletedTask;
+
+    private CancellationTokenSource? _traceCount;
+
+    private async Task CountTraceRunsLaterAsync(string value)
+    {
+        using CancellationTokenSource pending = new();
+        _traceCount = pending;
+        try
+        {
+            if (TraceCountDebounce > TimeSpan.Zero)
+            {
+                await Task.Delay(TraceCountDebounce, pending.Token).ConfigureAwait(true);
+            }
+
+            int? runs = await Task.Run(() => TraceRuns(value), pending.Token).ConfigureAwait(true);
+            if (!pending.IsCancellationRequested)
+            {
+                _traceRuns = runs;
+                NotifyTraceLines();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Superseded by a newer folder or by RefreshDetection.
+        }
+        finally
+        {
+            if (ReferenceEquals(_traceCount, pending))
+            {
+                _traceCount = null;
+            }
+        }
+    }
 
     /// <summary>Look at the trace folder again and update the rules lines.</summary>
     public void RefreshDetection()
     {
-        CountTraceRuns(Traces);
+        _traceCount?.Cancel();
+        _traceRuns = TraceRuns(Traces);
+        NotifyTraceLines();
+    }
+
+    private void NotifyTraceLines()
+    {
         OnPropertyChanged(nameof(ShowRulesTraces));
         OnPropertyChanged(nameof(ShowNoTraces));
         OnPropertyChanged(nameof(RulesTracesText));
     }
 
-    private void CountTraceRuns(string value)
+    // Trace runs in the folder, or null when the field is empty.
+    private static int? TraceRuns(string value)
     {
         string folder = value.Trim();
         if (folder.Length == 0)
         {
-            _traceRuns = null;
-            return;
+            return null;
         }
 
         try
         {
-            _traceRuns = Directory.Exists(folder) ? Build.AMPRPack.AMPRProfiler.DiscoverTracePairs(Path.GetFullPath(folder)).Count : 0;
+            return Directory.Exists(folder) ? Build.AMPRPack.AMPRProfiler.DiscoverTracePairs(Path.GetFullPath(folder)).Count : 0;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or Core.AMPR.AMPRPackException)
         {
-            _traceRuns = 0;
+            return 0;
         }
     }
 
