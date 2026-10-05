@@ -494,12 +494,18 @@ internal static class PackCommands
             Description = "exFAT cluster size in bytes or 'auto' (default: 65536 - SMP/LVD-optimal 64 KiB)",
             DefaultValueFactory = _ => "auto",
         };
+        Option<string> freeSpace = new("--free-space")
+        {
+            Description = "free space to leave inside the image, e.g. 2GiB (default: 0, a tight image); needed by anything " +
+                "that writes to the mounted image, like AMPR Emu's debug log and traces on a read-write mount",
+            DefaultValueFactory = _ => "0",
+        };
         Option<bool> overwrite = new("--overwrite") { Description = "Overwrite an existing output file" };
         Option<bool> verbose = new("--verbose") { Description = "Verbose output" };
         Option<bool> noProgress = new("--no-progress") { Description = "Disable the exFAT packing progress bar on stderr" };
         Command command = new("exfat", "Build a raw exFAT image from a source directory")
         {
-            sourceDir, output, clusterSize, overwrite, verbose, noProgress,
+            sourceDir, output, clusterSize, freeSpace, overwrite, verbose, noProgress,
         };
         AmprCliOptions ampr = new(command);
         command.SetAction(parse =>
@@ -514,6 +520,17 @@ internal static class PackCommands
             if (!TryParseClusterSize(parse.GetValue(clusterSize)!, out int? cluster, out string? clusterError))
             {
                 ctx.Log.Error(clusterError!);
+                return 1;
+            }
+
+            long freeBytes;
+            try
+            {
+                freeBytes = Core.AMPR.AMPRSize.Parse(parse.GetValue(freeSpace)!);
+            }
+            catch (ArgumentException ex)
+            {
+                ctx.Log.Error($"--free-space: {ex.Message}");
                 return 1;
             }
 
@@ -553,7 +570,7 @@ internal static class PackCommands
             }
 
             IProgressSink? progress = ctx.CreateProgress(!parse.GetValue(noProgress));
-            string written = ExfatImageWriter.Write(source, target, cluster, progress);
+            string written = ExfatImageWriter.Write(source, target, cluster, progress, freeBytes);
             ctx.Info($"Successfully wrote {Sizes.HumanReadable(new FileInfo(written).Length)} exFAT image: {written}");
             return 0;
         });

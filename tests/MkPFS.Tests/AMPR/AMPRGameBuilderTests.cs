@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using MkPFS.Build;
 using MkPFS.Build.AMPRPack;
+using MkPFS.Build.Exfat;
 using MkPFS.Build.PFS;
 using MkPFS.Cli;
 using MkPFS.Cli.Output;
@@ -171,6 +172,26 @@ public sealed class AMPRGameBuilderTests
         Assert.Equal(64 * 1024, reader.Geometry.ClusterSize);
         List<string> names = [.. reader.RootEntries().Select(e => e.Name).Order(StringComparer.Ordinal)];
         Assert.Equal(["ampr_assets-000.pak", "ampr_assets.index", "ampr_assets.index.crc", "ampr_emu.index", "data", "eboot.bin", "empty", "fakelib", "sce_module", "sce_sys"], names);
+    }
+
+    [Fact]
+    public void The_exfat_image_can_keep_free_space_for_writes()
+    {
+        using TempDir dir = new();
+        string game = Game(dir);
+        string output = Path.Combine(dir.Path, "out");
+
+        AMPRGameResult result = AMPRGameBuilder.Build(game, output, Options(dir, dir.Path) with { ExfatFreeBytes = 3 * 1024 * 1024 + 1 }, new ListLog());
+
+        using FileStream stream = File.OpenRead(result.ExfatImage!);
+        ExfatReader reader = new(stream);
+        Assert.Contains(reader.RootEntries(), e => e.Name == "eboot.bin");
+        ExfatImageWriter tight = ExfatImageWriter.Plan(output);
+        ExfatImageWriter roomy = ExfatImageWriter.Plan(output, null, 3 * 1024 * 1024 + 1);
+        Assert.Equal(0, tight.FreeBytes);
+        Assert.Equal(49L * 64 * 1024, roomy.FreeBytes); // 3 MiB + 1 byte, rounded up to 64 KiB clusters
+        Assert.Equal(stream.Length, roomy.ImageSize);
+        Assert.True(roomy.ImageSize >= tight.ImageSize + roomy.FreeBytes);
     }
 
     [Fact]

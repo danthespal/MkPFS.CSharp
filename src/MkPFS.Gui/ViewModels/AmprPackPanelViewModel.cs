@@ -54,6 +54,10 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
     [ObservableProperty]
     public partial string ExfatPath { get; set; } = string.Empty;
 
+    /// <summary><c>--exfat-free-space</c>: free space inside the image, e.g. <c>2GiB</c>; empty for none.</summary>
+    [ObservableProperty]
+    public partial string ExfatFree { get; set; } = string.Empty;
+
     /// <summary><c>--root</c>: the game's <c>/app0</c> folder.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowRulesFound), nameof(ShowRulesNone), nameof(RulesFoundText), nameof(RulesNoneText))]
@@ -242,6 +246,7 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
                 {
                     // An existing folder receives <titleId>.exfat: by default the folder that holds the output.
                     args.AddRange(["--exfat", ExfatPath.Trim() is { Length: > 0 } image ? image : Path.GetDirectoryName(Path.GetFullPath(output)) ?? output]);
+                    AddOption(args, "--exfat-free-space", ExfatFree);
                 }
 
                 break;

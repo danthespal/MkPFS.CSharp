@@ -20,6 +20,9 @@ public sealed record AMPRGameOptions
 
     /// <summary>exFAT image path (or existing folder for <c>&lt;titleId&gt;.exfat</c>) to build from the output.</summary>
     public string? ExfatImage { get; init; }
+
+    /// <summary>Free space to leave inside the exFAT image (0: tight). A debug run of AMPR Emu writes its log there.</summary>
+    public long ExfatFreeBytes { get; init; }
 }
 
 /// <summary>Result of <see cref="AMPRGameBuilder.Build"/>.</summary>
@@ -102,11 +105,13 @@ public static class AMPRGameBuilder
         }
 
         // A failed image leaves the finished folder in place, and only the partial image is removed.
-        log.Info("Building the exFAT image (64 KiB clusters)");
+        log.Info(options.ExfatFreeBytes > 0
+            ? $"Building the exFAT image (64 KiB clusters, {Sizes.HumanReadable(options.ExfatFreeBytes)} free)"
+            : "Building the exFAT image (64 KiB clusters)");
         string written;
         try
         {
-            written = ExfatImageWriter.Write(outputDir, image, null, exfatProgress);
+            written = ExfatImageWriter.Write(outputDir, image, null, exfatProgress, options.ExfatFreeBytes);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
         {

@@ -51,6 +51,10 @@
       <CheckBox Content="{l:Tr ap_verify_game}" IsChecked="{Binding VerifyGame}" />
       <CheckBox Name="ExfatBox" Content="{l:Tr ap_exfat}" IsChecked="{Binding Exfat}" />
       <c:PathField Label="{l:Tr ap_exfat_label}" Placeholder="{l:Tr ap_exfat_ph}" Mode="Save" Filters="exFAT image:*.exfat|All files:*.*" Text="{Binding ExfatPath}" IsVisible="{Binding ShowExfatPath}" />
+      <StackPanel Spacing="3" IsVisible="{Binding ShowExfatPath}">
+        <TextBlock Text="{l:Tr ap_exfat_free}" Classes="fieldlabel" TextWrapping="Wrap" />
+        <TextBox Text="{Binding ExfatFree}" PlaceholderText="0" Width="120" HorizontalAlignment="Left" />
+      </StackPanel>
     </StackPanel>
     <CheckBox Content="{l:Tr ap_overwrite}" IsChecked="{Binding Overwrite}" IsVisible="{Binding ShowOverwrite}" />
     <CheckBox Content="{l:Tr ap_json}" IsChecked="{Binding Json}" IsVisible="{Binding ShowJson}" />

@@ -35,15 +35,18 @@ public sealed class ExfatImageWriter
     private readonly long _bitmapClusters;
     private readonly long _upcaseClusters;
     private readonly long _clusterCount;
+    private readonly long _usedClusters;
     private readonly long _fatLengthSectors;
     private readonly long _heapOffsetSectors;
 
-    private ExfatImageWriter(Node root, int clusterSize)
+    private ExfatImageWriter(Node root, int clusterSize, long freeBytes)
     {
         _root = root;
         ClusterSize = clusterSize;
         long sectorsPerCluster = clusterSize / BytesPerSector;
-        (_bitmapClusters, _upcaseClusters, _clusterCount) = AssignClusters(root, clusterSize);
+        long freeClusters = Sizes.CeilDiv(Math.Max(0, freeBytes), clusterSize);
+        (_bitmapClusters, _upcaseClusters, _usedClusters) = AssignClusters(root, clusterSize, freeClusters);
+        _clusterCount = _usedClusters + freeClusters;
         if (_clusterCount > uint.MaxValue - 16)
         {
             throw new InvalidOperationException("source tree is too large for an exFAT volume with this cluster size");
@@ -60,12 +63,20 @@ public sealed class ExfatImageWriter
     /// <summary>Total image size in bytes.</summary>
     public long ImageSize { get; }
 
+    /// <summary>Free space left in the volume, in bytes (whole clusters).</summary>
+    public long FreeBytes => (_clusterCount - _usedClusters) * ClusterSize;
+
     /// <summary>Scan <paramref name="sourceRoot"/> and compute the layout.</summary>
     /// <param name="sourceRoot">Directory whose contents become the volume root.</param>
     /// <param name="clusterSize">Cluster size in bytes, or <see langword="null"/> for <see cref="DefaultClusterSize"/>.</param>
+    /// <param name="freeBytes">
+    /// Free space to leave in the volume (rounded up to clusters). 0, the default, gives a tight image with no free
+    /// cluster, like Python MkPFS; anything that writes to the mounted image (a game, or AMPR Emu's debug log and trace
+    /// on a read-write mount) needs some.
+    /// </param>
     /// <returns>Writer ready to emit the image.</returns>
-    public static ExfatImageWriter Plan(string sourceRoot, int? clusterSize = null) =>
-        new(ScanTree(sourceRoot), clusterSize ?? DefaultClusterSize);
+    public static ExfatImageWriter Plan(string sourceRoot, int? clusterSize = null, long freeBytes = 0) =>
+        new(ScanTree(sourceRoot), clusterSize ?? DefaultClusterSize, freeBytes);
 
     /// <summary>
     /// Write a complete image (Python <c>write_exfat_image</c>). An existing directory as <paramref name="outputPath"/>
@@ -75,15 +86,16 @@ public sealed class ExfatImageWriter
     /// <param name="outputPath">Image path or existing directory.</param>
     /// <param name="clusterSize">Cluster size, or <see langword="null"/> for the default.</param>
     /// <param name="progress">Optional progress, phase <c>exfat</c>.</param>
+    /// <param name="freeBytes">Free space to leave in the volume (see <see cref="Plan"/>).</param>
     /// <returns>The path written.</returns>
-    public static string Write(string sourceRoot, string outputPath, int? clusterSize = null, IProgressSink? progress = null)
+    public static string Write(string sourceRoot, string outputPath, int? clusterSize = null, IProgressSink? progress = null, long freeBytes = 0)
     {
         if (Directory.Exists(outputPath))
         {
             outputPath = Path.Combine(outputPath, GameParams.DefaultImageBasename(sourceRoot) + ".exfat");
         }
 
-        ExfatImageWriter writer = Plan(sourceRoot, clusterSize);
+        ExfatImageWriter writer = Plan(sourceRoot, clusterSize, freeBytes);
         string tempPath = outputPath + ".tmp";
         try
         {
@@ -163,6 +175,13 @@ public sealed class ExfatImageWriter
         foreach (ReadOnlyMemory<byte> chunk in EmitChildren(_root, buffer))
         {
             yield return chunk;
+        }
+
+        // 4. Free clusters, zero-filled.
+        byte[] zeros = new byte[FileReadChunk];
+        for (long left = FreeBytes; left > 0; left -= zeros.Length)
+        {
+            yield return zeros.AsMemory(0, (int)Math.Min(zeros.Length, left));
         }
     }
 
@@ -253,16 +272,16 @@ public sealed class ExfatImageWriter
     private static long NodeClusters(Node node, bool isRoot, int clusterSize) =>
         node.IsDir ? Math.Max(1, Sizes.CeilDiv(DirectoryEntryCount(node, isRoot) * 32, clusterSize)) : Sizes.CeilDiv(node.Size, clusterSize);
 
-    private static (long Bitmap, long Upcase, long Total) AssignClusters(Node root, int clusterSize)
+    private static (long Bitmap, long Upcase, long Used) AssignClusters(Node root, int clusterSize, long freeClusters)
     {
         long upcaseClusters = Sizes.CeilDiv(ExfatUpcase.Table.Length, clusterSize);
         long contentClusters = NodeClusters(root, isRoot: true, clusterSize) + Accumulate(root) + upcaseClusters;
 
-        // The bitmap must cover itself plus all content.
+        // The bitmap must cover itself, all content and the free clusters.
         long bitmapClusters = 1;
         while (true)
         {
-            long need = Sizes.CeilDiv(Sizes.CeilDiv(bitmapClusters + contentClusters, 8), clusterSize);
+            long need = Sizes.CeilDiv(Sizes.CeilDiv(bitmapClusters + contentClusters + freeClusters, 8), clusterSize);
             if (need == bitmapClusters)
             {
                 break;
@@ -495,14 +514,14 @@ public sealed class ExfatImageWriter
         }
     }
 
-    // Every heap cluster is allocated (tight image).
+    // Every used heap cluster is allocated; the free ones come last (a tight image has none).
     private byte[] BuildBitmap()
     {
         byte[] bitmap = new byte[AlignUp(Sizes.CeilDiv(_clusterCount, 8), ClusterSize)];
-        bitmap.AsSpan(0, (int)(_clusterCount / 8)).Fill(0xFF);
-        if (_clusterCount % 8 != 0)
+        bitmap.AsSpan(0, (int)(_usedClusters / 8)).Fill(0xFF);
+        if (_usedClusters % 8 != 0)
         {
-            bitmap[_clusterCount / 8] = (byte)((1 << (int)(_clusterCount % 8)) - 1);
+            bitmap[_usedClusters / 8] = (byte)((1 << (int)(_usedClusters % 8)) - 1);
         }
 
         return bitmap;

@@ -47,6 +47,7 @@
   <data name="ap_rules_no_traces" xml:space="preserve"><value>No traces in this folder: each run needs ampr_commands.bin and its ampr_emu.index side by side.</value></data>
   <data name="ap_err_traces_config" xml:space="preserve"><value>Use either a TOML file or a trace folder, not both.</value></data>
   <data name="ap_untraced_types" xml:space="preserve"><value>Also pack files no session read, when a traced file has the same type (for example the remaining .cas archives). They were not seen being read, so test the game with them.</value></data>
+  <data name="ap_exfat_free" xml:space="preserve"><value>Free space inside the image (optional, e.g. 2GiB): needed for a test run with the debug AMPR Emu, which writes its log into the game folder</value></data>
   <data name="ap_experimental" xml:space="preserve"><value>⚠ Experimental: whether a packed game runs depends on how it reads its files, and only a test on the PS5 shows that. Keep the original game until the packed one has been played.</value></data>
   <data name="ap_game_note" xml:space="preserve"><value>Builds a new folder you can copy to the PS5 and play: your libraries in fakelib/, ampr_emu.index, the LZ4 packs, and every file that stays loose. The game folder is only read. Needs AMPR Emu 0.4.2.1 or newer and a game that uses AMPR.</value></data>
   <data name="ap_libs_label" xml:space="preserve"><value>Library Folder (fakelib)</value></data>

@@ -179,11 +179,12 @@ internal static class AmprCommand
         Option<int?> workers = new("--workers") { Description = "compression workers" };
         Option<bool> selfContained = new("--self-contained") { Description = "do not auto-loose explicitly packed files; store incompressible blocks RAW" };
         Option<string?> exfat = new("--exfat") { Description = "also build an exFAT image of the output (file, or folder for <titleId>.exfat)" };
+        Option<string?> exfatFree = new("--exfat-free-space") { Description = "free space to leave inside the exFAT image, e.g. 2GiB (default: 0); a debug run of AMPR Emu writes its log there" };
         Option<bool> skipVerify = new("--skip-verify") { Description = "do not verify the packs and loose files after the build" };
         Option<bool> noProgress = new("--no-progress") { Description = "suppress progress on stderr" };
         Command command = new("game", "build a folder that runs from packs as is: libraries, ampr_emu.index, packs and loose files (not in ampr_pack.py)")
         {
-            root, output, fakelib, config, preset, traces, untracedTypes, workers, selfContained, exfat, skipVerify, noProgress,
+            root, output, fakelib, config, preset, traces, untracedTypes, workers, selfContained, exfat, exfatFree, skipVerify, noProgress,
         };
         command.SetAction(parse => Run(ctx, () =>
         {
@@ -226,6 +227,9 @@ internal static class AmprCommand
                 LibsDir = parse.GetValue(fakelib) is { } libs ? Resolve(ctx, libs) : null,
                 Verify = !parse.GetValue(skipVerify),
                 ExfatImage = parse.GetValue(exfat) is { } image ? Resolve(ctx, image) : null,
+                ExfatFreeBytes = parse.GetValue(exfatFree) is { } free
+                    ? parse.GetValue(exfat) is not null ? AMPRSize.Parse(free) : throw new AMPRPackException("--exfat-free-space needs --exfat")
+                    : 0,
             };
             try
             {

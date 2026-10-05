@@ -47,6 +47,7 @@
   <data name="ap_rules_no_traces" xml:space="preserve"><value>No hay trazas en esta carpeta: cada ejecución necesita ampr_commands.bin y su ampr_emu.index juntos.</value></data>
   <data name="ap_err_traces_config" xml:space="preserve"><value>Usa un archivo TOML o una carpeta de trazas, no ambos.</value></data>
   <data name="ap_untraced_types" xml:space="preserve"><value>Empaquetar también los archivos que ninguna sesión leyó, si un archivo trazado tiene el mismo tipo (por ejemplo, los .cas restantes). No se vio cómo se leían, así que prueba el juego con ellos.</value></data>
+  <data name="ap_exfat_free" xml:space="preserve"><value>Espacio libre dentro de la imagen (opcional, p. ej. 2GiB): necesario para una prueba con el AMPR Emu de depuración, que escribe su registro en la carpeta del juego</value></data>
   <data name="ap_experimental" xml:space="preserve"><value>⚠ Experimental: que un juego empaquetado funcione depende de cómo lee sus archivos, y solo una prueba en la PS5 lo muestra. Conserva el juego original hasta haber jugado el empaquetado.</value></data>
   <data name="ap_game_note" xml:space="preserve"><value>Crea una carpeta nueva que puedes copiar a la PS5 y jugar: tus bibliotecas en fakelib/, ampr_emu.index, los packs LZ4 y todos los archivos que quedan sueltos. La carpeta del juego solo se lee. Requiere AMPR Emu 0.4.2.1 o posterior y un juego que use AMPR.</value></data>
   <data name="ap_libs_label" xml:space="preserve"><value>Carpeta de Bibliotecas (fakelib)</value></data>

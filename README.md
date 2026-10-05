@@ -199,6 +199,7 @@ accepted and receives that derived filename.
 | Option | Default | Meaning |
 |---|---|---|
 | `--cluster-size <bytes\|auto>` | `auto` (`65536`) | exFAT cluster size. The automatic 64 KiB value is optimized for SMP/LVD. |
+| `--free-space <size>` | `0` | Free space to leave inside the image, for example `2GiB`. Images are otherwise exactly full, so nothing can write to them even on a read-write mount (AMPR Emu's debug log and traces, a game writing to `/app0`). |
 | `--overwrite` | off | Replace an existing output image. |
 | `--verbose` | off | Print detailed packing output. |
 | `--no-progress` | off | Hide the progress bar written to standard error. |
@@ -390,6 +391,15 @@ INDEX`, repeatable) writes the same rules as a TOML file to review or edit, plus
 and a runtime header; `mkpfs ampr profile batch` makes one profile per run of a folder or ZIP bundle. The
 output matches `ampr_pack_profile.py` byte for byte.
 
+##### When a packed game crashes
+
+The release AMPR Emu logs nothing, so the crash log alone does not say which file failed. Build the packed game
+again with **Free space inside the image** (`--exfat-free-space 2GiB`), put the debug `libSceAmpr.sprx` into the
+packed game's `fakelib/`, mount the image read-write (`image_rw=<image name>` in ShadowMountPlus's
+`config.ini`) and start it until it crashes. `ampr_emu.log` in the image then lists every packed file the game
+opened (`apr.pack.open`) and every open it refused (`apr.pack.open.fail … reason=…`), which points at the file
+to leave loose.
+
 ##### Reporting a game
 
 Whether it works or not, please report: the game title, ID and version, the `Profile found` or `No profile
@@ -480,7 +490,9 @@ mkpfs ampr game --root PPSA12345-app --output PPSA12345-packed --fakelib ampr-em
    loose file is in the output with its indexed size (`--skip-verify` skips this).
 
 If a step fails, the output folder is emptied so a retry starts clean. `--exfat <file or folder>` then
-builds an exFAT image of the output (64 KiB clusters, `<titleId>.exfat` in a folder). Use an exFAT
+builds an exFAT image of the output (64 KiB clusters, `<titleId>.exfat` in a folder); `--exfat-free-space 2GiB`
+leaves room inside it, which a test run with the debug AMPR Emu needs for its log (the image is otherwise
+exactly full). Use an exFAT
 image or the plain folder, and keep ShadowMountPlus's `mount_read_only=1` (the default) so AMPR Emu
 never rebuilds the index. A `.ffpfsc` would put zlib (about 150–250 MB/s on the PS5) on top of the LZ4
 packs. The output also keeps `ampr_assets.index.crc`: the game never reads it, and `verify` and
