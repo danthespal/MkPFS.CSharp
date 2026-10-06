@@ -91,6 +91,7 @@ public sealed class JobContext
 public sealed partial class JobRunner : ObservableObject
 {
     private readonly Action<Action> _post;
+    private readonly TimeProvider _time;
     private readonly Lock _gate = new();
     private readonly List<LogLine> _pendingLines = [];
     private CancellationTokenSource? _cancel;
@@ -103,6 +104,7 @@ public sealed partial class JobRunner : ObservableObject
     private long _total;
     private IReadOnlyList<ProgressPhase>? _plan;
     private double _overall;
+    private long _started;
 
     /// <summary>Create a runner that applies updates on the UI thread.</summary>
     public JobRunner()
@@ -112,9 +114,11 @@ public sealed partial class JobRunner : ObservableObject
 
     /// <summary>Create a runner with a custom UI scheduler (tests pass a synchronous one).</summary>
     /// <param name="post">Schedules an action on the UI thread.</param>
-    public JobRunner(Action<Action> post)
+    /// <param name="time">Clock for the time-left estimate (default: the system clock).</param>
+    public JobRunner(Action<Action> post, TimeProvider? time = null)
     {
         _post = post;
+        _time = time ?? TimeProvider.System;
     }
 
     /// <summary>Output log.</summary>
@@ -312,6 +316,7 @@ public sealed partial class JobRunner : ObservableObject
         bool progressDirty;
         double ratio;
         string label;
+        TimeSpan elapsed;
         lock (_gate)
         {
             lines = [.. _pendingLines];
@@ -321,6 +326,7 @@ public sealed partial class JobRunner : ObservableObject
             _flushQueued = false;
             ratio = _plan is null ? (_total > 0 ? Math.Clamp((double)_done / _total, 0, 1) : 0) : _overall;
             label = _label;
+            elapsed = _time.GetElapsedTime(_started);
         }
 
         foreach (LogLine line in lines)
@@ -330,7 +336,7 @@ public sealed partial class JobRunner : ObservableObject
 
         if (progressDirty && IsRunning)
         {
-            PhaseText = label;
+            PhaseText = TimeLeft(ratio, elapsed) is { } left ? $"{label} · {Localizer.Instance.Format("eta_left", left)}" : label;
             Progress = ratio;
         }
     }
@@ -350,6 +356,12 @@ public sealed partial class JobRunner : ObservableObject
                 _post(() => IsIndeterminate = false);
             }
 
+            // The estimate runs from the first step: of the whole run with a plan, else of the current phase.
+            if (_phase.Length == 0 || (_plan is null && phase != _phase))
+            {
+                _started = _time.GetTimestamp();
+            }
+
             _phase = phase;
             _label = phase;
             _done = done;
@@ -364,6 +376,23 @@ public sealed partial class JobRunner : ObservableObject
             _progressDirty = true;
             QueueFlush();
         }
+    }
+
+    /// <summary>Time left at <paramref name="ratio"/> done after <paramref name="elapsed"/>, once the rate has settled.</summary>
+    /// <param name="ratio">Fraction done, 0 to 1.</param>
+    /// <param name="elapsed">Time since the first step.</param>
+    /// <returns>"1h 05m", "4m 12s" or "38s"; null in the first seconds and first percent, and when done.</returns>
+    internal static string? TimeLeft(double ratio, TimeSpan elapsed)
+    {
+        if (ratio < 0.01 || ratio >= 1 || elapsed < TimeSpan.FromSeconds(3))
+        {
+            return null;
+        }
+
+        TimeSpan left = TimeSpan.FromSeconds(Math.Ceiling(elapsed.TotalSeconds * (1 - ratio) / ratio));
+        return left.TotalHours >= 1 ? $"{(int)left.TotalHours}h {left.Minutes:00}m"
+            : left.TotalMinutes >= 1 ? $"{left.Minutes}m {left.Seconds:00}s"
+            : $"{left.Seconds}s";
     }
 
     private void OnStatus(string message)

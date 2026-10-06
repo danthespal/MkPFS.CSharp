@@ -65,6 +65,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private static readonly Color Amber = Color.Parse("#FFB800");
     private static readonly Color Pink = Color.Parse("#FF5CAA");
     private static readonly Color Lime = Color.Parse("#C6FF3D");
+    private static readonly Color Blue = Color.Parse("#3D9BFF");
 
     /// <summary>Create the main window state with every page.</summary>
     public MainWindowViewModel()
@@ -75,6 +76,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
             [
                 Item("pack_exfat", "nav_pack_exfat", Icons.PackExfat, new PackExfatPanelViewModel(Orange)),
                 Item("pack_file", "nav_pack_file", Icons.PackFile, new PackFilePanelViewModel(Cyan)),
+                Item("pack_fpkg", "nav_pack_fpkg", Icons.PackFPKG, new PackFPKGPanelViewModel(Blue)),
                 Item("ampr", "nav_ampr", Icons.AmprPack, new AmprPackPanelViewModel(Lime)),
             ]),
             new("section_check",

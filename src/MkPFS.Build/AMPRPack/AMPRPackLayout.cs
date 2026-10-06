@@ -33,7 +33,18 @@ public sealed class AMPRPackVolumeWriter : IDisposable
         MaxPackSize = maxPackSize;
         Flags = flags | AMPRPackFormat.PackFlagIOPageLayout;
         _stream = new FileStream(TempPath, FileMode.Create, FileAccess.ReadWrite, FileShare.None);
-        WriteZeros(PayloadOffset);
+        try
+        {
+            WriteZeros(PayloadOffset);
+        }
+        catch
+        {
+            // A failed header write (disk full) leaves neither the handle nor the temporary file behind.
+            _stream.Dispose();
+            File.Delete(TempPath);
+            throw;
+        }
+
         Position = PayloadOffset;
         PaddingBytes = PayloadOffset - AMPRPackFormat.DataHeaderSize;
     }

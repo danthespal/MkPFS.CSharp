@@ -96,6 +96,42 @@ public sealed class OutputTests
     }
 
     [Fact]
+    public void Progress_redraws_only_on_a_new_percentage_or_after_half_a_second()
+    {
+        StringWriter writer = new();
+        ManualTime time = new();
+        TerminalProgress progress = new(writer, time);
+
+        for (int i = 0; i < 1000; i++)
+        {
+            progress.Step("write", i, 100_000, 0);
+        }
+
+        Assert.Equal(1, writer.ToString().Split('\r').Length - 1);
+        time.Advance(TimeSpan.FromSeconds(1));
+        progress.Step("write", 1001, 100_000, 0);
+        progress.Step("write", 1002, 100_000, 0);
+        progress.Step("write", 5000, 100_000, 0);
+        Assert.Equal(3, writer.ToString().Split('\r').Length - 1);
+    }
+
+    [Fact]
+    public void A_completed_phase_is_drawn_once_until_it_starts_over()
+    {
+        StringWriter writer = new();
+        TerminalProgress progress = new(writer, new ManualTime());
+
+        progress.Step("inner", 10, 10, 0);
+        progress.Step("inner", 10, 10, 0);
+        progress.Step("inner", 10, 10, 0);
+        Assert.Single(writer.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries));
+
+        progress.Step("inner", 0, 10, 0);
+        progress.Step("inner", 10, 10, 0);
+        Assert.Equal(2, writer.ToString().Split("100% inner").Length - 1);
+    }
+
+    [Fact]
     public void Progress_clamps_out_of_range_values()
     {
         StringWriter writer = new();

@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Runtime.ExceptionServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -113,6 +114,9 @@ public sealed class PFSInspection
 
     /// <summary>SHA-256 over <c>path \0 sha256(file)</c> for every file in sorted order.</summary>
     public string ManifestSha256 { get; set; } = string.Empty;
+
+    /// <summary>SHA-256 of each file read whole by the payload pass, reused by the source comparison.</summary>
+    internal Dictionary<string, byte[]> PayloadHashes { get; } = new(StringComparer.Ordinal);
 
     /// <summary>Files stored compressed.</summary>
     public int CompressedFiles { get; set; }
@@ -1023,9 +1027,11 @@ public static class PFSInspector
                 result.Errors.Add($"file '{rel}' size {length} does not match inode size {inode.LogicalSize}");
             }
 
+            byte[] digest = fileHash.GetHashAndReset();
+            result.PayloadHashes[rel] = digest;
             manifest.AppendData(Encoding.UTF8.GetBytes(rel));
             manifest.AppendData([0]);
-            manifest.AppendData(fileHash.GetHashAndReset());
+            manifest.AppendData(digest);
             checkedFiles++;
         }
 
@@ -1072,36 +1078,58 @@ public static class PFSInspector
         long lastReported = 0;
         progress?.Report("compare", 0, progressTotal);
 
-        foreach (string rel in common)
+        // Source files hash in parallel (independent reads); a source file that cannot be read fails the run as
+        // the serial walk did, at the first such file in path order.
+        byte[]?[] sourceHashes = new byte[]?[common.Count];
+        ExceptionDispatchInfo?[] sourceErrors = new ExceptionDispatchInfo?[common.Count];
+        Parallel.For(0, common.Count, i =>
         {
-            PFSInode inode = result.Inodes[(int)result.FileInodes[rel]];
-            using IncrementalHash imageHash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
             try
             {
-                foreach (ReadOnlyMemory<byte> chunk in image.ReadLogicalChunks(inode))
+                using FileStream file = File.OpenRead(source.Files[common[i]]);
+                sourceHashes[i] = SHA256.HashData(file);
+            }
+            catch (Exception ex)
+            {
+                sourceErrors[i] = ExceptionDispatchInfo.Capture(ex);
+            }
+        });
+
+        for (int index = 0; index < common.Count; index++)
+        {
+            string rel = common[index];
+            PFSInode inode = result.Inodes[(int)result.FileInodes[rel]];
+
+            // The payload pass already hashed most files whole; only the others are read again.
+            if (!result.PayloadHashes.TryGetValue(rel, out byte[]? imageDigest))
+            {
+                using IncrementalHash imageHash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+                try
                 {
-                    imageHash.AppendData(chunk.Span);
-                    processed += chunk.Length;
-                    if (progress is not null && processed - lastReported >= ProgressInterval)
+                    foreach (ReadOnlyMemory<byte> chunk in image.ReadLogicalChunks(inode))
                     {
-                        lastReported = processed;
-                        progress.Report("compare", Math.Min(processed, total), progressTotal, processed);
+                        imageHash.AppendData(chunk.Span);
                     }
                 }
-            }
-            catch (Exception ex) when (ex is IOException or InvalidDataException)
-            {
-                result.Errors.Add($"file '{rel}' failed to read payload: {ex.Message}");
-                continue;
+                catch (Exception ex) when (ex is IOException or InvalidDataException)
+                {
+                    result.Errors.Add($"file '{rel}' failed to read payload: {ex.Message}");
+                    continue;
+                }
+
+                imageDigest = imageHash.GetHashAndReset();
             }
 
-            byte[] sourceHash;
-            using (FileStream file = File.OpenRead(source.Files[rel]))
+            processed += Math.Max(0, inode.LogicalSize);
+            if (progress is not null && processed - lastReported >= ProgressInterval)
             {
-                sourceHash = SHA256.HashData(file);
+                lastReported = processed;
+                progress.Report("compare", Math.Min(processed, total), progressTotal, processed);
             }
 
-            if (!imageHash.GetHashAndReset().AsSpan().SequenceEqual(sourceHash))
+            sourceErrors[index]?.Throw();
+            byte[] sourceHash = sourceHashes[index]!;
+            if (!imageDigest.AsSpan().SequenceEqual(sourceHash))
             {
                 result.Errors.Add($"content mismatch for file: {rel}");
             }

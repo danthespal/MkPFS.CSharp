@@ -16,6 +16,10 @@
     <Rectangle Classes="separator" />
     <TextBlock Text="{l:Tr options}" Classes="section" Foreground="{Binding Accent}" />
     <CheckBox Content="{l:Tr exf_overwrite}" IsChecked="{Binding Overwrite}" />
+    <StackPanel Spacing="3" ToolTip.Tip="{l:Tr tip_exf_free}">
+      <TextBlock Text="{l:Tr exf_free}" Classes="fieldlabel" />
+      <TextBox Name="FreeSpaceBox" Text="{Binding FreeSpace}" PlaceholderText="0" Width="120" HorizontalAlignment="Left" />
+    </StackPanel>
     <Rectangle Classes="separator" />
     <TextBlock Text="{l:Tr am_section}" Classes="section" Foreground="{Binding Accent}" />
     <v:AmprSettings DataContext="{Binding Ampr}" />

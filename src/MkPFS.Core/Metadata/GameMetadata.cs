@@ -302,6 +302,13 @@ public static partial class GameMetadataReader
     {
         meta.PackageType = "PKG";
         using FileStream fh = File.OpenRead(path);
+        if (PKG.FIHHeader.IsFIH(ReadAt(fh, 0, 4)))
+        {
+            // Not in Python (it reports UNKNOWN): a PS5 finalized package keeps param.json and icon0.png as CNT entries.
+            ReadPS5Pkg(path, meta);
+            return;
+        }
+
         if (!ReadAt(fh, 0, 4).AsSpan().SequenceEqual("\u007fCNT"u8))
         {
             meta.PackageType = "UNKNOWN";
@@ -358,6 +365,36 @@ public static partial class GameMetadataReader
         }
 
         if (icon is { Size: > 0 and <= MaxIconSize } ic && ReadAt(fh, ic.Offset, (int)ic.Size) is { } png && IsPng(png))
+        {
+            meta.IconBytes = png;
+        }
+    }
+
+    private static void ReadPS5Pkg(string path, GameMetadata meta)
+    {
+        using PKG.PKGFile pkg = PKG.PKGFile.Open(path);
+        meta.PackageType = pkg.FIH!.IsDebug ? "PS5 PKG (debug)" : "PS5 PKG";
+        string contentId = pkg.CNT.ContentId;
+        if (contentId.Length > 0)
+        {
+            meta.ContentId = contentId;
+            meta.TitleId = TitleIdFromContentId(contentId) ?? meta.TitleId;
+            meta.Region = RegionFromContentId(contentId);
+        }
+
+        if (pkg.FindEntry(0x2000) is { DataSize: > 0 and <= MaxParamSize } param)
+        {
+            try
+            {
+                FillFromParamJson(pkg.ReadEntry(param), meta);
+            }
+            catch (JsonException)
+            {
+                // Keep the CNT identifiers when param.json is malformed.
+            }
+        }
+
+        if (pkg.FindEntry(PkgEntryIcon0Png) is { DataSize: > 0 and <= MaxIconSize } icon && pkg.ReadEntry(icon) is { } png && IsPng(png))
         {
             meta.IconBytes = png;
         }

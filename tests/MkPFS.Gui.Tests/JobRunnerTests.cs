@@ -32,6 +32,46 @@ public sealed class JobRunnerTests
         Assert.False(runner.IsRunning);
     }
 
+    [Theory]
+    [InlineData(0.005, 60, null)]
+    [InlineData(0.5, 2, null)]
+    [InlineData(1.0, 60, null)]
+    [InlineData(0.5, 38, "38s")]
+    [InlineData(0.25, 84, "4m 12s")]
+    [InlineData(0.1, 434, "1h 05m")]
+    public void Time_left_waits_for_a_settled_rate_and_reads_naturally(double ratio, int seconds, string? expected) =>
+        Assert.Equal(expected, JobRunner.TimeLeft(ratio, TimeSpan.FromSeconds(seconds)));
+
+    [Fact]
+    public async Task The_phase_text_carries_the_time_left()
+    {
+        ManualClock clock = new();
+        JobRunner runner = new(action => action(), clock);
+        string? midway = null;
+        await runner.RunAsync(job =>
+        {
+            job.Progress.Report("compress", 0, 100);
+            clock.Advance(TimeSpan.FromSeconds(30));
+            job.Progress.Report("compress", 25, 100);
+            midway = runner.PhaseText;
+            return 0;
+        });
+
+        Assert.Equal("compress · 1m 30s left", midway);
+        Assert.Equal("✓ compress", runner.PhaseText);
+    }
+
+    private sealed class ManualClock : TimeProvider
+    {
+        private long _ticks;
+
+        public override long TimestampFrequency => TimeSpan.TicksPerSecond;
+
+        public override long GetTimestamp() => _ticks;
+
+        public void Advance(TimeSpan by) => _ticks += by.Ticks;
+    }
+
     [Fact]
     public async Task Phase_changes_log_the_finished_phase_and_the_bar_ends_full()
     {

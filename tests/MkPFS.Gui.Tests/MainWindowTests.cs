@@ -41,7 +41,7 @@ public sealed class MainWindowTests
 
         Assert.Equal(["section_build", "section_check", "section_read"], model.Sections.Select(s => s.TitleKey));
         Assert.Equal(
-            ["pack_exfat", "pack_file", "ampr", "verify", "repair", "inspect", "tree", "unpack"],
+            ["pack_exfat", "pack_file", "pack_fpkg", "ampr", "verify", "repair", "inspect", "tree", "unpack"],
             NavButtons(window).Select(AutomationProperties.GetName));
         Assert.True(Nav(window, "pack_exfat").IsChecked);
         Assert.Equal("Pack exFAT", PageTitle(window));
@@ -49,6 +49,18 @@ public sealed class MainWindowTests
         Assert.True(Shows(window, "BUILD"));
         Assert.Equal("MkPFS.CSharp", window.Title);
         Assert.True(Shows(window, "MkPFS.CSharp"));
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void Pack_fpkg_page_warns_about_the_firmware_limit()
+    {
+        (MainWindow window, _) = Open();
+
+        Nav(window, "pack_fpkg").IsChecked = true;
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.True(Shows(window, "⚠ Fake packages start games only on PS5 firmware 11.60 and below. On 11.61 and newer they install but the game does not start; use a .ffpfsc image with ShadowMountPlus there (up to 13.60)."));
         window.Close();
     }
 

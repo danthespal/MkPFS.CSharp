@@ -117,8 +117,10 @@ Partly written output is removed; an in-place repair finishes its rewrite first 
   <data name="encryption" xml:space="preserve"><value>Encryption</value></data>
   <data name="err_process" xml:space="preserve"><value>✗ Process exited with code {0}.</value></data>
   <data name="err_unexpected" xml:space="preserve"><value>[ERROR] Unexpected: {0}</value></data>
+  <data name="eta_left" xml:space="preserve"><value>{0} left</value></data>
   <data name="exf_cluster_size" xml:space="preserve"><value>Cluster Size</value></data>
   <data name="exf_err_src" xml:space="preserve"><value>✗ Source folder is required.</value></data>
+  <data name="exf_free" xml:space="preserve"><value>Free Space Inside the Image (e.g. 2GiB)</value></data>
   <data name="exf_out_label" xml:space="preserve"><value>Output Image</value></data>
   <data name="exf_out_ph" xml:space="preserve"><value>Select output path…</value></data>
   <data name="exf_overwrite" xml:space="preserve"><value>Overwrite Existing Output</value></data>
@@ -128,6 +130,30 @@ Partly written output is removed; an in-place repair finishes its rewrite first 
   <data name="exf_title" xml:space="preserve"><value>Pack exFAT</value></data>
   <data name="export_log" xml:space="preserve"><value>Export Log</value></data>
   <data name="fmt_auto" xml:space="preserve"><value>Auto-detect</value></data>
+  <data name="fpk_comp_auto" xml:space="preserve"><value>Auto (Kraken where it pays)</value></data>
+  <data name="fpk_comp_fast" xml:space="preserve"><value>Fast (Kraken, quicker)</value></data>
+  <data name="fpk_comp_stored" xml:space="preserve"><value>Stored (no compression)</value></data>
+  <data name="fpk_compression" xml:space="preserve"><value>Compression</value></data>
+  <data name="fpk_content_id" xml:space="preserve"><value>Content ID</value></data>
+  <data name="fpk_content_id_ph" xml:space="preserve"><value>From param.json</value></data>
+  <data name="fpk_dry_run" xml:space="preserve"><value>Dry Run (check only)</value></data>
+  <data name="fpk_err_src" xml:space="preserve"><value>✗ Application folder is required.</value></data>
+  <data name="fpk_firmware" xml:space="preserve"><value>⚠ Fake packages start games only on PS5 firmware 11.60 and below. On 11.61 and newer they install but the game does not start; use a .ffpfsc image with ShadowMountPlus there (up to 13.60).</value></data>
+  <data name="fpk_generated" xml:space="preserve"><value>Generated param.json (when the folder has none): title, version, DRM type</value></data>
+  <data name="fpk_no_fake_sign" xml:space="preserve"><value>Do Not Fake-Sign ELF Modules</value></data>
+  <data name="fpk_out_label" xml:space="preserve"><value>Output Package</value></data>
+  <data name="fpk_out_ph" xml:space="preserve"><value>Select output path…</value></data>
+  <data name="fpk_passcode" xml:space="preserve"><value>Passcode</value></data>
+  <data name="fpk_passcode_ph" xml:space="preserve"><value>32 characters (default: all zeros)</value></data>
+  <data name="fpk_seed" xml:space="preserve"><value>Seed</value></data>
+  <data name="fpk_seed_ph" xml:space="preserve"><value>32 hex digits (default: from content ID and passcode)</value></data>
+  <data name="fpk_src_label" xml:space="preserve"><value>Application Folder</value></data>
+  <data name="fpk_src_ph" xml:space="preserve"><value>Select the folder with sce_sys and eboot.bin…</value></data>
+  <data name="fpk_subtitle" xml:space="preserve"><value>Build a fake-signed PS5 debug package (.pkg) from an application folder</value></data>
+  <data name="fpk_temp_ph" xml:space="preserve"><value>Next to the package (the staged inner image is as large as the game)…</value></data>
+  <data name="fpk_title" xml:space="preserve"><value>Pack FPKG</value></data>
+  <data name="fpk_title_ph" xml:space="preserve"><value>Title</value></data>
+  <data name="fpk_verify" xml:space="preserve"><value>Verify After Building</value></data>
   <data name="i_ekpfs" xml:space="preserve"><value>EKPFS Key (optional)</value></data>
   <data name="i_ekpfs_ph" xml:space="preserve"><value>64 hex chars…</value></data>
   <data name="i_err" xml:space="preserve"><value>✗ Image path is required.</value></data>
@@ -143,6 +169,7 @@ Partly written output is removed; an in-place repair finishes its rewrite first 
   <data name="nav_inspect" xml:space="preserve"><value>Inspect</value></data>
   <data name="nav_pack_exfat" xml:space="preserve"><value>Pack exFAT</value></data>
   <data name="nav_pack_file" xml:space="preserve"><value>Pack FFPFSC</value></data>
+  <data name="nav_pack_fpkg" xml:space="preserve"><value>Pack FPKG</value></data>
   <data name="nav_repair" xml:space="preserve"><value>Repair</value></data>
   <data name="nav_tree" xml:space="preserve"><value>Tree</value></data>
   <data name="nav_unpack" xml:space="preserve"><value>Unpack</value></data>
@@ -219,6 +246,15 @@ Partly written output is removed; an in-place repair finishes its rewrite first 
   <data name="t_newcrypt" xml:space="preserve"><value>Use newCrypt EKPFS derivation</value></data>
   <data name="t_subtitle" xml:space="preserve"><value>Browse the directory tree embedded in a PFS image</value></data>
   <data name="t_title" xml:space="preserve"><value>Tree</value></data>
+  <data name="tip_exf_free" xml:space="preserve"><value>Room left free inside the exFAT, so a read-write mount can write to it: saves, logs, AMPR Emu traces. Sizes like 512MiB or 2GiB; empty or 0 makes a tight image with no free space.</value></data>
+  <data name="tip_fpk_compression" xml:space="preserve"><value>Auto compresses with Kraken where it saves space, like PS5PkgTool. Stored writes every file uncompressed. Fast compresses the same chunks with a quicker parse: about twice as fast, a few percent larger.</value></data>
+  <data name="tip_fpk_content_id" xml:space="preserve"><value>36-character content ID. Leave empty to use the contentId of sce_sys/param.json.</value></data>
+  <data name="tip_fpk_dry_run" xml:space="preserve"><value>Check the folder and report what would be packed, without writing a package.</value></data>
+  <data name="tip_fpk_generated" xml:space="preserve"><value>Used only when the folder has no sce_sys/param.json; a supplied param.json is packed unchanged.</value></data>
+  <data name="tip_fpk_no_fake_sign" xml:space="preserve"><value>Pack plain ELF modules unchanged. A debug-mode console only starts fake-signed modules.</value></data>
+  <data name="tip_fpk_passcode" xml:space="preserve"><value>Passcode the package key is derived from. Leave empty for all zeros.</value></data>
+  <data name="tip_fpk_seed" xml:space="preserve"><value>Outer image seed. Leave empty to derive it, so the same folder always gives the same package.</value></data>
+  <data name="tip_fpk_verify" xml:space="preserve"><value>Check every digest of the finished package and compare it with the source folder.</value></data>
   <data name="u_auto_subdir" xml:space="preserve"><value>→ Output subfolder: {0}</value></data>
   <data name="u_deep" xml:space="preserve"><value>Extract files inside a wrapped exFAT</value></data>
   <data name="u_ekpfs" xml:space="preserve"><value>EKPFS Key (optional)</value></data>

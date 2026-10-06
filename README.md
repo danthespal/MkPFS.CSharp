@@ -23,15 +23,23 @@ PFSC block repair ported from PS5 Game Compressor and LZ4 asset packs for AMPR E
 > the packed game runs depends on how that game reads its files, and only a test on the PS5 shows that.
 > Keep the original game until the packed one has been played. See [AMPR asset packs](#ampr-asset-packs).
 
+> [!WARNING]
+> **PS5 debug packages (`pack fpkg`, the Pack FPKG page) are experimental.** They match the packages
+> [PS5PkgTool](https://github.com/pearlxcore/PS5PKGTool) builds, but neither has been confirmed to install on a
+> console yet. Fake packages only start games on **firmware 11.60 and below** (see
+> [Console compatibility](#console-compatibility)). See [PS5 debug packages](#ps5-debug-packages).
+
 ## Contents
 
 - [Features](#features)
 - [Quick start](#quick-start)
+- [Console compatibility](#console-compatibility)
 - [Download](#download)
 - [Desktop app](#desktop-app)
 - [Command line](#command-line)
 - [APR Emu](#apr-emu)
 - [AMPR asset packs](#ampr-asset-packs)
+- [PS5 debug packages](#ps5-debug-packages)
 - [Differences from Python MkPFS](#differences-from-python-mkpfs)
 - [Build from source](#build-from-source)
 - [Credits and license](#credits-and-license)
@@ -48,6 +56,7 @@ PFSC block repair ported from PS5 Game Compressor and LZ4 asset packs for AMPR E
 | 🩹 | **Repair** | Finds and fixes compressed blocks the PS5 may decode wrongly (images made with ISA-L). |
 | 🎮 | **APR Emu** | Copies AMPR Emu into a game's `fakelib/` and writes its `ampr_emu.index`. |
 | 📦 | **AMPR packs** *(experimental)* | Packs game data into LZ4 asset packs that AMPR Emu reads on the fly. |
+| 🧩 | **PS5 debug packages** *(experimental)* | Builds a fake-signed `.pkg` from a game folder, as PS5PkgTool does, and reads `.pkg` files back. |
 | 🖥️ | **Desktop app** | Every command in a window, in English, Português (BR), Español, Română, Deutsch and Français. |
 
 ## Quick start
@@ -76,6 +85,27 @@ mkpfs verify PPSA12345.ffpfsc --source-file PPSA12345.exfat   # optional: check 
 | `.ffpfsc` | Smaller (zlib) | `pack file`, `pack folder` | The usual image for ShadowMountPlus. |
 | `.ffpfs` | Same as the game | `pack folder --raw` | Signed, encrypted or PS4 images. |
 | AMPR packs | Much smaller (LZ4) | `ampr game` | Experimental: AMPR titles with a tested profile. |
+| `.pkg` | Smaller (Kraken) | `pack fpkg` | Experimental: a fake-signed debug package to install. |
+
+## Console compatibility
+
+What each output needs on a jailbroken PS5, and the firmware it works on. These limits come from the
+console-side tools and from reports of other tools' output, as of October 2026; MkPFS's own files have not
+been tested on every firmware.
+
+| Output | Runs with | Firmware | Notes |
+|---|---|---|---|
+| `.pkg` (`pack fpkg`) | kstuff-lite, package installer | Starts games on **11.60 and below** | On 11.61, 12.xx and 13.xx the package installs but the game does not start. |
+| `.ffpfsc` (`pack folder`, `pack file`) | [ShadowMountPlus](https://github.com/drakmor/ShadowMountPlus) with kstuff-lite 1.07+ | Up to **13.60** | ShadowMountPlus lists PFS images as experimental. |
+| `.ffpfs` (`pack folder --raw`) | ShadowMountPlus | Up to 13.60 | Experimental in ShadowMountPlus. |
+| `.exfat` (`pack exfat`) | ShadowMountPlus | Up to 13.60 | The compatibility format. |
+| AMPR packs (`ampr`) | AMPR Emu in `fakelib/`, through ShadowMountPlus | No published range; as ShadowMountPlus | Not verified. |
+
+- The current public jailbreak covers firmware 7.00 to 13.60 (PS5 and PS5 Pro); 14.00 and newer have none.
+- The 11.60 limit of fake packages is in the console's kernel patches (kstuff), not in how a package is built.
+  It is expected to rise with a later kstuff release.
+- A game built for a newer firmware than the console's needs a backport, whatever the format; MkPFS does not
+  backport games.
 
 ## Download
 
@@ -141,6 +171,7 @@ Paths may be absolute or relative. `<...>` is your value, `[...]` is optional, a
 | `pack exfat <source_dir> [output]` | `<titleId>.exfat` | Build an uncompressed exFAT image. |
 | `pack file <source_file> <image_file>` | `.ffpfsc` | Compress one file (usually an `.exfat`) into a PFS image. |
 | `pack folder <source_dir> <image_file>` | `.ffpfsc` | Wrap a folder in exFAT and compress it in one pass. |
+| `pack fpkg <source_dir> [output]` | `<content-id>-A<ver>-V0100.pkg` | Build a fake-signed PS5 debug package ([details](#ps5-debug-packages)). |
 | `batch <source_dir> <output_dir>` | one `.ffpfsc` per item | Pack many folders and images; existing outputs are skipped. |
 | `verify <image_file>` | report | Validate an image, optionally against its source. |
 | `inspect <image_file>` | report | Show metadata and integrity information. |
@@ -157,6 +188,7 @@ mkpfs pack exfat PPSA12345-app PPSA12345.exfat              # game folder -> exF
 mkpfs pack file PPSA12345.exfat PPSA12345.ffpfsc            # exFAT -> compressed image
 mkpfs pack folder PPSA12345-app PPSA12345.ffpfsc            # both steps in one pass
 mkpfs pack folder PPSA12345-app PPSA12345.ffpfs --raw       # plain PFS (signed, encrypted, PS4...)
+mkpfs pack fpkg PPSA12345-app --verify                     # fake-signed debug package, checked
 mkpfs batch ./games ./output                                # every game in a folder
 mkpfs verify PPSA12345.ffpfsc --source-file PPSA12345.exfat # check against the source
 mkpfs inspect PPSA12345.ffpfsc                              # details (--format json for scripts)
@@ -267,7 +299,7 @@ Folder items also take the [APR Emu options](#apr-emu).
 ### Reading and extracting
 
 Encrypted images take `--ekpfs-key <64-hex>` (default: all zeros) and `--new-crypt` (alternate key
-derivation). `verify`, `tree` and `unpack` take `--format <auto|pfs|exfat>`.
+derivation). PS5 `.pkg` files take `--passcode <32 characters>` (default: all zeros). `verify`, `tree` and `unpack` take `--format <auto|pfs|exfat>`.
 
 | Command | Option | Meaning |
 |---|---|---|
@@ -276,7 +308,7 @@ derivation). `verify`, `tree` and `unpack` take `--format <auto|pfs|exfat>`.
 | `unpack` | `--deep` | Extract the files inside a wrapped exFAT. |
 | | `--only <inner-path>` | With `--deep`, extract only this file or folder (repeatable). |
 | | `--overwrite`, `--no-progress` | Replace existing output; hide progress. |
-| `verify` | `--source-dir <dir>` / `--source-file <file>` | Compare with the source folder or file. |
+| `verify` | `--source-dir <dir>` / `--source-file <file>` | Compare with the source folder or file (for a `.pkg`, the folder it was built from). |
 | | `--expect-crc32 <hex>` | Require this payload CRC32. |
 | | `--expect-manifest-sha256 <64-hex>` | Require this manifest SHA-256. |
 | | `--require-game-files` | Warn when `sce_sys/param.json`, `eboot.bin` or `pfs-version.dat` is missing. |
@@ -498,6 +530,48 @@ include = ["eboot.bin", "*.prx", "*.sprx", "sce_sys/*", "sce_module/*", "fakelib
 >   `.crc` file is only used by `verify` and `unpack`.
 > - Use an exFAT image or the plain folder, not `.ffpfsc`: zlib on top of LZ4 makes loading slower.
 
+## PS5 debug packages
+
+`pack fpkg` builds a fake-signed PS5 debug package (`.pkg`) from a game or homebrew folder for a console that
+installs debug packages. It produces the same packages as [PS5PkgTool](https://github.com/pearlxcore/PS5PKGTool):
+with `--compression stored` the bytes match PS5PkgTool's except the random RSA padding of the key entries;
+with `auto` (the default) the layout and every compress-or-store decision match, but the Kraken streams differ.
+Memory use stays small whatever the size of the game; packages over 4 GiB and with thousands of files work.
+Fake packages start games only on firmware 11.60 and below; see [Console compatibility](#console-compatibility).
+
+The folder needs `eboot.bin` at its root and should have `sce_sys/param.json` (the content id comes from it).
+`pack fpkg` then:
+
+- fake-signs plain ELF modules (`eboot.bin`, `*.elf`, `*.prx`, `*.sprx`) in the package, never in the folder;
+- adds `sce_sys/keystone` (from the passcode), `sce_sys/pfs-version.dat` and `sce_sys/about/right.sprx`;
+- moves `param.json`, the icons and pictures (with their `.dds` versions) and `changeinfo/` into the package
+  header, packs everything else into the game file system;
+- refuses file names with non-ASCII characters (PS5PkgTool turns them into `?`).
+
+```bash
+mkpfs pack fpkg PPSA12345-app                          # UP0000-PPSA12345_00-...-A0100-V0100.pkg here
+mkpfs pack fpkg PPSA12345-app game.pkg --compression stored --verify
+mkpfs pack fpkg homebrew --content-id UP0000-TEST00000_00-HOMEBREW00000000 --title "My App"
+mkpfs verify game.pkg --source-dir PPSA12345-app       # every digest, then compare with the folder
+mkpfs unpack game.pkg out                              # extract the game files
+```
+
+| Option | Default | Meaning |
+|---|---|---|
+| `--content-id <id>` | `contentId` of `param.json` | 36-character content id; required when the folder has no `param.json`. |
+| `--passcode <32 chars>` | all zeros | The package key is derived from it. |
+| `--compression <auto\|fast\|stored>` | `auto` | Kraken where it pays; `fast` uses a quicker parse (about twice as fast, a few percent larger); `stored` does not compress. |
+| `--cpu-count <n>` | `0` (auto) | Kraken workers. Auto uses every logical processor (the encoder gains from hyper-threading); the package is the same whatever the count. |
+| `--verify` | off | Check the finished package and compare it with the folder. |
+| `--dry-run` | off | Check the folder and report what would be packed. |
+| `--no-fake-sign` | off | Pack plain ELF modules unchanged (a debug-mode console only starts fake-signed ones). |
+| `--seed <32 hex>` | from content id and passcode | Outer image seed; the same folder and options always give the same package. |
+| `--timestamp <unix>` | `SOURCE_DATE_EPOCH` or now | Time stamped on every file. |
+| `--title`, `--app-version`, `--drm-type` | title id, `01.00`, `free` | Used only to generate a missing `param.json`; a supplied one is packed unchanged. |
+| `--temp-folder <dir>` | next to the package | Where the inner image is staged while building; it is about as large as the game. |
+| `--verbose` | off | Log every file's placement and compression and the package layout. |
+| `--json` | off | Print the result as JSON. |
+
 ## Differences from Python MkPFS
 
 | Area | MkPFS.CSharp |
@@ -567,12 +641,17 @@ repository secret (a VirusTotal API key) it also scans every archive and links t
 | PS5 Game Compressor by Juma Sayeh | The PFSC repair logic. |
 | [APR Emu](https://github.com/drakmor/ampr_emu) by Drakmor | `ampr_emu.index` and the asset-pack format and tools that `ampr` ports. |
 | [PlayGo stub](https://github.com/drakmor/pgo_stub) by Drakmor | `libScePlayGo.sprx`. |
+| [LibProsperoPKG](https://github.com/SvenGDK/LibProsperoPKG) by SvenGDK (GPL-3.0-or-later) | PS5 package research; parts of the PS5 package builder, the Kraken encoder and the Kraken decoder are ported from it (the decoder derives from [ooz](https://github.com/powzix/ooz) by Powzix, GPL-3.0). |
+| [PS5PkgTool](https://github.com/pearlxcore/PS5PKGTool) by pearlxcore (GPL-3.0) | The package format `pack fpkg` reproduces, checked against its output (its engine is used as a black box, not copied). |
 
 Third-party components: [zlib](https://zlib.net) 1.3.1 (zlib license), [LZ4](https://github.com/lz4/lz4)
 1.9.4 and [Tomlyn](https://github.com/xoofx/Tomlyn) (BSD-2-Clause), [Avalonia](https://avaloniaui.net),
 [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet),
 [System.CommandLine](https://github.com/dotnet/command-line-api) and [Spectre.Console](https://spectreconsole.net)
 (MIT), and [Material Design Icons](https://pictogrammers.com/library/mdi/) (Apache-2.0).
+
+`pack fpkg` embeds Sony's `sce_sys/about/right.sprx`, which every debug package carries (PS5PkgTool ships the
+same file).
 
 Licensed under **GPL-3.0-only**, like MkPFS; see [LICENSE.md](LICENSE.md). This project is not affiliated with
 Sony Interactive Entertainment.

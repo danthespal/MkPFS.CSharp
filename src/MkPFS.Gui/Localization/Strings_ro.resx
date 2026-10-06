@@ -117,8 +117,10 @@ Ieșirea scrisă parțial este ștearsă; o reparare pe loc își termină mai �
   <data name="encryption" xml:space="preserve"><value>Criptare</value></data>
   <data name="err_process" xml:space="preserve"><value>✗ Procesul s-a încheiat cu codul {0}.</value></data>
   <data name="err_unexpected" xml:space="preserve"><value>[EROARE] Neașteptat: {0}</value></data>
+  <data name="eta_left" xml:space="preserve"><value>încă {0}</value></data>
   <data name="exf_cluster_size" xml:space="preserve"><value>Dimensiune cluster</value></data>
   <data name="exf_err_src" xml:space="preserve"><value>✗ Folderul sursă este obligatoriu.</value></data>
+  <data name="exf_free" xml:space="preserve"><value>Spațiu liber în imagine (de ex. 2GiB)</value></data>
   <data name="exf_out_label" xml:space="preserve"><value>Imagine de ieșire</value></data>
   <data name="exf_out_ph" xml:space="preserve"><value>Alege calea de ieșire…</value></data>
   <data name="exf_overwrite" xml:space="preserve"><value>Suprascrie ieșirea existentă</value></data>
@@ -128,6 +130,30 @@ Ieșirea scrisă parțial este ștearsă; o reparare pe loc își termină mai �
   <data name="exf_title" xml:space="preserve"><value>Împachetare exFAT</value></data>
   <data name="export_log" xml:space="preserve"><value>Exportă jurnalul</value></data>
   <data name="fmt_auto" xml:space="preserve"><value>Detectare automată</value></data>
+  <data name="fpk_comp_auto" xml:space="preserve"><value>Auto (Kraken unde merită)</value></data>
+  <data name="fpk_comp_fast" xml:space="preserve"><value>Rapid (Kraken, mai iute)</value></data>
+  <data name="fpk_comp_stored" xml:space="preserve"><value>Stocat (fără compresie)</value></data>
+  <data name="fpk_compression" xml:space="preserve"><value>Compresie</value></data>
+  <data name="fpk_content_id" xml:space="preserve"><value>ID conținut</value></data>
+  <data name="fpk_content_id_ph" xml:space="preserve"><value>Din param.json</value></data>
+  <data name="fpk_dry_run" xml:space="preserve"><value>Simulare (doar verificare)</value></data>
+  <data name="fpk_err_src" xml:space="preserve"><value>✗ Dosarul aplicației este obligatoriu.</value></data>
+  <data name="fpk_firmware" xml:space="preserve"><value>⚠ Pachetele false pornesc jocuri doar pe firmware PS5 11.60 sau mai vechi. Pe 11.61 și mai noi se instalează, dar jocul nu pornește; folosește acolo o imagine .ffpfsc cu ShadowMountPlus (până la 13.60).</value></data>
+  <data name="fpk_generated" xml:space="preserve"><value>param.json generat (când dosarul nu are): titlu, versiune, tip DRM</value></data>
+  <data name="fpk_no_fake_sign" xml:space="preserve"><value>Nu semna fals modulele ELF</value></data>
+  <data name="fpk_out_label" xml:space="preserve"><value>Pachet de ieșire</value></data>
+  <data name="fpk_out_ph" xml:space="preserve"><value>Selectează calea de ieșire…</value></data>
+  <data name="fpk_passcode" xml:space="preserve"><value>Cod de acces</value></data>
+  <data name="fpk_passcode_ph" xml:space="preserve"><value>32 de caractere (implicit: doar zerouri)</value></data>
+  <data name="fpk_seed" xml:space="preserve"><value>Sămânță</value></data>
+  <data name="fpk_seed_ph" xml:space="preserve"><value>32 cifre hex (implicit: din ID-ul conținutului și cod)</value></data>
+  <data name="fpk_src_label" xml:space="preserve"><value>Dosar aplicație</value></data>
+  <data name="fpk_src_ph" xml:space="preserve"><value>Selectează dosarul cu sce_sys și eboot.bin…</value></data>
+  <data name="fpk_subtitle" xml:space="preserve"><value>Creează un pachet de depanare PS5 cu semnătură falsă (.pkg) dintr-un dosar de aplicație</value></data>
+  <data name="fpk_temp_ph" xml:space="preserve"><value>Lângă pachet (imaginea interioară temporară e cât jocul)…</value></data>
+  <data name="fpk_title" xml:space="preserve"><value>Împachetare FPKG</value></data>
+  <data name="fpk_title_ph" xml:space="preserve"><value>Titlu</value></data>
+  <data name="fpk_verify" xml:space="preserve"><value>Verifică după creare</value></data>
   <data name="i_ekpfs" xml:space="preserve"><value>Cheie EKPFS (opțional)</value></data>
   <data name="i_ekpfs_ph" xml:space="preserve"><value>64 caractere hex…</value></data>
   <data name="i_err" xml:space="preserve"><value>✗ Calea imaginii este obligatorie.</value></data>
@@ -143,6 +169,7 @@ Ieșirea scrisă parțial este ștearsă; o reparare pe loc își termină mai �
   <data name="nav_inspect" xml:space="preserve"><value>Inspectare</value></data>
   <data name="nav_pack_exfat" xml:space="preserve"><value>Împachetare exFAT</value></data>
   <data name="nav_pack_file" xml:space="preserve"><value>Împachetare FFPFSC</value></data>
+  <data name="nav_pack_fpkg" xml:space="preserve"><value>Împachetare FPKG</value></data>
   <data name="nav_repair" xml:space="preserve"><value>Reparare</value></data>
   <data name="nav_tree" xml:space="preserve"><value>Arbore</value></data>
   <data name="nav_unpack" xml:space="preserve"><value>Despachetare</value></data>
@@ -219,6 +246,15 @@ Ieșirea scrisă parțial este ștearsă; o reparare pe loc își termină mai �
   <data name="t_newcrypt" xml:space="preserve"><value>Folosește derivarea EKPFS newCrypt</value></data>
   <data name="t_subtitle" xml:space="preserve"><value>Răsfoiește arborele de directoare dintr-o imagine PFS</value></data>
   <data name="t_title" xml:space="preserve"><value>Arbore</value></data>
+  <data name="tip_exf_free" xml:space="preserve"><value>Spațiu lăsat liber în exFAT, ca o montare citire-scriere să poată scrie în el: salvări, jurnale, urme AMPR Emu. Dimensiuni ca 512MiB sau 2GiB; gol sau 0 face o imagine strânsă fără spațiu liber.</value></data>
+  <data name="tip_fpk_compression" xml:space="preserve"><value>Auto comprimă cu Kraken unde economisește spațiu, ca PS5PkgTool. Stocat scrie toate fișierele necomprimate. Rapid comprimă aceleași blocuri cu o analiză mai rapidă: de aproximativ două ori mai repede, cu câteva procente mai mare.</value></data>
+  <data name="tip_fpk_content_id" xml:space="preserve"><value>ID de conținut de 36 de caractere. Lasă gol pentru a folosi contentId din sce_sys/param.json.</value></data>
+  <data name="tip_fpk_dry_run" xml:space="preserve"><value>Verifică dosarul și arată ce s-ar împacheta, fără a scrie un pachet.</value></data>
+  <data name="tip_fpk_generated" xml:space="preserve"><value>Folosit doar când dosarul nu are sce_sys/param.json; un param.json existent este împachetat neschimbat.</value></data>
+  <data name="tip_fpk_no_fake_sign" xml:space="preserve"><value>Împachetează modulele ELF neschimbate. O consolă în mod depanare pornește doar module cu semnătură falsă.</value></data>
+  <data name="tip_fpk_passcode" xml:space="preserve"><value>Codul din care se derivă cheia pachetului. Lasă gol pentru doar zerouri.</value></data>
+  <data name="tip_fpk_seed" xml:space="preserve"><value>Sămânța imaginii exterioare. Lasă gol pentru a o deriva, astfel același dosar dă mereu același pachet.</value></data>
+  <data name="tip_fpk_verify" xml:space="preserve"><value>Verifică toate amprentele pachetului terminat și compară-l cu dosarul sursă.</value></data>
   <data name="u_auto_subdir" xml:space="preserve"><value>→ Subfolder de ieșire: {0}</value></data>
   <data name="u_deep" xml:space="preserve"><value>Extrage fișierele dintr-un exFAT împachetat</value></data>
   <data name="u_ekpfs" xml:space="preserve"><value>Cheie EKPFS (opțional)</value></data>

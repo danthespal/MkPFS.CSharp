@@ -28,9 +28,15 @@ internal static class ReadCommands
         Option<string> format = new("--format") { Description = "Output format for inspection report", DefaultValueFactory = _ => "text" };
         format.AcceptOnlyFromAmong("text", "json");
         (Option<string?> key, Option<bool> newCrypt) = KeyOptions();
-        Command command = new("inspect", "Inspect image metadata and integrity summary") { image, format, key, newCrypt };
+        Option<string?> passcode = PKGCommands.PasscodeOption();
+        Command command = new("inspect", "Inspect image metadata and integrity summary") { image, format, key, newCrypt, passcode };
         command.SetAction(parse =>
         {
+            if (PKGCommands.IsPackage(FullPath(parse.GetValue(image)!)))
+            {
+                return PKGCommands.Inspect(ctx, FullPath(parse.GetValue(image)!), parse.GetValue(passcode), parse.GetValue(key), parse.GetValue(format) == "json");
+            }
+
             if (!TryKey(ctx, parse.GetValue(key), out byte[] ekpfs))
             {
                 return 2;
@@ -82,9 +88,15 @@ internal static class ReadCommands
         Option<bool> deep = new("--deep") { Description = "If the image wraps a single exFAT, list the files inside it" };
         Option<string> format = FormatOption();
         (Option<string?> key, Option<bool> newCrypt) = KeyOptions();
-        Command command = new("tree", "Print source folder or image tree representation") { image, deep, format, key, newCrypt };
+        Option<string?> passcode = PKGCommands.PasscodeOption();
+        Command command = new("tree", "Print source folder or image tree representation") { image, deep, format, key, newCrypt, passcode };
         command.SetAction(parse =>
         {
+            if (PKGCommands.IsPackage(FullPath(parse.GetValue(image)!)))
+            {
+                return PKGCommands.Tree(ctx, FullPath(parse.GetValue(image)!), parse.GetValue(passcode), parse.GetValue(key));
+            }
+
             if (!TryKey(ctx, parse.GetValue(key), out byte[] ekpfs))
             {
                 return 2;
@@ -154,7 +166,8 @@ internal static class ReadCommands
         (Option<string?> key, Option<bool> newCrypt) = KeyOptions();
         Option<string> format = FormatOption();
         Option<bool> noProgress = new("--no-progress") { Description = "Disable the extraction progress bar on stderr" };
-        Command command = new("unpack", "Extract files from image to destination directory") { image, output, overwrite, deep, only, key, newCrypt, format, noProgress };
+        Option<string?> passcode = PKGCommands.PasscodeOption();
+        Command command = new("unpack", "Extract files from image to destination directory") { image, output, overwrite, deep, only, key, newCrypt, format, noProgress, passcode };
         command.SetAction(parse =>
         {
             if (!TryKey(ctx, parse.GetValue(key), out byte[] ekpfs))
@@ -176,6 +189,11 @@ internal static class ReadCommands
             {
                 ctx.Info($"output path {outputPath} exists (use --overwrite to force)");
                 return 2;
+            }
+
+            if (PKGCommands.IsPackage(path))
+            {
+                return PKGCommands.Unpack(ctx, path, outputPath, parse.GetValue(passcode), parse.GetValue(key), !parse.GetValue(noProgress));
             }
 
             Core.Diagnostics.IProgressSink? progress = ctx.CreateProgress(!parse.GetValue(noProgress));
@@ -234,10 +252,23 @@ internal static class ReadCommands
         (Option<string?> key, Option<bool> newCrypt) = KeyOptions();
         Option<string> format = FormatOption();
         Option<bool> requireGameFiles = new("--require-game-files") { Description = "Enable the PS5 game-file checklist (warn on missing sce_sys/param.json, eboot.bin, pfs-version.dat)" };
-        Command command = new("verify", "Validate image structure and payload checksums") { image, sourceDir, sourceFile, expectCrc, expectManifest, key, newCrypt, format, requireGameFiles };
+        Option<string?> passcode = PKGCommands.PasscodeOption();
+        Command command = new("verify", "Validate image structure and payload checksums") { image, sourceDir, sourceFile, expectCrc, expectManifest, key, newCrypt, format, requireGameFiles, passcode };
         command.SetAction(parse =>
         {
             string path = FullPath(parse.GetValue(image)!);
+            if (PKGCommands.IsPackage(path))
+            {
+                if (parse.GetValue(sourceFile) is not null)
+                {
+                    ctx.Info("--source-file is not supported for PS5 packages; use --source-dir");
+                    return 2;
+                }
+
+                string? pkgSource = parse.GetValue(sourceDir) is { } dir ? FullPath(dir) : null;
+                return PKGCommands.Verify(ctx, path, parse.GetValue(passcode), parse.GetValue(key), pkgSource);
+            }
+
             string? dirArg = parse.GetValue(sourceDir);
             string? fileArg = parse.GetValue(sourceFile);
             if (dirArg is not null && fileArg is not null)

@@ -20,6 +20,7 @@ internal static class PackCommands
         pack.Subcommands.Add(FolderCommand(ctx));
         pack.Subcommands.Add(FileCommand(ctx));
         pack.Subcommands.Add(Exfat(ctx));
+        pack.Subcommands.Add(FPKGPackCommand.Create(ctx));
         return pack;
     }
 

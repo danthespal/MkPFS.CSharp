@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    FPKG oracle runner. Not part of MkPFS.slnx. build_fpkg_goldens.py copies LibProsperoPkg into
+    $(FPKGOracleLib), applies the hooks in ../OracleHooks.cs, then builds this project.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>FPKGOracle</AssemblyName>
+    <RootNamespace>FPKGOracle</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <FPKGOracleLib Condition="'$(FPKGOracleLib)' == ''">$(MSBuildThisFileDirectory)..\..\..\tmp\oracle-fpkg\lib\</FPKGOracleLib>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(FPKGOracleLib)LibProsperoPkg.csproj" />
+  </ItemGroup>
+
+</Project>

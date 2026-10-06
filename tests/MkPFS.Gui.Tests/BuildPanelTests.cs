@@ -36,6 +36,42 @@ public sealed class BuildPanelTests
         panel.Overwrite = true;
         panel.Ampr.LibsDir = "L:/ampr";
         Assert.Equal(["pack", "exfat", "D:/games/x", "D:/x.exfat", "--overwrite", "--ampr-libs", "L:/ampr"], Build(panel, out _));
+        panel.FreeSpace = " 2GiB ";
+        Assert.Equal(["pack", "exfat", "D:/games/x", "D:/x.exfat", "--overwrite", "--free-space", "2GiB", "--ampr-libs", "L:/ampr"], Build(panel, out _));
+    }
+
+    [Fact]
+    public void Pack_fpkg_builds_arguments_and_names_the_package_after_the_content_id()
+    {
+        using TempDir dir = new();
+        PackFPKGPanelViewModel panel = new(Colors.Blue, Sync());
+        Assert.Null(Build(panel, out string? error));
+        Assert.Equal("✗ Application folder is required.", error);
+
+        string game = Game(dir);
+        panel.Source = game;
+        string output = Path.Combine(dir.Path, "UP0001-PPSA01234_00-ASTROBOT00000000-A0100-V0100.pkg");
+        Assert.Equal(output, panel.Output);
+        string auto = panel.AutoCpu.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        Assert.Equal(["pack", "fpkg", game, output, "--compression", "auto", "--cpu-count", auto, "--verify"], Build(panel, out _));
+
+        panel.VerifyAfter = false;
+        panel.DryRun = panel.NoFakeSign = true;
+        panel.Compression = panel.Compressions.Single(c => c.Value == "stored");
+        panel.ContentId = " UP0001-PPSA01234_00-ASTROBOT00000001 ";
+        panel.Passcode = new string('a', 32);
+        panel.Seed = "000102030405060708090a0b0c0d0e0f";
+        panel.AppTitle = "Astro";
+        panel.AppVersion = "01.02";
+        panel.DrmType = panel.DrmTypes.Single(d => d.Value == "standard");
+        panel.TempFolder = "T:/scratch";
+        panel.Verbose = true;
+        panel.CpuChoice = panel.CpuChoices[1];
+        Assert.Equal(
+            ["pack", "fpkg", game, output, "--content-id", "UP0001-PPSA01234_00-ASTROBOT00000001", "--passcode", new string('a', 32),
+             "--compression", "stored", "--cpu-count", "1", "--dry-run", "--no-fake-sign", "--temp-folder", "T:/scratch", "--verbose", "--seed", "000102030405060708090a0b0c0d0e0f", "--title", "Astro",
+             "--app-version", "01.02", "--drm-type", "standard"],
+            Build(panel, out _));
     }
 
     [Fact]

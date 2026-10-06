@@ -1,0 +1,103 @@
+// Ported from LibProsperoPkg (SvenGDK, GPL-3.0-or-later) Util/SubStream.cs at commit 748eabf
+// for byte parity with its packages (FPKG plan F4b). See NOTICE.
+using MkPFS.Core.Compression.Kraken;
+// LibProsperoPkg - A library for building and inspecting PS5 packages.
+// Copyright (C) 2026 SvenGDK
+//
+// Shared utility primitives: crypto, binary IO and stream helpers.
+#nullable disable
+using System;
+using System.IO;
+
+namespace MkPFS.Build.FPKG.Prospero;
+
+public class SubStream : Stream
+{
+    public override bool CanRead => true;
+
+    public override bool CanSeek => true;
+
+    public override bool CanWrite => false;
+
+    public override long Length { get; }
+
+    public override long Position
+    {
+        get
+        {
+            return position;
+        }
+
+        set
+        {
+            Seek(value, SeekOrigin.Begin);
+        }
+    }
+
+    /// <summary>
+    /// Creates a non-owning read-only window into a stream
+    /// </summary>
+    public SubStream(Stream s, long offset, long length)
+    {
+        this.parent = s;
+        this.offset = offset;
+        Length = length;
+    }
+
+    private Stream parent;
+    private long offset;
+    private long position;
+
+    public override int Read(byte[] buffer, int offset, int count)
+    {
+        parent.Seek(this.offset + Position, SeekOrigin.Begin);
+        if (count + Position > Length)
+        {
+            count = (int)(Length - Position);
+        }
+        int bytes_read = parent.Read(buffer, offset, count);
+        position += bytes_read;
+        return bytes_read;
+    }
+
+    public override long Seek(long offset, SeekOrigin origin)
+    {
+        switch (origin)
+        {
+            case SeekOrigin.Begin:
+                break;
+            case SeekOrigin.Current:
+                offset += position;
+                break;
+            case SeekOrigin.End:
+                offset += Length;
+                break;
+        }
+        if (offset > Length)
+        {
+            offset = Length;
+        }
+        else if (offset < 0)
+        {
+            offset = 0;
+        }
+        position = offset;
+        return position;
+    }
+
+    #region Not Supported
+    public override void Flush()
+    {
+        throw new NotSupportedException();
+    }
+    public override void SetLength(long value)
+    {
+        throw new NotSupportedException();
+    }
+
+    public override void Write(byte[] buffer, int offset, int count)
+    {
+        throw new NotSupportedException();
+    }
+    #endregion
+}

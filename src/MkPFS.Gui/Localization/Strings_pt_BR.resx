@@ -117,8 +117,10 @@ A saída escrita pela metade é removida; um reparo no local termina sua regrava
   <data name="encryption" xml:space="preserve"><value>Criptografia</value></data>
   <data name="err_process" xml:space="preserve"><value>✗ Processo encerrado com código {0}.</value></data>
   <data name="err_unexpected" xml:space="preserve"><value>[ERRO] Inesperado: {0}</value></data>
+  <data name="eta_left" xml:space="preserve"><value>faltam {0}</value></data>
   <data name="exf_cluster_size" xml:space="preserve"><value>Tamanho do Cluster</value></data>
   <data name="exf_err_src" xml:space="preserve"><value>✗ A pasta fonte é obrigatória.</value></data>
+  <data name="exf_free" xml:space="preserve"><value>Espaço livre dentro da imagem (ex.: 2GiB)</value></data>
   <data name="exf_out_label" xml:space="preserve"><value>Imagem de Saída</value></data>
   <data name="exf_out_ph" xml:space="preserve"><value>Selecione o caminho de saída…</value></data>
   <data name="exf_overwrite" xml:space="preserve"><value>Sobrescrever pasta de saída existente</value></data>
@@ -128,6 +130,30 @@ A saída escrita pela metade é removida; um reparo no local termina sua regrava
   <data name="exf_title" xml:space="preserve"><value>Empacotar EXFAT</value></data>
   <data name="export_log" xml:space="preserve"><value>Exportar Log</value></data>
   <data name="fmt_auto" xml:space="preserve"><value>Detecção automática</value></data>
+  <data name="fpk_comp_auto" xml:space="preserve"><value>Auto (Kraken quando compensa)</value></data>
+  <data name="fpk_comp_fast" xml:space="preserve"><value>Rápido (Kraken, mais ágil)</value></data>
+  <data name="fpk_comp_stored" xml:space="preserve"><value>Armazenado (sem compressão)</value></data>
+  <data name="fpk_compression" xml:space="preserve"><value>Compressão</value></data>
+  <data name="fpk_content_id" xml:space="preserve"><value>ID de conteúdo</value></data>
+  <data name="fpk_content_id_ph" xml:space="preserve"><value>Do param.json</value></data>
+  <data name="fpk_dry_run" xml:space="preserve"><value>Simulação (apenas verificar)</value></data>
+  <data name="fpk_err_src" xml:space="preserve"><value>✗ A pasta do aplicativo é obrigatória.</value></data>
+  <data name="fpk_firmware" xml:space="preserve"><value>⚠ Pacotes falsos só iniciam jogos no firmware 11.60 do PS5 ou anterior. No 11.61 e mais novos eles instalam, mas o jogo não inicia; use uma imagem .ffpfsc com o ShadowMountPlus nesses casos (até 13.60).</value></data>
+  <data name="fpk_generated" xml:space="preserve"><value>param.json gerado (quando a pasta não tem): título, versão, tipo de DRM</value></data>
+  <data name="fpk_no_fake_sign" xml:space="preserve"><value>Não assinar falsamente os módulos ELF</value></data>
+  <data name="fpk_out_label" xml:space="preserve"><value>Pacote de saída</value></data>
+  <data name="fpk_out_ph" xml:space="preserve"><value>Selecione o caminho de saída…</value></data>
+  <data name="fpk_passcode" xml:space="preserve"><value>Código de acesso</value></data>
+  <data name="fpk_passcode_ph" xml:space="preserve"><value>32 caracteres (padrão: só zeros)</value></data>
+  <data name="fpk_seed" xml:space="preserve"><value>Semente</value></data>
+  <data name="fpk_seed_ph" xml:space="preserve"><value>32 dígitos hex (padrão: do ID de conteúdo e do código)</value></data>
+  <data name="fpk_src_label" xml:space="preserve"><value>Pasta do aplicativo</value></data>
+  <data name="fpk_src_ph" xml:space="preserve"><value>Selecione a pasta com sce_sys e eboot.bin…</value></data>
+  <data name="fpk_subtitle" xml:space="preserve"><value>Criar um pacote de depuração PS5 com assinatura falsa (.pkg) a partir de uma pasta de aplicativo</value></data>
+  <data name="fpk_temp_ph" xml:space="preserve"><value>Ao lado do pacote (a imagem interna temporária tem o tamanho do jogo)…</value></data>
+  <data name="fpk_title" xml:space="preserve"><value>Empacotar FPKG</value></data>
+  <data name="fpk_title_ph" xml:space="preserve"><value>Título</value></data>
+  <data name="fpk_verify" xml:space="preserve"><value>Verificar após criar</value></data>
   <data name="i_ekpfs" xml:space="preserve"><value>Chave EKPFS (opcional)</value></data>
   <data name="i_ekpfs_ph" xml:space="preserve"><value>64 caracteres hex…</value></data>
   <data name="i_err" xml:space="preserve"><value>✗ O caminho da imagem é obrigatório.</value></data>
@@ -143,6 +169,7 @@ A saída escrita pela metade é removida; um reparo no local termina sua regrava
   <data name="nav_inspect" xml:space="preserve"><value>Inspecionar</value></data>
   <data name="nav_pack_exfat" xml:space="preserve"><value>Empacotar EXFAT</value></data>
   <data name="nav_pack_file" xml:space="preserve"><value>Empacotar FFPFSC</value></data>
+  <data name="nav_pack_fpkg" xml:space="preserve"><value>Empacotar FPKG</value></data>
   <data name="nav_repair" xml:space="preserve"><value>Reparar</value></data>
   <data name="nav_tree" xml:space="preserve"><value>Árvore</value></data>
   <data name="nav_unpack" xml:space="preserve"><value>Desempacotar</value></data>
@@ -219,6 +246,15 @@ A saída escrita pela metade é removida; um reparo no local termina sua regrava
   <data name="t_newcrypt" xml:space="preserve"><value>Usar derivação newCrypt EKPFS</value></data>
   <data name="t_subtitle" xml:space="preserve"><value>Navegar pela árvore de diretórios embutida na imagem PFS</value></data>
   <data name="t_title" xml:space="preserve"><value>Árvore</value></data>
+  <data name="tip_exf_free" xml:space="preserve"><value>Espaço livre dentro do exFAT para que uma montagem de leitura e escrita possa gravar nele: saves, logs, rastros do AMPR Emu. Tamanhos como 512MiB ou 2GiB; vazio ou 0 cria uma imagem justa sem espaço livre.</value></data>
+  <data name="tip_fpk_compression" xml:space="preserve"><value>Auto comprime com Kraken onde economiza espaço, como o PS5PkgTool. Armazenado grava todos os arquivos sem compressão. Rápido comprime os mesmos blocos com uma análise mais rápida: cerca de duas vezes mais rápido, alguns por cento maior.</value></data>
+  <data name="tip_fpk_content_id" xml:space="preserve"><value>ID de conteúdo de 36 caracteres. Deixe vazio para usar o contentId de sce_sys/param.json.</value></data>
+  <data name="tip_fpk_dry_run" xml:space="preserve"><value>Verificar a pasta e mostrar o que seria empacotado, sem gravar um pacote.</value></data>
+  <data name="tip_fpk_generated" xml:space="preserve"><value>Usado apenas quando a pasta não tem sce_sys/param.json; um param.json fornecido é empacotado sem alterações.</value></data>
+  <data name="tip_fpk_no_fake_sign" xml:space="preserve"><value>Empacotar os módulos ELF sem alterações. Um console em modo de depuração só inicia módulos com assinatura falsa.</value></data>
+  <data name="tip_fpk_passcode" xml:space="preserve"><value>Código do qual a chave do pacote é derivada. Deixe vazio para só zeros.</value></data>
+  <data name="tip_fpk_seed" xml:space="preserve"><value>Semente da imagem externa. Deixe vazio para derivá-la, assim a mesma pasta sempre gera o mesmo pacote.</value></data>
+  <data name="tip_fpk_verify" xml:space="preserve"><value>Verificar todos os resumos do pacote pronto e compará-lo com a pasta de origem.</value></data>
   <data name="u_auto_subdir" xml:space="preserve"><value>→ Subpasta de saída: {0}</value></data>
   <data name="u_deep" xml:space="preserve"><value>Extrair arquivos dentro de um exFAT encapsulado</value></data>
   <data name="u_ekpfs" xml:space="preserve"><value>Chave EKPFS (opcional)</value></data>

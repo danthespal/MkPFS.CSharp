@@ -1,3 +1,4 @@
+using System.Runtime.ExceptionServices;
 using System.Security.Cryptography;
 using MkPFS.Core.Diagnostics;
 using MkPFS.Core.Exfat;
@@ -295,15 +296,22 @@ public static class PFSExtractor
     public static ExtractionResult ExtractExfat(string imagePath, string outputPath, IProgressSink? progress = null, IReadOnlyList<string>? selectors = null)
     {
         ExtractionResult result = new() { ImagePath = imagePath, OutputPath = outputPath };
-        FileStream stream;
+        FileStream? stream = null;
         ExfatReader reader;
         try
         {
             stream = File.OpenRead(imagePath);
             reader = new ExfatReader(stream);
         }
-        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
+        catch (Exception ex)
         {
+            // A corrupt image must not leave the file open (and locked) behind the error.
+            stream?.Dispose();
+            if (ex is not (IOException or InvalidDataException or UnauthorizedAccessException))
+            {
+                throw;
+            }
+
             result.Errors.Add($"failed to parse exFAT image: {ex.Message}");
             return result;
         }
@@ -372,35 +380,67 @@ public static class PFSExtractor
                 return name.StartsWith('.') || name.Equals("thumbs.db", StringComparison.OrdinalIgnoreCase) || name.Equals("desktop.ini", StringComparison.OrdinalIgnoreCase);
             }
 
-            Dictionary<string, string> sourceHashes = new(StringComparer.Ordinal);
-            foreach (string file in Directory.EnumerateFiles(root, "*", new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = 0, IgnoreInaccessible = true }).Order(StringComparer.Ordinal))
+            // The source hashes in parallel on a background task while the image is walked below; results go into
+            // the map in path order (a later case-variant overwrites, as before), and the first unreadable file
+            // in that order fails the run.
+            List<(string File, string Rel)> sourceFiles = [.. Directory.EnumerateFiles(root, "*", new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = 0, IgnoreInaccessible = true })
+                .Order(StringComparer.Ordinal)
+                .Select(file => (file, Path.GetRelativePath(root, file).Replace('\\', '/')))
+                .Where(f => !IsMetadata(f.Item2))];
+            Task<Dictionary<string, string>> sourceTask = Task.Run(() =>
             {
-                string rel = Path.GetRelativePath(root, file).Replace('\\', '/');
-                if (!IsMetadata(rel))
+                string?[] hashes = new string?[sourceFiles.Count];
+                ExceptionDispatchInfo?[] failures = new ExceptionDispatchInfo?[sourceFiles.Count];
+                Parallel.For(0, sourceFiles.Count, i =>
                 {
-                    using FileStream fs = File.OpenRead(file);
-                    sourceHashes[rel.ToLowerInvariant()] = Convert.ToHexStringLower(SHA256.HashData(fs));
+                    try
+                    {
+                        using FileStream fs = File.OpenRead(sourceFiles[i].File);
+                        hashes[i] = Convert.ToHexStringLower(SHA256.HashData(fs));
+                    }
+                    catch (Exception ex)
+                    {
+                        failures[i] = ExceptionDispatchInfo.Capture(ex);
+                    }
+                });
+                Dictionary<string, string> map = new(StringComparer.Ordinal);
+                for (int i = 0; i < sourceFiles.Count; i++)
+                {
+                    failures[i]?.Throw();
+                    map[sourceFiles[i].Rel.ToLowerInvariant()] = hashes[i]!;
                 }
-            }
+
+                return map;
+            });
 
             Dictionary<string, string> imageHashes = new(StringComparer.Ordinal);
-            foreach (ExfatEntry entry in reader.EnumerateFiles())
+            try
             {
-                string rel = entry.RelPath.Replace('\\', '/').TrimStart('/');
-                if (IsMetadata(rel))
+                foreach (ExfatEntry entry in reader.EnumerateFiles())
                 {
-                    continue;
-                }
+                    string rel = entry.RelPath.Replace('\\', '/').TrimStart('/');
+                    if (IsMetadata(rel))
+                    {
+                        continue;
+                    }
 
-                using IncrementalHash hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-                foreach (ReadOnlyMemory<byte> chunk in reader.ReadFile(entry))
-                {
-                    hash.AppendData(chunk.Span);
-                }
+                    using IncrementalHash hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+                    foreach (ReadOnlyMemory<byte> chunk in reader.ReadFile(entry))
+                    {
+                        hash.AppendData(chunk.Span);
+                    }
 
-                imageHashes[rel.ToLowerInvariant()] = Convert.ToHexStringLower(hash.GetHashAndReset());
+                    imageHashes[rel.ToLowerInvariant()] = Convert.ToHexStringLower(hash.GetHashAndReset());
+                }
+            }
+            catch
+            {
+                // The source used to be hashed first, so its failure still takes precedence over the image's.
+                sourceTask.GetAwaiter().GetResult();
+                throw;
             }
 
+            Dictionary<string, string> sourceHashes = sourceTask.GetAwaiter().GetResult();
             List<string> missing = [.. sourceHashes.Keys.Where(k => !imageHashes.ContainsKey(k)).Order(StringComparer.Ordinal)];
             List<string> extra = [.. imageHashes.Keys.Where(k => !sourceHashes.ContainsKey(k)).Order(StringComparer.Ordinal)];
             if (missing.Count > 0)

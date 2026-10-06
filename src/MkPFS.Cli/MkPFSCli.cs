@@ -81,6 +81,12 @@ public static class MkPFSCli
             ctx.Error(ex.Message);
             return 1;
         }
+        catch (AggregateException ex) when (ex.Flatten().InnerExceptions.All(e => e is IOException or InvalidDataException or UnauthorizedAccessException))
+        {
+            // The same input errors raised inside a parallel loop (checks, unpack): one line, not a stack trace.
+            ctx.Error(ex.Flatten().InnerExceptions[0].Message);
+            return 1;
+        }
         catch (AggregateException ex) when (ex.Flatten().InnerExceptions.All(e => e is OperationCanceledException))
         {
             // A cancelled job sink throws inside parallel compression, which wraps it; surface it as a cancellation.
@@ -134,6 +140,43 @@ public static class MkPFSCli
         return command;
     }
 
+    // Builds a tiny Kraken-mode debug package and runs every package check on it: exercises the managed SHA3, AES-XTS,
+    // RSA and Kraken paths (also in Native AOT builds).
+    private static bool SelfTestPackage(IMkPFSLog log)
+    {
+        string root = Path.Combine(Path.GetTempPath(), "mkpfs-selftest-" + Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(root, "src", "data"));
+            File.WriteAllBytes(Path.Combine(root, "src", "eboot.bin"), new byte[0x1000]);
+            File.WriteAllText(Path.Combine(root, "src", "data", "text.txt"), string.Concat(Enumerable.Repeat("mkpfs selftest package\n", 20_000)));
+            string pkg = Path.Combine(root, "selftest.pkg");
+            Build.FPKG.FPKGBuilder.Build(new Build.FPKG.FPKGBuildOptions
+            {
+                SourceDir = Path.Combine(root, "src"),
+                ContentId = "UP9000-TEST00000_00-MKPFSSELFTEST000",
+                Time = DateTimeOffset.FromUnixTimeSeconds(1_700_000_000),
+                Compress = true,
+            }, pkg);
+            using Core.PKG.PS5Package package = Core.PKG.PS5Package.Open(pkg);
+            List<Core.PKG.PS5Check> failed = [.. Core.PKG.PS5PackageVerifier.Verify(package).Where(c => !c.Passed)];
+            log.Info($"debug package: {new FileInfo(pkg).Length} bytes, {(failed.Count == 0 ? "every check ok" : "FAILED " + string.Join(", ", failed.Select(c => c.Name)))}");
+            return failed.Count == 0;
+        }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
+        {
+            log.Info($"debug package: FAILED {ex.Message}");
+            return false;
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, recursive: true);
+            }
+        }
+    }
+
     // Hidden diagnostics: proves the native zlib loads (also in Native AOT builds).
     private static Command BuildSelfTestCommand()
     {
@@ -155,7 +198,8 @@ public static class MkPFSCli
             int length = Zlib.Decompress(compressed, restored);
             bool ok = length == block.Length && restored.AsSpan().SequenceEqual(block);
             log.Info($"zlib {Zlib.NativeVersion}: 65536 -> {compressed.Length} bytes, round-trip {(ok ? "ok" : "FAILED")}");
-            return ok ? 0 : 1;
+            bool package = SelfTestPackage(log);
+            return ok && package ? 0 : 1;
         });
         return command;
     }

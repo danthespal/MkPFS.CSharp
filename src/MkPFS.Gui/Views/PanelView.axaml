@@ -23,6 +23,7 @@
             <ContentControl.DataTemplates>
               <DataTemplate DataType="vm:PackExfatPanelViewModel"><panels:PackExfatForm /></DataTemplate>
               <DataTemplate DataType="vm:PackFilePanelViewModel"><panels:PackFileForm /></DataTemplate>
+              <DataTemplate DataType="vm:PackFPKGPanelViewModel"><panels:PackFPKGForm /></DataTemplate>
               <DataTemplate DataType="vm:VerifyPanelViewModel"><panels:VerifyForm /></DataTemplate>
               <DataTemplate DataType="vm:RepairPanelViewModel"><panels:RepairForm /></DataTemplate>
               <DataTemplate DataType="vm:InspectPanelViewModel"><panels:InspectForm /></DataTemplate>

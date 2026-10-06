@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    PS5PkgTool oracle runner (FPKG plan F5). Not part of MkPFS.slnx. build_ppt_goldens.py builds it against
+    the PS5PkgTool checkout in $(PS5PkgToolDir), whose ProsperoPkgTool engine (MIT, binary) writes the packages.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>PPTOracle</AssemblyName>
+    <RootNamespace>PPTOracle</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <IsAotCompatible>false</IsAotCompatible>
+    <PS5PkgToolDir Condition="'$(PS5PkgToolDir)' == ''">$(MSBuildThisFileDirectory)..\..\..\..\PS5PkgTool\</PS5PkgToolDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(PS5PkgToolDir)PS5PKGTool.Core\PS5PKGTool.Core.csproj" />
+  </ItemGroup>
+
+</Project>

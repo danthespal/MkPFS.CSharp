@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\MkPFS.Core\MkPFS.Core.csproj" />
@@ -8,10 +8,25 @@
     <PackageReference Include="Tomlyn" Version="2.10.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="MkPFS.Parity" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- sce_sys/about/right.sprx that Publishing Tools adds to every application (byte-identical). -->
+    <EmbeddedResource Include="FPKG/Resources/right.sprx" LogicalName="MkPFS.Build.FPKG.right.sprx" />
+    <!-- Public RSA moduli for the CNT key entries and the header seal (LibProsperoPkg Keys/Data; the
+         metadata modulus is taken from its key file, the private part is not shipped). -->
+    <EmbeddedResource Include="FPKG/Resources/passcode_moduli.bin" LogicalName="MkPFS.Build.FPKG.passcode_moduli.bin" />
+    <EmbeddedResource Include="FPKG/Resources/mount_image_modulus.bin" LogicalName="MkPFS.Build.FPKG.mount_image_modulus.bin" />
+    <EmbeddedResource Include="FPKG/Resources/pkg_meta_modulus.bin" LogicalName="MkPFS.Build.FPKG.pkg_meta_modulus.bin" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
 </Project>

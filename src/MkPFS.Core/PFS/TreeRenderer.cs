@@ -37,6 +37,46 @@ public static class TreeRenderer
     /// <summary>Render an exFAT tree with the same ordering rules.</summary>
     /// <param name="entries">Entries at one level.</param>
     /// <returns>Lines.</returns>
+    /// <summary>Render a list of slash-separated paths in the same style as <see cref="RenderPFS"/>.</summary>
+    /// <param name="entries">Paths and whether each is a directory.</param>
+    /// <returns>Tree lines.</returns>
+    public static List<string> RenderPaths(IEnumerable<(string Path, bool IsDirectory)> entries)
+    {
+        Dictionary<string, List<(string Name, bool IsDirectory)>> children = new(StringComparer.Ordinal);
+        foreach ((string path, bool isDirectory) in entries)
+        {
+            int slash = path.LastIndexOf('/');
+            string parent = slash < 0 ? string.Empty : path[..slash];
+            if (!children.TryGetValue(parent, out List<(string Name, bool IsDirectory)>? list))
+            {
+                children[parent] = list = [];
+            }
+
+            list.Add((path[(slash + 1)..], isDirectory));
+        }
+
+        List<string> lines = [];
+        void Render(string dir, string prefix)
+        {
+            List<(string Name, bool IsDirectory)> ordered = [.. (children.GetValueOrDefault(dir) ?? [])
+                .OrderBy(e => !e.IsDirectory)
+                .ThenBy(e => e.Name.ToLowerInvariant(), StringComparer.Ordinal)
+                .ThenBy(e => e.Name, StringComparer.Ordinal)];
+            for (int i = 0; i < ordered.Count; i++)
+            {
+                bool last = i == ordered.Count - 1;
+                lines.Add(prefix + (last ? "`-- " : "|-- ") + ordered[i].Name);
+                if (ordered[i].IsDirectory)
+                {
+                    Render(dir.Length == 0 ? ordered[i].Name : dir + "/" + ordered[i].Name, prefix + (last ? "    " : "|   "));
+                }
+            }
+        }
+
+        Render(string.Empty, string.Empty);
+        return lines;
+    }
+
     public static List<string> RenderExfat(IEnumerable<ExfatEntry> entries)
     {
         List<string> lines = [];

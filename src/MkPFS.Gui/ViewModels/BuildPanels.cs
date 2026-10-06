@@ -26,6 +26,10 @@ public sealed partial class PackExfatPanelViewModel(Color accent, JobRunner? job
     [ObservableProperty]
     public partial bool Overwrite { get; set; }
 
+    /// <summary><c>--free-space</c>: free space inside the image, e.g. <c>2GiB</c>; empty for a tight image.</summary>
+    [ObservableProperty]
+    public partial string FreeSpace { get; set; } = string.Empty;
+
     /// <summary>APR Emu libraries and index.</summary>
     public AmprSettingsViewModel Ampr { get; } = new();
 
@@ -62,6 +66,7 @@ public sealed partial class PackExfatPanelViewModel(Color accent, JobRunner? job
         }
 
         AddFlag(args, Overwrite, "--overwrite");
+        AddOption(args, "--free-space", FreeSpace);
         if (ClusterSize is { Value: not "auto" } cluster)
         {
             args.Add("--cluster-size");

@@ -8,6 +8,7 @@ the Python tools on generated inputs and record what they produce.
 | [Python MkPFS](https://github.com/PSBrew/MkPFS) 1.0.0 | `../MkPFS` | Images, logs and game metadata (`build_goldens.py`). |
 | [ampr_emu](https://github.com/drakmor/ampr_emu) `tools/ampr_pack.py` 4.0 | `../ampr_emu` | AMPR asset packs (`build_ampr_goldens.py`). |
 | ampr_emu `tools/ampr_pack_profile.py` 4.1 | `../ampr_emu` | `mkpfs ampr profile` (`check_ampr_profile.py`). |
+| [LibProsperoPKG](https://github.com/SvenGDK/LibProsperoPKG) 2.6.0 (C#) | `../LibProsperoPKG` | PS5 debug packages for `pack fpkg` ([`tools/oracle-fpkg`](../oracle-fpkg/README.md)). |
 
 The generated corpus lives in `tests/fixtures/generated/` (git-ignored). Without it, the parity tests skip.
 

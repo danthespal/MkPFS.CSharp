@@ -1,3 +1,4 @@
+using System.Runtime.ExceptionServices;
 using MkPFS.Core.Crypto;
 using MkPFS.Core.PFSC;
 using MkPFS.Core.Util;
@@ -314,14 +315,69 @@ public sealed class PFSImage : IDisposable
             throw new InvalidDataException($"PFSC logical size {reader.LogicalSize} is smaller than inode size {expected}");
         }
 
-        byte[] block = new byte[reader.Header.LogicalBlockSize];
+        // Batches of blocks: stored bytes are read in order, decoded in parallel (each block is independent),
+        // then handed out in order. A block that fails to decode throws when its turn comes, after the blocks
+        // before it, as a block-by-block decode would.
+        int blockSize = reader.Header.LogicalBlockSize;
+        int batch = Math.Max(1, chunkSize / Math.Max(1, blockSize));
+        byte[][] decoded = new byte[batch][];
+        byte[]?[] storedBlocks = new byte[batch][];
+        ExceptionDispatchInfo?[] errors = new ExceptionDispatchInfo?[batch];
+        long blocks = Math.Min(reader.BlockCount, (expected + blockSize - 1) / blockSize);
         long emitted = 0;
-        for (long i = 0; i < reader.BlockCount && emitted < expected; i++)
+        for (long first = 0; first < blocks; first += batch)
         {
-            reader.DecodeBlock(i, block);
-            int take = (int)Math.Min(block.Length, expected - emitted);
-            emitted += take;
-            yield return block.AsMemory(0, take);
+            int count = (int)Math.Min(batch, blocks - first);
+            for (int k = 0; k < count; k++)
+            {
+                errors[k] = null;
+                try
+                {
+                    int length = reader.StoredLength(first + k);
+                    storedBlocks[k] = length > blockSize ? null : new byte[length];
+                    if (storedBlocks[k] is { } bytes)
+                    {
+                        reader.ReadStoredBlock(first + k, bytes);
+                    }
+                }
+                catch (Exception ex) when (ex is IOException or InvalidDataException)
+                {
+                    errors[k] = ExceptionDispatchInfo.Capture(ex);
+                }
+            }
+
+            long batchFirst = first;
+            Parallel.For(0, count, k =>
+            {
+                if (errors[k] is not null)
+                {
+                    return;
+                }
+
+                decoded[k] ??= new byte[blockSize];
+                try
+                {
+                    // An oversized block is reported by DecodeBlock's own check, with its message.
+                    if (storedBlocks[k] is null)
+                    {
+                        throw new InvalidDataException($"PFSC block {batchFirst + k} stored size {reader.StoredLength(batchFirst + k)} exceeds logical size {blockSize}");
+                    }
+
+                    PFSCReader.DecodeStoredBlock(storedBlocks[k], decoded[k], batchFirst + k);
+                }
+                catch (Exception ex) when (ex is IOException or InvalidDataException)
+                {
+                    errors[k] = ExceptionDispatchInfo.Capture(ex);
+                }
+            });
+
+            for (int k = 0; k < count && emitted < expected; k++)
+            {
+                errors[k]?.Throw();
+                int take = (int)Math.Min(blockSize, expected - emitted);
+                emitted += take;
+                yield return decoded[k].AsMemory(0, take);
+            }
         }
 
         if (emitted != expected)
@@ -460,7 +516,8 @@ internal sealed class PFSImageStream(PFSImage image) : Stream
 /// <summary>Seekable logical view with a 16-block LRU cache (Python <c>_LogicalFileView</c>).</summary>
 internal sealed class PFSLogicalStream : Stream
 {
-    private const int CacheBlocks = 16;
+    private const int CacheBlocks = 32;
+    private const int ReadAheadBlocks = 16;
     private readonly PFSImage _image;
     private readonly long _base;
     private readonly long _size;
@@ -555,15 +612,93 @@ internal sealed class PFSLogicalStream : Stream
             return cached;
         }
 
-        byte[] block = new byte[_pfsc!.Header.LogicalBlockSize];
-        _pfsc.DecodeBlock(index, block);
-        _cache[index] = block;
-        _order.Enqueue(index);
-        if (_order.Count > CacheBlocks)
+        // Reads are mostly sequential (exFAT clusters in order), so a miss also decodes the blocks after it, in
+        // parallel. Stored bytes are read in order first (one shared stream). Only the requested block's failure
+        // is raised; a read-ahead block that fails is left uncached, to fail when it is actually read.
+        PFSCReader pfsc = _pfsc!;
+        int blockSize = pfsc.Header.LogicalBlockSize;
+        List<(long Index, byte[] Stored)> batch = [];
+        for (long i = index; i < pfsc.BlockCount && batch.Count < ReadAheadBlocks; i++)
         {
-            _cache.Remove(_order.Dequeue());
+            if (i != index && _cache.ContainsKey(i))
+            {
+                break;
+            }
+
+            if (i == index)
+            {
+                int length = pfsc.StoredLength(i);
+                if (length > blockSize)
+                {
+                    break;
+                }
+
+                byte[] stored = new byte[length];
+                pfsc.ReadStoredBlock(i, stored);
+                batch.Add((i, stored));
+                continue;
+            }
+
+            try
+            {
+                int length = pfsc.StoredLength(i);
+                if (length > blockSize)
+                {
+                    break;
+                }
+
+                byte[] stored = new byte[length];
+                pfsc.ReadStoredBlock(i, stored);
+                batch.Add((i, stored));
+            }
+            catch (Exception ex) when (ex is IOException or InvalidDataException)
+            {
+                break;
+            }
         }
 
-        return block;
+        if (batch.Count == 0)
+        {
+            // An oversized requested block: DecodeBlock raises its own error.
+            byte[] single = new byte[blockSize];
+            pfsc.DecodeBlock(index, single);
+            return single;
+        }
+
+        byte[]?[] decoded = new byte[batch.Count][];
+        ExceptionDispatchInfo? requested = null;
+        Parallel.For(0, batch.Count, k =>
+        {
+            byte[] block = new byte[blockSize];
+            try
+            {
+                PFSCReader.DecodeStoredBlock(batch[k].Stored, block, batch[k].Index);
+                decoded[k] = block;
+            }
+            catch (Exception ex) when (ex is IOException or InvalidDataException)
+            {
+                if (k == 0)
+                {
+                    requested = ExceptionDispatchInfo.Capture(ex);
+                }
+            }
+        });
+        requested?.Throw();
+        for (int k = 0; k < batch.Count; k++)
+        {
+            if (decoded[k] is not { } block)
+            {
+                continue;
+            }
+
+            _cache[batch[k].Index] = block;
+            _order.Enqueue(batch[k].Index);
+            if (_order.Count > CacheBlocks)
+            {
+                _cache.Remove(_order.Dequeue());
+            }
+        }
+
+        return decoded[0]!;
     }
 }

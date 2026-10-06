@@ -6,14 +6,19 @@ namespace MkPFS.Cli.Output;
 
 /// <summary>
 /// Single-line terminal progress bar on stderr, same format as Python <c>Progress.step</c>:
-/// <c>[####----] 50% compress @ 1.95 MB/s ETA 3s</c>.
+/// <c>[####----] 50% compress @ 1.95 MB/s ETA 3s</c>. The line is redrawn when the percentage changes, at most
+/// every half second otherwise, and once when a phase completes; builders report on every write, which would
+/// otherwise flush the terminal hundreds of thousands of times.
 /// </summary>
 public sealed class TerminalProgress : IProgressSink
 {
+    private static readonly TimeSpan RedrawInterval = TimeSpan.FromMilliseconds(500);
+
     private readonly TextWriter _writer;
     private readonly TimeProvider _time;
     private readonly int _width;
     private readonly Dictionary<string, PhaseState> _phases = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _finished = new(StringComparer.Ordinal);
 
     /// <summary>Create a progress bar.</summary>
     /// <param name="writer">Target writer, normally stderr.</param>
@@ -32,7 +37,19 @@ public sealed class TerminalProgress : IProgressSink
         total = Math.Max(total, 1);
         done = Math.Clamp(done, 0, total);
 
-        if (!_phases.TryGetValue(phase, out PhaseState? state))
+        // A completed phase stays complete until it starts over below 100%.
+        if (_finished.Contains(phase))
+        {
+            if (done >= total)
+            {
+                return;
+            }
+
+            _finished.Remove(phase);
+        }
+
+        bool first = !_phases.TryGetValue(phase, out PhaseState? state);
+        if (state is null)
         {
             state = new PhaseState(_time.GetTimestamp());
             _phases[phase] = state;
@@ -44,9 +61,17 @@ public sealed class TerminalProgress : IProgressSink
         }
 
         double ratio = (double)done / total;
+        int pct = (int)(ratio * 100);
+        long now = _time.GetTimestamp();
+        if (!first && done < total && pct == state.LastPercent && _time.GetElapsedTime(state.LastDrawn, now) < RedrawInterval)
+        {
+            return;
+        }
+
+        state.LastPercent = pct;
+        state.LastDrawn = now;
         int fill = (int)(_width * ratio);
         string bar = new string('#', fill) + new string('-', _width - fill);
-        int pct = (int)(ratio * 100);
 
         double elapsed = _time.GetElapsedTime(state.StartTimestamp).TotalSeconds;
         string speedText = string.Empty;
@@ -91,6 +116,7 @@ public sealed class TerminalProgress : IProgressSink
         {
             _writer.Write("\n");
             _phases.Remove(phase);
+            _finished.Add(phase);
         }
 
         _writer.Flush();
@@ -106,6 +132,10 @@ public sealed class TerminalProgress : IProgressSink
     private sealed class PhaseState(long startTimestamp)
     {
         public long StartTimestamp { get; } = startTimestamp;
+
+        public long LastDrawn { get; set; } = startTimestamp;
+
+        public int LastPercent { get; set; } = -1;
 
         public long Bytes { get; set; }
 

@@ -23,6 +23,8 @@ public static class ProgressPlan
         {
             // Compressing reads and deflates the image; verifying decodes it, comparing reads both again.
             ("pack", "file") when Has("--verify") => [new("compress", 3), new("verify", 1), new("compare", 1)],
+            // A package writes its inner image (compressing in auto mode), then the package; verifying reads it again.
+            ("pack", "fpkg") when !Has("--dry-run") => [new("inner", Has("stored") ? 1 : Has("fast") ? 2 : 3), new("write", 1), .. Has("--verify") ? new[] { new ProgressPhase("verify", 1) } : []],
             ("verify", _) when Has("--source-file") || Has("--source-dir") => [new("verify", 1), new("compare", 1)],
             ("repair", _) when !Has("--scan") => [new("scan", 1), new("repair", 1), new("verify", 1)],
             // Packing compresses every packed byte with LZ4 HC; the image only copies the output.
