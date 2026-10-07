@@ -437,7 +437,9 @@ through AMPR. MkPFS turns those recordings into rules.
    run, so the emulator can write into the game folder.
 2. Play a session, then quit the game from the PS5 menu.
 3. Copy `ampr_commands.bin` and `ampr_emu.index` into a subfolder of a trace folder (for example
-   `traces/session1/`) and delete them from the game folder. More sessions cover more of the game.
+   `traces/session1/`) before starting the game again. Leave both in the game folder: the emulator needs the
+   index (keep it unchanged until every session and pack is done), and starts a new journal on each launch.
+   More sessions cover more of the game.
 4. Put the normal emulator back and set `mount_read_only=1` again.
 5. Pick the trace folder in **Trace folder** (`--traces traces`); the page shows how many sessions it found.
 
