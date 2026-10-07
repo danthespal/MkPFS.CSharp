@@ -59,6 +59,37 @@ public sealed class AMPRGlobTests
         Assert.False(AMPRGlob.Matches("assets/a.bin", []));
     }
 
+    [Fact]
+    public void Matches_large_list_agrees_with_per_pattern_fnmatch()
+    {
+        // Large lists take the compiled PatternSet path (exact paths in a hash set, globs as regexes).
+        List<string> patterns = [.. Enumerable.Range(0, 64).Select(i => $"contents/{i:X2}/file{i}"),
+            "/abs/lead.bin", "win\\sep.bin", "a.b", "a+b", "glob/*.dat", "set/a[0-9]", "q/?x"];
+        string[] paths =
+        [
+            "contents/00/file0", "contents/3F/file63", "contents/3F/file62", "CONTENTS/00/file0", "abs/lead.bin",
+            "/abs/lead.bin", "win/sep.bin", "a.b", "axb", "a+b", "aab", "glob/x.dat", "glob/sub/x.dat", "glob/x.da",
+            "set/a5", "set/ab", "q/ax", "q/axx", "",
+        ];
+
+        foreach (string path in paths)
+        {
+            string normalized = path.Replace('\\', '/').TrimStart('/');
+            bool expected = patterns.Any(p => AMPRGlob.FnMatchCase(normalized, p.Replace('\\', '/').TrimStart('/')));
+            Assert.Equal(expected, AMPRGlob.Matches(path, patterns));
+        }
+    }
+
+    [Fact]
+    public void Matches_large_list_recompiles_after_the_list_grows()
+    {
+        List<string> patterns = [.. Enumerable.Range(0, 20).Select(i => $"p{i}")];
+        Assert.False(AMPRGlob.Matches("late/added.bin", patterns));
+
+        patterns.Add("late/*.bin");
+        Assert.True(AMPRGlob.Matches("late/added.bin", patterns));
+    }
+
     [Theory]
     [InlineData(0.01, "0.01")]
     [InlineData(0.125, "0.125")]
