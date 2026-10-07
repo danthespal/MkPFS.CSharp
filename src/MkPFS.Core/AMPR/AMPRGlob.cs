@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -11,7 +12,11 @@ namespace MkPFS.Core.AMPR;
 /// </summary>
 public static class AMPRGlob
 {
+    // Lists at least this long are compiled once into a PatternSet; shorter ones (often built per call) are matched directly.
+    private const int PatternSetThreshold = 16;
+
     private static readonly ConcurrentDictionary<string, Regex> Cache = new(StringComparer.Ordinal);
+    private static readonly ConditionalWeakTable<IReadOnlyCollection<string>, PatternSet> Sets = new();
 
     /// <summary>Python <c>glob_matches</c>: normalize separators, strip leading <c>/</c>, match any pattern.</summary>
     /// <param name="path">Relative path.</param>
@@ -19,9 +24,25 @@ public static class AMPRGlob
     /// <returns><see langword="true"/> when any pattern matches.</returns>
     public static bool Matches(string path, IEnumerable<string> patterns)
     {
-        string normalized = path.Replace('\\', '/').TrimStart('/');
-        return patterns.Any(pattern => FnMatchCase(normalized, pattern.Replace('\\', '/').TrimStart('/')));
+        string normalized = Normalize(path);
+        if (patterns is IReadOnlyCollection<string> { Count: >= PatternSetThreshold } collection)
+        {
+            // Trace-derived include_from lists hold tens of thousands of exact paths; matching each one as a regex
+            // per file is quadratic. Recompile if the list changed size since it was cached.
+            PatternSet set = Sets.GetValue(collection, static c => new PatternSet(c));
+            if (set.Count != collection.Count)
+            {
+                set = new PatternSet(collection);
+                Sets.AddOrUpdate(collection, set);
+            }
+
+            return set.Matches(normalized);
+        }
+
+        return patterns.Any(pattern => FnMatchCase(normalized, Normalize(pattern)));
     }
+
+    private static string Normalize(string path) => path.Replace('\\', '/').TrimStart('/');
 
     /// <summary>Python <c>fnmatch.fnmatchcase(name, pattern)</c>.</summary>
     /// <param name="name">Name.</param>
@@ -175,5 +196,35 @@ public static class AMPRGlob
         }
 
         return j + 1;
+    }
+
+    // A pattern without '*', '?' or '[' translates to an anchored, fully escaped regex, so fnmatchcase on it is plain
+    // ordinal equality; those go into a hash set and only real globs are matched as regexes.
+    private sealed class PatternSet
+    {
+        private readonly HashSet<string> _literals = new(StringComparer.Ordinal);
+        private readonly List<string> _globs = [];
+
+        public PatternSet(IReadOnlyCollection<string> patterns)
+        {
+            Count = patterns.Count;
+            foreach (string pattern in patterns)
+            {
+                string normalized = Normalize(pattern);
+                if (normalized.AsSpan().IndexOfAny('*', '?', '[') < 0)
+                {
+                    _literals.Add(normalized);
+                }
+                else
+                {
+                    _globs.Add(normalized);
+                }
+            }
+        }
+
+        public int Count { get; }
+
+        public bool Matches(string normalizedPath) =>
+            _literals.Contains(normalizedPath) || _globs.Exists(glob => FnMatchCase(normalizedPath, glob));
     }
 }
