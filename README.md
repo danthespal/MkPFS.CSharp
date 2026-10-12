@@ -431,7 +431,7 @@ folder is emptied.
 ### Packing without a profile (LZ4 Game Compressor)
 
 Tick **LZ4 Game Compressor** under **Build playable game** (`ampr compress`) to let MkPFS build the rules from the
-game's folder structure, the way the PS5 LZ4 Game Compressor homebrew does: files in subfolders, numbered files and known asset types are packed (16 KiB hot blocks for audio
+game's folder structure, the way the PS5 [LZ4 Game Compressor](https://github.com/gameboy829/PS5-LZ4-Game-Compressor) homebrew does: files in subfolders, numbered files and known asset types are packed (16 KiB hot blocks for audio
 folders); `eboot.bin`, modules, `sce_sys`, `fakelib`, videos, audio streams, images and already compressed files
 stay loose. Levels 1–4 use LZ4 fast, 5–12 LZ4 HC (default 7). The game folder needs `eboot.bin` and
 `sce_sys/param.json`, and the output drive must have room for the case where nothing compresses.
@@ -540,7 +540,7 @@ include = ["eboot.bin", "*.prx", "*.sprx", "sce_sys/*", "sce_module/*", "fakelib
 > [!NOTE]
 > - `ampr pack` and `ampr profile` are ports of ampr_emu's `tools/ampr_pack.py` (4.0) and
 >   `tools/ampr_pack_profile.py` (4.1), with the same output byte for byte. `game`, `--traces` and
->   `--pack-untraced-types` are MkPFS additions; `compress` ports the PS5 LZ4 Game Compressor's universal profile.
+>   `--pack-untraced-types` are MkPFS additions; `compress` ports the [PS5 LZ4 Game Compressor](https://github.com/gameboy829/PS5-LZ4-Game-Compressor)'s universal profile.
 > - The release emulator loads at most 2,000,000 files, 16,000,000 chunks and 1,024 volumes; `pack` warns
 >   when a set goes over a limit.
 > - Deploy `ampr_emu.index`, the manifest, its `.runtime` file and every volume from the same build. The
@@ -658,6 +658,7 @@ repository secret (a VirusTotal API key) it also scans every archive and links t
 | PS5 Game Compressor by Juma Sayeh | The PFSC repair logic. |
 | [APR Emu](https://github.com/drakmor/ampr_emu) by Drakmor | `ampr_emu.index` and the asset-pack format and tools that `ampr` ports. |
 | [PlayGo stub](https://github.com/drakmor/pgo_stub) by Drakmor | `libScePlayGo.sprx`. |
+| [PS5 LZ4 Game Compressor](https://github.com/gameboy829/PS5-LZ4-Game-Compressor) by gameboy829 (GPL-3.0-or-later) | The universal pack profile, safety exclusions and free-space estimate that `ampr compress` ports. |
 | [LibProsperoPKG](https://github.com/SvenGDK/LibProsperoPKG) by SvenGDK (GPL-3.0-or-later) | PS5 package research; parts of the PS5 package builder, the Kraken encoder and the Kraken decoder are ported from it (the decoder derives from [ooz](https://github.com/powzix/ooz) by Powzix, GPL-3.0). |
 | [PS5PkgTool](https://github.com/pearlxcore/PS5PKGTool) by pearlxcore (GPL-3.0) | The package format `pack fpkg` reproduces, checked against its output (its engine is used as a black box, not copied). |
 
