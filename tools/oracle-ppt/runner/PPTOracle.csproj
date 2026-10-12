@@ -10,6 +10,8 @@
     <RootNamespace>PPTOracle</RootNamespace>
     <IsPackable>false</IsPackable>
     <IsAotCompatible>false</IsAotCompatible>
+    <!-- Advisories in PS5PkgTool's pinned dependencies (ImageSharp) stay warnings: the runner never ships. -->
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1901;NU1902;NU1903;NU1904</WarningsNotAsErrors>
     <PS5PkgToolDir Condition="'$(PS5PkgToolDir)' == ''">$(MSBuildThisFileDirectory)..\..\..\..\PS5PkgTool\</PS5PkgToolDir>
   </PropertyGroup>
 

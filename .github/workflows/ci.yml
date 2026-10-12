@@ -60,9 +60,61 @@ jobs:
           path: tests/fixtures/generated/goldens/*ampr*/src
           retention-days: 7
 
+  # The AMPR pack and FPKG parity tests skip without these corpora. Windows: the PS5PkgTool runner is an .exe.
+  oracle-extra:
+    name: Oracle corpus (AMPR packs, FPKG)
+    runs-on: windows-latest
+    env:
+      # The oracle scripts refuse any other commit.
+      AMPR_EMU_COMMIT: cfa85df379f6eeeb165d7badf9b648e266fe77b7
+      LIBPROSPEROPKG_COMMIT: 748eabf1b7d17819528cabf367d8e27109d8fce3
+      PS5PKGTOOL_COMMIT: 61874dfe0f4bbf23c61d421010c9fd86bb3a68d2
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - uses: astral-sh/setup-uv@v7
+
+      # The scripts expect each oracle next to this repository (../<name>), which actions/checkout cannot write.
+      - name: Check out oracles
+        shell: bash
+        run: |
+          fetch() {
+            git init -q "../$1"
+            git -C "../$1" fetch -q --depth 1 "https://github.com/$2.git" "$3"
+            git -C "../$1" checkout -q FETCH_HEAD
+          }
+          fetch ampr_emu drakmor/ampr_emu "$AMPR_EMU_COMMIT"
+          fetch LibProsperoPKG SvenGDK/LibProsperoPKG "$LIBPROSPEROPKG_COMMIT"
+          fetch PS5PkgTool pearlxcore/PS5PkgTool "$PS5PKGTOOL_COMMIT"
+
+      - name: Build AMPR pack corpus (ampr_pack.py)
+        run: uv run --no-project --python 3.11 --with lz4==4.4.5 python tools/oracle/build_ampr_goldens.py
+
+      - name: Build FPKG corpus (LibProsperoPKG)
+        run: uv run --no-project --python 3.11 python tools/oracle-fpkg/build_fpkg_goldens.py
+
+      - name: Build FPKG corpus (PS5PkgTool)
+        run: uv run --no-project --python 3.11 python tools/oracle-ppt/build_ppt_goldens.py
+
+      # A tar keeps the file times the AMPR goldens pin and the empty directories; artifacts keep neither.
+      - name: Archive corpus
+        shell: bash
+        run: tar -czf oracle-extra.tgz -C tests/fixtures/generated ampr fpkg
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: oracle-corpus-extra
+          path: oracle-extra.tgz
+          compression-level: 0
+          retention-days: 7
+
   build:
     name: Build and test (${{ matrix.rid }})
-    needs: oracle
+    needs: [oracle, oracle-extra]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -95,6 +147,14 @@ jobs:
         shell: bash
         working-directory: tests/fixtures/generated
         run: tr -d '\r' < empty-dirs.txt | while IFS= read -r dir; do mkdir -p "$dir"; done
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: oracle-corpus-extra
+
+      - name: Extract AMPR and FPKG corpus
+        shell: bash
+        run: tar -xzf oracle-extra.tgz -C tests/fixtures/generated && rm oracle-extra.tgz
 
       # vcvarsall.bat (used by native/build.ps1 and the AOT linker) calls vswhere.exe by name.
       - name: Put vswhere on PATH (Windows)
