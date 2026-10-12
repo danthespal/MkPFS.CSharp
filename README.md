@@ -428,6 +428,20 @@ flowchart LR
 that every packed file decodes to the original. The game folder is only read; if a step fails, the output
 folder is emptied.
 
+### Packing without a profile (LZ4 Game Compressor)
+
+Tick **LZ4 Game Compressor** under **Build playable game** (`ampr compress`) to let MkPFS build the rules from the
+game's folder structure, the way the PS5 LZ4 Game Compressor homebrew does: files in subfolders, numbered files and known asset types are packed (16 KiB hot blocks for audio
+folders); `eboot.bin`, modules, `sce_sys`, `fakelib`, videos, audio streams, images and already compressed files
+stay loose. Levels 1–4 use LZ4 fast, 5–12 LZ4 HC (default 7). The game folder needs `eboot.bin` and
+`sce_sys/param.json`, and the output drive must have room for the case where nothing compresses.
+
+```bash
+mkpfs ampr compress --root PPSA12345-app --output PPSA12345-packed --fakelib ampr-emu --level 7 --exfat .
+```
+
+The rules are generic, not tested per game: keep the original until the packed game has been played.
+
 ### Making rules from traces
 
 The debug build of AMPR Emu (for example the 0.4.2.1 test-debug-pack) records every file the game reads
@@ -491,6 +505,7 @@ include = ["eboot.bin", "*.prx", "*.sprx", "sce_sys/*", "sce_module/*", "fakelib
 | Subcommand | Required | Purpose |
 |---|---|---|
 | `game` | `--root --output`, and `--config` or `--traces` | Build a folder that runs from packs as is. |
+| `compress` | `--root --output` | Like `game`, with rules generated from the folder structure (`--level 1..12`, default 7). |
 | `pack` | `--root --ampr-index --output` | Write only the pack set (manifest, volumes, CRC file). |
 | `verify` | `--index` | Decode every chunk; `--root` also compares with the source. |
 | `unpack` | `--index --output` | Extract packed files (`--file <glob>`, `--overwrite`, `--no-preserve-mtime`). |
@@ -525,7 +540,7 @@ include = ["eboot.bin", "*.prx", "*.sprx", "sce_sys/*", "sce_module/*", "fakelib
 > [!NOTE]
 > - `ampr pack` and `ampr profile` are ports of ampr_emu's `tools/ampr_pack.py` (4.0) and
 >   `tools/ampr_pack_profile.py` (4.1), with the same output byte for byte. `game`, `--traces` and
->   `--pack-untraced-types` are MkPFS additions.
+>   `--pack-untraced-types` are MkPFS additions; `compress` ports the PS5 LZ4 Game Compressor's universal profile.
 > - The release emulator loads at most 2,000,000 files, 16,000,000 chunks and 1,024 volumes; `pack` warns
 >   when a set goes over a limit.
 > - Deploy `ampr_emu.index`, the manifest, its `.runtime` file and every volume from the same build. The

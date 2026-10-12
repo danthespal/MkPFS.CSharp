@@ -18,6 +18,16 @@
       </ComboBox>
     </StackPanel>
     <TextBlock Text="{l:Tr ap_game_note}" TextWrapping="Wrap" IsVisible="{Binding ShowGameOptions}" />
+    <CheckBox Name="LZ4CompressorBox" IsChecked="{Binding LZ4Compressor}" IsVisible="{Binding ShowGameOptions}">
+      <TextBlock Text="{l:Tr ap_lz4}" TextWrapping="Wrap" />
+    </CheckBox>
+    <StackPanel Name="LZ4CompressorOptions" Spacing="8" IsVisible="{Binding UseCompressor}">
+      <TextBlock Text="{l:Tr ap_lz4_note}" TextWrapping="Wrap" />
+      <StackPanel Spacing="3">
+        <TextBlock Text="{l:Tr ap_lz4_level}" Classes="fieldlabel" TextWrapping="Wrap" />
+        <ComboBox Name="LevelPicker" ItemsSource="{Binding Levels}" SelectedItem="{Binding Level}" Width="120" HorizontalAlignment="Left" />
+      </StackPanel>
+    </StackPanel>
     <TextBlock Text="{l:Tr ap_pack_note}" TextWrapping="Wrap" IsVisible="{Binding ShowPackNote}" />
     <TextBlock Text="{l:Tr ap_note}" TextWrapping="Wrap" />
     <Rectangle Classes="separator" />
@@ -30,7 +40,7 @@
     <c:PathField Label="{l:Tr ap_config_label}" Placeholder="{l:Tr ap_config_ph}" Mode="Open" Filters="TOML:*.toml|All files:*.*" Text="{Binding Config}" IsVisible="{Binding ShowConfig}" />
     <TextBlock Name="RulesConfig" Text="{l:Tr ap_rules_config}" TextWrapping="Wrap" IsVisible="{Binding ShowRulesConfig}" />
     <TextBlock Name="RulesMissing" Text="{l:Tr ap_rules_missing}" TextWrapping="Wrap" Foreground="{StaticResource Warning}" IsVisible="{Binding ShowRulesMissing}" />
-    <c:PathField Label="{l:Tr ap_traces_label}" Placeholder="{l:Tr ap_traces_ph}" Mode="Folder" Text="{Binding Traces}" IsVisible="{Binding ShowPackOptions}" />
+    <c:PathField Label="{l:Tr ap_traces_label}" Placeholder="{l:Tr ap_traces_ph}" Mode="Folder" Text="{Binding Traces}" IsVisible="{Binding ShowTraces}" />
     <TextBlock Name="RulesTraces" Text="{Binding RulesTracesText}" TextWrapping="Wrap" Foreground="{StaticResource Success}" IsVisible="{Binding ShowRulesTraces}" />
     <TextBlock Name="NoTraces" Text="{l:Tr ap_rules_no_traces}" TextWrapping="Wrap" Foreground="{StaticResource Warning}" IsVisible="{Binding ShowNoTraces}" />
     <CheckBox Name="UntracedTypesBox" IsChecked="{Binding UntracedTypes}" IsVisible="{Binding ShowRulesTraces}">
@@ -43,7 +53,7 @@
         <TextBlock Text="{l:Tr ap_workers}" Classes="fieldlabel" />
         <TextBox Text="{Binding Workers}" Width="120" HorizontalAlignment="Left" />
       </StackPanel>
-      <CheckBox Content="{l:Tr ap_self_contained}" IsChecked="{Binding SelfContained}" />
+      <CheckBox Content="{l:Tr ap_self_contained}" IsChecked="{Binding SelfContained}" IsVisible="{Binding ShowSelfContained}" />
       <CheckBox Content="{l:Tr ap_allow_missing}" IsChecked="{Binding AllowMissing}" IsVisible="{Binding ShowAllowMissing}" />
     </StackPanel>
     <StackPanel Spacing="8" IsVisible="{Binding ShowGameOptions}">

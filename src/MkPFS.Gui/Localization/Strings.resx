@@ -43,6 +43,9 @@
   <data name="ap_exfat_free" xml:space="preserve"><value>Free space inside the image (optional, e.g. 2GiB): needed for a test run with the debug AMPR Emu, which writes its log into the game folder</value></data>
   <data name="ap_experimental" xml:space="preserve"><value>⚠ Experimental: whether a packed game runs depends on how it reads its files, and only a test on the PS5 shows that. Keep the original game until the packed one has been played.</value></data>
   <data name="ap_game_note" xml:space="preserve"><value>Builds a new folder you can copy to the PS5 and play: your libraries in fakelib/, ampr_emu.index, the LZ4 packs, and every file that stays loose. The game folder is only read. Needs AMPR Emu 0.4.2.1 or newer and a game that uses AMPR.</value></data>
+  <data name="ap_lz4" xml:space="preserve"><value>LZ4 Game Compressor: build the rules automatically from the game&apos;s folder structure (no TOML profile or traces needed)</value></data>
+  <data name="ap_lz4_note" xml:space="preserve"><value>Packs the files in subfolders, numbered files and known asset types with LZ4 (64 KiB blocks; 16 KiB hot blocks for audio folders). eboot.bin, modules, sce_sys, fakelib, videos, audio streams, images and already compressed files stay loose, and large files that barely compress are left loose after sampling. Needs eboot.bin and sce_sys/param.json, and checks that the output drive has room even if nothing compresses.</value></data>
+  <data name="ap_lz4_level" xml:space="preserve"><value>Compression level (1–4: LZ4 fast; 5–12: LZ4 HC, slower but smaller; default 7)</value></data>
   <data name="ap_libs_label" xml:space="preserve"><value>Library Folder (fakelib)</value></data>
   <data name="ap_libs_ph" xml:space="preserve"><value>Folder with libSceAmpr.sprx and other fakelib libraries (optional if the game has them)…</value></data>
   <data name="ap_verify_game" xml:space="preserve"><value>Verify the packs and loose files after building</value></data>

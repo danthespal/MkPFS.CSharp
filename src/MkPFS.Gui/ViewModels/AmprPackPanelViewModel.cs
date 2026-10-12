@@ -35,7 +35,24 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
     [NotifyPropertyChangedFor(nameof(ShowPackOptions), nameof(ShowOverwrite), nameof(ShowJson), nameof(ShowConfirm))]
     [NotifyPropertyChangedFor(nameof(ShowGameOptions), nameof(ShowAllowMissing), nameof(ShowExfatPath), nameof(ShowPackNote))]
     [NotifyPropertyChangedFor(nameof(ShowRulesMissing), nameof(ShowRulesConfig), nameof(ShowRulesTraces), nameof(ShowNoTraces))]
+    [NotifyPropertyChangedFor(nameof(UseCompressor), nameof(ShowTraces), nameof(ShowSelfContained))]
     public partial Choice Action { get; set; } = ActionChoices[0];
+
+    /// <summary>
+    /// Build the game with the LZ4 Game Compressor workflow (<c>ampr compress</c>): the rules come from the game's
+    /// folder structure, so no TOML profile or traces are needed.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(UseCompressor), nameof(ShowConfig), nameof(ShowTraces), nameof(ShowSelfContained))]
+    [NotifyPropertyChangedFor(nameof(ShowRulesMissing), nameof(ShowRulesConfig), nameof(ShowRulesTraces), nameof(ShowNoTraces))]
+    public partial bool LZ4Compressor { get; set; }
+
+    /// <summary>Compression levels for <c>--level</c>.</summary>
+    public IReadOnlyList<int> Levels { get; } = [.. Enumerable.Range(1, 12)];
+
+    /// <summary><c>--level</c> (compressor): up to 4 uses LZ4 fast, higher LZ4 HC.</summary>
+    [ObservableProperty]
+    public partial int Level { get; set; } = Build.AMPRPack.AMPRUniversalProfile.DefaultLevel;
 
     /// <summary><c>--fakelib</c> (game): folder with AMPR Emu and other libraries to add.</summary>
     [ObservableProperty]
@@ -125,8 +142,17 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
     /// <summary>Pack manifest field (every action but game and pack).</summary>
     public bool ShowManifest => Action.Value is not ("game" or "pack");
 
-    /// <summary>Configuration field (game, pack, runtime-config).</summary>
-    public bool ShowConfig => Action.Value is "game" or "pack" or "runtime-config";
+    /// <summary>The LZ4 Game Compressor builds the game (game with the toggle on).</summary>
+    public bool UseCompressor => Action.Value == "game" && LZ4Compressor;
+
+    /// <summary>Configuration field (game, pack, runtime-config); the compressor makes its own rules.</summary>
+    public bool ShowConfig => Action.Value is "game" or "pack" or "runtime-config" && !UseCompressor;
+
+    /// <summary>Trace folder field (game, pack) unless the compressor makes the rules.</summary>
+    public bool ShowTraces => ShowPackOptions && !UseCompressor;
+
+    /// <summary>Self-contained (game, pack) unless the compressor makes the rules.</summary>
+    public bool ShowSelfContained => ShowPackOptions && !UseCompressor;
 
     /// <summary>Workers and self-contained (game, pack).</summary>
     public bool ShowPackOptions => Action.Value is "game" or "pack";
@@ -147,19 +173,19 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
     private int? _traceRuns;
 
     /// <summary>The trace folder has runs: the rules come from the traces.</summary>
-    public bool ShowRulesTraces => ShowPackOptions && Config.Trim().Length == 0 && _traceRuns > 0;
+    public bool ShowRulesTraces => ShowTraces && Config.Trim().Length == 0 && _traceRuns > 0;
 
     /// <summary>The trace folder has no runs.</summary>
-    public bool ShowNoTraces => ShowPackOptions && Config.Trim().Length == 0 && _traceRuns == 0;
+    public bool ShowNoTraces => ShowTraces && Config.Trim().Length == 0 && _traceRuns == 0;
 
     /// <summary>How many trace runs were found.</summary>
     public string RulesTracesText => Localizer.Instance.Format("ap_rules_traces", _traceRuns ?? 0);
 
     /// <summary>Neither a TOML profile nor a trace folder is chosen yet (game, pack).</summary>
-    public bool ShowRulesMissing => ShowPackOptions && Config.Trim().Length == 0 && Traces.Trim().Length == 0;
+    public bool ShowRulesMissing => ShowTraces && Config.Trim().Length == 0 && Traces.Trim().Length == 0;
 
     /// <summary>The user's TOML file decides what is packed.</summary>
-    public bool ShowRulesConfig => ShowPackOptions && Config.Trim().Length > 0 && Traces.Trim().Length == 0;
+    public bool ShowRulesConfig => ShowTraces && Config.Trim().Length > 0 && Traces.Trim().Length == 0;
 
     /// <summary>Overwrite (unpack).</summary>
     public bool ShowOverwrite => Action.Value == "unpack";
@@ -185,10 +211,10 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
         string traces = Traces.Trim();
         error = Action.Value switch
         {
-            "game" or "pack" when config.Length > 0 && traces.Length > 0 => Localizer.Instance["ap_err_traces_config"],
+            "game" or "pack" when !UseCompressor && config.Length > 0 && traces.Length > 0 => Localizer.Instance["ap_err_traces_config"],
             "game" when root.Length == 0 || output.Length == 0 => Localizer.Instance["ap_err_pack"],
             "pack" when root.Length == 0 || output.Length == 0 => Localizer.Instance["ap_err_pack"],
-            "game" or "pack" when config.Length == 0 && traces.Length == 0 => Localizer.Instance["ap_err_rules"],
+            "game" or "pack" when !UseCompressor && config.Length == 0 && traces.Length == 0 => Localizer.Instance["ap_err_rules"],
             "game" or "pack" when Workers.Trim().Length > 0 && !(int.TryParse(Workers.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out int n) && n is >= 1 and <= 256)
                 => Localizer.Instance["ap_err_workers"],
             "verify" or "list" or "inspect" when manifest.Length == 0 => Localizer.Instance["ap_err_manifest"],
@@ -202,9 +228,18 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
             return null;
         }
 
-        List<string> args = ["ampr", Action.Value];
+        List<string> args = ["ampr", UseCompressor ? "compress" : Action.Value];
         switch (Action.Value)
         {
+            case "game" when UseCompressor:
+                // The compressor makes the rules from the folder structure: no profile, traces or self-contained.
+                args.AddRange(["--root", root, "--output", output]);
+                AddOption(args, "--fakelib", Libs);
+                args.AddRange(["--level", Level.ToString(CultureInfo.InvariantCulture)]);
+                AddOption(args, "--workers", Workers);
+                AddFlag(args, !VerifyGame, "--skip-verify");
+                AddExfat(args, output);
+                break;
             case "game":
                 args.AddRange(["--root", root, "--output", output]);
                 AddOption(args, "--fakelib", Libs);
@@ -214,13 +249,7 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
                 AddOption(args, "--workers", Workers);
                 AddFlag(args, SelfContained, "--self-contained");
                 AddFlag(args, !VerifyGame, "--skip-verify");
-                if (Exfat)
-                {
-                    // An existing folder receives <titleId>.exfat: by default the folder that holds the output.
-                    args.AddRange(["--exfat", ExfatPath.Trim() is { Length: > 0 } image ? image : Path.GetDirectoryName(Path.GetFullPath(output)) ?? output]);
-                    AddOption(args, "--exfat-free-space", ExfatFree);
-                }
-
+                AddExfat(args, output);
                 break;
             case "pack":
                 args.AddRange(["--root", root, "--ampr-index", AmprIndex.Trim() is { Length: > 0 } index ? index : Path.Combine(root, "ampr_emu.index"), "--output", output]);
@@ -256,6 +285,16 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
         }
 
         return args;
+    }
+
+    private void AddExfat(List<string> args, string output)
+    {
+        if (Exfat)
+        {
+            // An existing folder receives <titleId>.exfat: by default the folder that holds the output.
+            args.AddRange(["--exfat", ExfatPath.Trim() is { Length: > 0 } image ? image : Path.GetDirectoryName(Path.GetFullPath(output)) ?? output]);
+            AddOption(args, "--exfat-free-space", ExfatFree);
+        }
     }
 
     /// <summary>Count the trace runs in the chosen folder (each needs ampr_commands.bin and ampr_emu.index).</summary>

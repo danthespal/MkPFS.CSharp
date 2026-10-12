@@ -36,6 +36,7 @@ internal static class AmprCommand
         Command command = new("ampr", "Build and manage AMPR Emu seekable LZ4 asset packs for /app0 (experimental)");
         command.Subcommands.Add(Pack(ctx));
         command.Subcommands.Add(Game(ctx));
+        command.Subcommands.Add(AmprCompressCommand.Create(ctx));
         command.Subcommands.Add(Unpack(ctx));
         command.Subcommands.Add(Verify(ctx));
         command.Subcommands.Add(RemoveSources(ctx));
@@ -511,7 +512,7 @@ internal static class AmprCommand
     // Python ConsoleBuildProgress: throttled "[pack  NN%] phase: details, elapsed HH:MM:SS" lines on stderr, which the
     // GUI shows in its log. The GUI bar gets one overall "pack" phase with the same percentage on every event (the
     // sink also cancels the job), so it does not log a misleading "done" line per build phase.
-    private static Action<AMPRBuildProgress> ProgressReporter(CliContext ctx)
+    internal static Action<AMPRBuildProgress> ProgressReporter(CliContext ctx)
     {
         IProgressSink? sink = ctx.ExternalProgressSink;
         Stopwatch clock = Stopwatch.StartNew();

@@ -28,7 +28,7 @@ public static class ProgressPlan
             ("verify", _) when Has("--source-file") || Has("--source-dir") => [new("verify", 1), new("compare", 1)],
             ("repair", _) when !Has("--scan") => [new("scan", 1), new("repair", 1), new("verify", 1)],
             // Packing compresses every packed byte with LZ4 HC; the image only copies the output.
-            ("ampr", "game") when Has("--exfat") => [new("pack", 4), new("exfat", 1)],
+            ("ampr", "game" or "compress") when Has("--exfat") => [new("pack", 4), new("exfat", 1)],
             _ => [],
         };
         return phases.Count > 1 ? phases : null;

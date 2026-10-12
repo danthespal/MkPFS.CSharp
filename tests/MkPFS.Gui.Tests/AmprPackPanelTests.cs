@@ -81,6 +81,59 @@ public sealed class AmprPackPanelTests
     }
 
     [Fact]
+    public void Lz4_compressor_toggle_builds_compress_arguments_without_rules()
+    {
+        AmprPackPanelViewModel panel = new(Colors.YellowGreen, Sync());
+        Assert.False(panel.UseCompressor);
+        panel.LZ4Compressor = true;
+        Assert.True(panel.UseCompressor);
+        Assert.False(panel.ShowConfig || panel.ShowTraces || panel.ShowSelfContained || panel.ShowRulesMissing);
+        Assert.True(panel.ShowPackOptions);
+
+        Assert.Null(panel.BuildArguments(out string? error));
+        Assert.Equal("✗ Game folder and output folder are both required.", error);
+        panel.Root = "D:/game";
+        panel.Output = "D:/games/out";
+        Assert.Equal(["ampr", "compress", "--root", "D:/game", "--output", "D:/games/out", "--level", "7"], panel.BuildArguments(out _));
+
+        // Rules, traces and self-contained belong to the TOML workflow and are not passed.
+        panel.Config = "D:/rules.toml";
+        panel.Traces = "D:/traces";
+        panel.SelfContained = true;
+        panel.Libs = "D:/emu";
+        panel.Level = 3;
+        panel.Workers = "4";
+        panel.VerifyGame = false;
+        panel.Exfat = true;
+        panel.ExfatFree = "2GiB";
+        Assert.Equal(
+            ["ampr", "compress", "--root", "D:/game", "--output", "D:/games/out", "--fakelib", "D:/emu", "--level", "3", "--workers", "4", "--skip-verify",
+                "--exfat", Path.GetDirectoryName(Path.GetFullPath("D:/games/out"))!, "--exfat-free-space", "2GiB"],
+            panel.BuildArguments(out _));
+        Assert.NotNull(ProgressPlan.For(panel.BuildArguments(out _)!));
+
+        panel.Workers = "0";
+        Assert.Null(panel.BuildArguments(out error));
+        Assert.Equal("✗ Workers must be a whole number from 1 to 256.", error);
+
+        // The toggle only applies to the game action.
+        panel.Workers = string.Empty;
+        panel.Action = panel.Actions.Single(a => a.Value == "pack");
+        Assert.False(panel.UseCompressor);
+        Assert.True(panel.ShowConfig && panel.ShowTraces && panel.ShowSelfContained);
+        Assert.Null(panel.BuildArguments(out error));
+        Assert.Equal("Use either a TOML file or a trace folder, not both.", error);
+        panel.Traces = string.Empty;
+        Assert.Equal("pack", panel.BuildArguments(out _)![1]);
+        panel.Traces = "D:/traces";
+        panel.Action = panel.Actions.Single(a => a.Value == "game");
+        Assert.True(panel.UseCompressor);
+        panel.LZ4Compressor = false;
+        Assert.Null(panel.BuildArguments(out error));
+        Assert.Equal("Use either a TOML file or a trace folder, not both.", error);
+    }
+
+    [Fact]
     public void Other_actions_build_arguments_and_validate()
     {
         AmprPackPanelViewModel verify = Panel("verify");
@@ -262,6 +315,30 @@ public sealed class AmprPackPanelTests
         Assert.True(File.Exists(Path.Combine(panel.Output, "ampr_emu.index")));
         Assert.True(File.Exists(panel.Manifest));
         Assert.False(File.Exists(Path.Combine(panel.Output, "data", "level.dat")));
+    }
+
+    [AvaloniaFact]
+    public async Task Page_builds_a_playable_game_folder_with_the_lz4_compressor()
+    {
+        using TempDir dir = new();
+        string game = BuildPanelTests.Game(dir);
+        dir.File("PPSA01234-app/data/level.res", string.Concat(Enumerable.Repeat("terrain mesh texture ", 20_000)));
+        dir.File("emu/libSceAmpr.sprx", "AMPR Emu with AMPRPAK4 support");
+
+        AmprPackPanelViewModel panel = new(Colors.YellowGreen, Sync());
+        panel.LZ4Compressor = true;
+        panel.Root = game;
+        panel.Output = Path.Combine(dir.Path, "playable");
+        panel.Libs = Path.Combine(dir.Path, "emu");
+        await panel.RunCommand.ExecuteAsync(null);
+
+        Assert.True(panel.Job.Lines[^1].Text == "✓ Completed successfully.", string.Join('\n', panel.Job.Lines.Select(l => l.Text)));
+        Assert.Contains(panel.Job.Lines, l => l.Text.StartsWith("Rules: LZ4 Game Compressor universal profile (LZ4 HC level 7)", StringComparison.Ordinal));
+        Assert.Contains(panel.Job.Lines, l => l.Text == "[5/5] Verifying");
+        Assert.True(File.Exists(Path.Combine(panel.Output, "fakelib", "libSceAmpr.sprx")));
+        Assert.True(File.Exists(panel.Manifest));
+        Assert.True(File.Exists(Path.Combine(panel.Output, "eboot.bin")));
+        Assert.False(File.Exists(Path.Combine(panel.Output, "data", "level.res")));
     }
 
     [AvaloniaFact]
