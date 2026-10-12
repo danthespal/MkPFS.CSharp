@@ -66,7 +66,11 @@ public sealed class AMPRCliParityTests
                 string actual = CliParityTests.Normalize(
                     $"$ ampr_pack.py {string.Join(' ', argv)}\nexit={exit}\n--- stdout\n{stdout}\n--- stderr\n{errors}", work);
 
-                Assert.True(expected == actual, $"{caseName}/{stepName}:\n--- expected\n{expected}\n--- actual\n{actual}");
+                // The corpus is built on one OS and replayed on all: paths in the JSON output use the oracle's
+                // separator (escaped "\\" on Windows), so compare them separator-neutral.
+                expected = expected.Replace(@"\\", "/", StringComparison.Ordinal);
+                actual = actual.Replace(@"\\", "/", StringComparison.Ordinal);
+                Assert.True(expected == actual,$"{caseName}/{stepName}:\n--- expected\n{expected}\n--- actual\n{actual}");
             }
         }
         finally
