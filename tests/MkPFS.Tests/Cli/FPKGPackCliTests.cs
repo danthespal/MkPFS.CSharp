@@ -64,7 +64,8 @@ public sealed class FPKGPackCliTests : IDisposable
         string temp = Path.Combine(_root, "scratch");
         (int exit, string output) = Run("pack", "fpkg", Source, Path.Combine(Out, "t.pkg"), "--temp-folder", temp, "--verbose", "--cpu-count", "2");
         Assert.True(exit == 0, output);
-        Assert.Contains("CPU cores:     2", output, StringComparison.Ordinal);
+        // Counts are capped at every logical processor but two (1 on a 3-processor runner).
+        Assert.Contains($"CPU cores:     {Math.Min(2, Core.Util.CpuCores.Max)}\n", output.ReplaceLineEndings("\n"), StringComparison.Ordinal);
         Assert.Contains($"staging it in {temp}", output, StringComparison.Ordinal);
         Assert.Contains($"Temp folder:   {temp}", output, StringComparison.Ordinal);
         Assert.Contains("eboot.bin [fake-signed]:", output, StringComparison.Ordinal);
