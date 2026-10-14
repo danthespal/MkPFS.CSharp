@@ -10,6 +10,8 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="MkPFS.Parity" />
+    <!-- Sibling AMPR Simulator reuses the trace reader and per-file recommendations. -->
+    <InternalsVisibleTo Include="AMPRSimulator" />
   </ItemGroup>
 
   <ItemGroup>
@@ -20,6 +22,8 @@
     <EmbeddedResource Include="FPKG/Resources/passcode_moduli.bin" LogicalName="MkPFS.Build.FPKG.passcode_moduli.bin" />
     <EmbeddedResource Include="FPKG/Resources/mount_image_modulus.bin" LogicalName="MkPFS.Build.FPKG.mount_image_modulus.bin" />
     <EmbeddedResource Include="FPKG/Resources/pkg_meta_modulus.bin" LogicalName="MkPFS.Build.FPKG.pkg_meta_modulus.bin" />
+    <!-- AMPR pack profiles tested on the PS5 (AMPRBundledProfiles). -->
+    <EmbeddedResource Include="AMPRPack/Profiles/*.toml" LogicalName="MkPFS.Build.AMPRPack.Profiles.%(Filename)%(Extension)" />
   </ItemGroup>
 
   <PropertyGroup>

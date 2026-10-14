@@ -11,6 +11,9 @@ public sealed class AmprPackPanelTests
 {
     private static JobRunner Sync() => new(action => action());
 
+    // What the CPU picker's Auto passes: every logical processor but two.
+    private static readonly string Auto = MkPFS.Core.Util.CpuCores.Max.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
     private static AmprPackPanelViewModel Panel(string action)
     {
         AmprPackPanelViewModel panel = new(Colors.YellowGreen, Sync());
@@ -32,22 +35,26 @@ public sealed class AmprPackPanelTests
         Assert.Equal("✗ Choose a TOML profile or a trace folder: without rules nothing is packed.", error);
         panel.Config = "D:/rules.toml";
         Assert.Equal(
-            ["ampr", "pack", "--root", "D:/game", "--ampr-index", Path.Combine("D:/game", "ampr_emu.index"), "--output", "D:/out", "--config", "D:/rules.toml"],
+            ["ampr", "pack", "--root", "D:/game", "--ampr-index", Path.Combine("D:/game", "ampr_emu.index"), "--output", "D:/out", "--config", "D:/rules.toml", "--workers", Auto],
             panel.BuildArguments(out _));
 
         panel.AmprIndex = "D:/idx/ampr_emu.index";
         panel.Config = "D:/rules.toml";
-        panel.Workers = "4";
+        panel.Cpu.Select(1);
         panel.SelfContained = true;
         panel.AllowMissing = true;
         Assert.Equal(
             ["ampr", "pack", "--root", "D:/game", "--ampr-index", "D:/idx/ampr_emu.index", "--output", "D:/out", "--config", "D:/rules.toml",
-                "--workers", "4", "--self-contained", "--allow-missing"],
+                "--workers", "1", "--self-contained", "--allow-missing"],
             panel.BuildArguments(out _));
 
-        panel.Workers = "0";
-        Assert.Null(panel.BuildArguments(out error));
-        Assert.Equal("✗ Workers must be a whole number from 1 to 256.", error);
+        // The picker offers Auto and 1 to every logical processor but two; Auto passes that count.
+        Assert.Equal(MkPFS.Core.Util.CpuCores.Max + 1, panel.Cpu.Choices.Count);
+        panel.Cpu.Select(10_000);
+        Assert.Equal(MkPFS.Core.Util.CpuCores.Max, panel.Cpu.Count);
+        panel.Cpu.Select(0);
+        Assert.Equal("0", panel.Cpu.Selected.Value);
+        Assert.Equal(["--workers", Auto], panel.BuildArguments(out _)!.SkipWhile(a => a != "--workers").Take(2));
     }
 
     [Fact]
@@ -64,15 +71,15 @@ public sealed class AmprPackPanelTests
         Assert.Null(panel.BuildArguments(out error));
         Assert.Equal("✗ Choose a TOML profile or a trace folder: without rules nothing is packed.", error);
         panel.Config = "D:/rules.toml";
-        Assert.Equal(["ampr", "game", "--root", "D:/game", "--output", "D:/games/out", "--config", "D:/rules.toml"], panel.BuildArguments(out _));
+        Assert.Equal(["ampr", "game", "--root", "D:/game", "--output", "D:/games/out", "--config", "D:/rules.toml", "--workers", Auto], panel.BuildArguments(out _));
 
         panel.Libs = "D:/emu";
-        panel.Workers = "4";
+        panel.Cpu.Select(1);
         panel.SelfContained = true;
         panel.VerifyGame = false;
         panel.Exfat = true;
         Assert.Equal(
-            ["ampr", "game", "--root", "D:/game", "--output", "D:/games/out", "--fakelib", "D:/emu", "--config", "D:/rules.toml", "--workers", "4",
+            ["ampr", "game", "--root", "D:/game", "--output", "D:/games/out", "--fakelib", "D:/emu", "--config", "D:/rules.toml", "--workers", "1",
                 "--self-contained", "--skip-verify", "--exfat", Path.GetDirectoryName(Path.GetFullPath("D:/games/out"))!],
             panel.BuildArguments(out _));
 
@@ -94,7 +101,7 @@ public sealed class AmprPackPanelTests
         Assert.Equal("✗ Game folder and output folder are both required.", error);
         panel.Root = "D:/game";
         panel.Output = "D:/games/out";
-        Assert.Equal(["ampr", "compress", "--root", "D:/game", "--output", "D:/games/out", "--level", "7"], panel.BuildArguments(out _));
+        Assert.Equal(["ampr", "compress", "--root", "D:/game", "--output", "D:/games/out", "--level", "12", "--workers", Auto], panel.BuildArguments(out _));
 
         // Rules, traces and self-contained belong to the TOML workflow and are not passed.
         panel.Config = "D:/rules.toml";
@@ -102,22 +109,18 @@ public sealed class AmprPackPanelTests
         panel.SelfContained = true;
         panel.Libs = "D:/emu";
         panel.Level = 3;
-        panel.Workers = "4";
+        panel.Cpu.Select(1);
         panel.VerifyGame = false;
         panel.Exfat = true;
         panel.ExfatFree = "2GiB";
         Assert.Equal(
-            ["ampr", "compress", "--root", "D:/game", "--output", "D:/games/out", "--fakelib", "D:/emu", "--level", "3", "--workers", "4", "--skip-verify",
+            ["ampr", "compress", "--root", "D:/game", "--output", "D:/games/out", "--fakelib", "D:/emu", "--level", "3", "--workers", "1", "--skip-verify",
                 "--exfat", Path.GetDirectoryName(Path.GetFullPath("D:/games/out"))!, "--exfat-free-space", "2GiB"],
             panel.BuildArguments(out _));
         Assert.NotNull(ProgressPlan.For(panel.BuildArguments(out _)!));
 
-        panel.Workers = "0";
-        Assert.Null(panel.BuildArguments(out error));
-        Assert.Equal("✗ Workers must be a whole number from 1 to 256.", error);
-
         // The toggle only applies to the game action.
-        panel.Workers = string.Empty;
+        panel.Cpu.Select(0);
         panel.Action = panel.Actions.Single(a => a.Value == "pack");
         Assert.False(panel.UseCompressor);
         Assert.True(panel.ShowConfig && panel.ShowTraces && panel.ShowSelfContained);
@@ -218,6 +221,46 @@ public sealed class AmprPackPanelTests
         panel.Action = panel.Actions.Single(a => a.Value == "verify");
         panel.Traces = string.Empty;
         Assert.False(panel.ShowRulesMissing || panel.ShowRulesConfig);
+    }
+
+    [Fact]
+    public void Page_uses_the_bundled_profile_that_fits_the_game()
+    {
+        using TempDir dir = new();
+        dir.File("game/toc");
+        dir.File("game/dag");
+        dir.File("game/d/a.archive");
+        string root = Path.Combine(dir.Path, "game");
+        string output = Path.Combine(dir.Path, "out");
+        AmprPackPanelViewModel panel = Panel("game");
+        panel.Root = root;
+        panel.Output = output;
+
+        Assert.True(panel.ShowRulesBundled);
+        Assert.False(panel.ShowRulesMissing);
+        Assert.StartsWith(
+            "✓ Bundled profile Insomniac engine, tested on the PS5 with Marvel's Wolverine (PPSA03671, 01.001.005): picked by the engine's file layout",
+            panel.RulesBundledText, StringComparison.Ordinal);
+        Assert.Equal(["ampr", "game", "--root", root, "--output", output, "--profile", "insomniac", "--workers", Auto], panel.BuildArguments(out string? error));
+        Assert.Null(error);
+
+        // The user's own rules win; the compressor and pack never use bundled profiles.
+        panel.Config = "rules.toml";
+        Assert.False(panel.ShowRulesBundled);
+        Assert.DoesNotContain("--profile", panel.BuildArguments(out _)!);
+        panel.Config = string.Empty;
+        panel.LZ4Compressor = true;
+        Assert.False(panel.ShowRulesBundled);
+        panel.LZ4Compressor = false;
+        panel.Action = panel.Actions.Single(a => a.Value == "pack");
+        Assert.False(panel.ShowRulesBundled);
+        Assert.True(panel.ShowRulesMissing);
+
+        // A folder without a fitting profile asks for rules again.
+        panel.Action = panel.Actions.Single(a => a.Value == "game");
+        panel.Root = Directory.CreateDirectory(Path.Combine(dir.Path, "other")).FullName;
+        Assert.False(panel.ShowRulesBundled);
+        Assert.True(panel.ShowRulesMissing);
     }
 
     [Fact]
@@ -333,7 +376,7 @@ public sealed class AmprPackPanelTests
         await panel.RunCommand.ExecuteAsync(null);
 
         Assert.True(panel.Job.Lines[^1].Text == "✓ Completed successfully.", string.Join('\n', panel.Job.Lines.Select(l => l.Text)));
-        Assert.Contains(panel.Job.Lines, l => l.Text.StartsWith("Rules: LZ4 Game Compressor universal profile (LZ4 HC level 7)", StringComparison.Ordinal));
+        Assert.Contains(panel.Job.Lines, l => l.Text.StartsWith("Rules: LZ4 Game Compressor universal profile (LZ4 HC level 12)", StringComparison.Ordinal));
         Assert.Contains(panel.Job.Lines, l => l.Text == "[5/5] Verifying");
         Assert.True(File.Exists(Path.Combine(panel.Output, "fakelib", "libSceAmpr.sprx")));
         Assert.True(File.Exists(panel.Manifest));

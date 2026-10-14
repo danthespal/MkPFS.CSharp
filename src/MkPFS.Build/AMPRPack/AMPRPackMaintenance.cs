@@ -65,9 +65,10 @@ public static class AMPRPackMaintenance
     /// <summary>The exact safe source set the manifest packs; nothing is changed (Python <c>packed_source_removal_plan</c>).</summary>
     /// <param name="indexPath">Manifest path.</param>
     /// <param name="root"><c>/app0</c> source tree.</param>
+    /// <param name="keepOnDisk">Leave <see cref="AMPRDiskFiles"/> in place (MkPFS addition); <see langword="false"/> plans like ampr_pack.py.</param>
     /// <returns>Plan.</returns>
     /// <exception cref="AMPRPackException">The manifest packs a protected file or a source is unsafe.</exception>
-    public static AMPRRemovalPlan RemovalPlan(string indexPath, string root)
+    public static AMPRRemovalPlan RemovalPlan(string indexPath, string root, bool keepOnDisk = true)
     {
         AMPRPackManifest manifest = AMPRPackManifest.Load(indexPath);
         root = RequireRoot(root);
@@ -77,12 +78,13 @@ public static class AMPRPackMaintenance
         for (int fileId = 1; fileId <= manifest.Files.Count; fileId++)
         {
             AMPRFileRecord record = manifest.Files[fileId - 1];
-            if (!record.IsPacked)
+            string relative = AMPRAssetPath.Relative(manifest.FilePath(fileId));
+            if (!record.IsPacked || (keepOnDisk && AMPRDiskFiles.MustStayOnDisk(relative, record.LogicalSize)))
             {
+                // Pack sets from ampr_pack.py or older builds pack files the PS5 must still find on disk.
                 continue;
             }
 
-            string relative = AMPRAssetPath.Relative(manifest.FilePath(fileId));
             if (IsProtected(relative))
             {
                 throw new AMPRPackException($"manifest marks a protected game/runtime file as packed: {relative}");
@@ -110,11 +112,12 @@ public static class AMPRPackMaintenance
     /// <param name="indexPath">Manifest path.</param>
     /// <param name="root"><c>/app0</c> source tree.</param>
     /// <param name="removeEmptyDirs">Remove directories left empty, never the root.</param>
+    /// <param name="keepOnDisk">Leave <see cref="AMPRDiskFiles"/> in place (MkPFS addition); <see langword="false"/> removes like ampr_pack.py.</param>
     /// <returns>Counters.</returns>
     /// <exception cref="AMPRPackException">A source is missing, protected, unsafe or differs from the packed data.</exception>
-    public static AMPRRemovalResult RemovePackedSources(string indexPath, string root, bool removeEmptyDirs = false)
+    public static AMPRRemovalResult RemovePackedSources(string indexPath, string root, bool removeEmptyDirs = false, bool keepOnDisk = true)
     {
-        AMPRRemovalPlan initial = RemovalPlan(indexPath, root);
+        AMPRRemovalPlan initial = RemovalPlan(indexPath, root, keepOnDisk);
         if (initial.MissingFiles > 0)
         {
             throw new AMPRPackException($"cannot verify before removal: {initial.MissingFiles} packed source files are missing");
@@ -130,12 +133,13 @@ public static class AMPRPackMaintenance
         for (int fileId = 1; fileId <= manifest.Files.Count; fileId++)
         {
             AMPRFileRecord record = manifest.Files[fileId - 1];
-            if (!record.IsPacked)
+            string relative = AMPRAssetPath.Relative(manifest.FilePath(fileId));
+            if (!record.IsPacked || (keepOnDisk && AMPRDiskFiles.MustStayOnDisk(relative, record.LogicalSize)))
             {
+                // Pack sets from ampr_pack.py or older builds pack files the PS5 must still find on disk.
                 continue;
             }
 
-            string relative = AMPRAssetPath.Relative(manifest.FilePath(fileId));
             if (IsProtected(relative))
             {
                 throw new AMPRPackException($"refusing to remove protected path: {relative}");

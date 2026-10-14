@@ -24,6 +24,43 @@ internal static class AmprProfileCommand
         Command command = new("profile", "generate pack rules from APR traces of the debug emulator build (ampr_pack_profile.py)");
         command.Subcommands.Add(Generate(ctx));
         command.Subcommands.Add(Batch(ctx));
+        command.Subcommands.Add(Bundled(ctx));
+        return command;
+    }
+
+    // Not in ampr_pack_profile.py: the profiles tested on the PS5 that ampr game picks from.
+    private static Command Bundled(CliContext ctx)
+    {
+        Option<string?> root = new("--root") { Description = "game folder (/app0): also show which profile ampr game would pick" };
+        Option<string?> export = new("--export") { Description = "write every bundled profile TOML into this folder", HelpName = "DIR" };
+        Command command = new("bundled", "list the profiles tested on the PS5 that ship with MkPFS (not in ampr_pack_profile.py)") { root, export };
+        command.SetAction(parse => AmprCommand.Run(ctx, () =>
+        {
+            foreach (AMPRBundledProfile profile in AMPRBundledProfiles.All)
+            {
+                string engine = profile.Engine is null ? string.Empty : $"; also picked for other {profile.Label} games";
+                ctx.Out.WriteLine($"{profile.Id,-10} {profile.Label}: tested on {profile.Tested}{engine} ({profile.Source})");
+            }
+
+            if (parse.GetValue(root) is { } game)
+            {
+                AMPRBundledMatch? match = AMPRBundledProfiles.Match(AmprCommand.Resolve(ctx, game));
+                ctx.Out.WriteLine(match is null
+                    ? "No bundled profile fits this game."
+                    : $"ampr game picks {match.Profile.Id}: {AmprCommand.BundledMatchText(match.Kind)}");
+            }
+
+            if (parse.GetValue(export) is { } directory)
+            {
+                string folder = AmprCommand.Resolve(ctx, directory);
+                foreach (AMPRBundledProfile profile in AMPRBundledProfiles.All)
+                {
+                    WriteText(Path.Combine(folder, profile.FileName), profile.Toml, overwrite: false);
+                }
+
+                ctx.Out.WriteLine($"Wrote {AMPRBundledProfiles.All.Count} profiles to {folder}");
+            }
+        }));
         return command;
     }
 

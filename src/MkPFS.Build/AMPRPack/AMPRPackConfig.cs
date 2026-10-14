@@ -116,8 +116,11 @@ public sealed class AMPRPackConfig
     /// <summary>Chunk alignment inside a page.</summary>
     public long ChunkAlignment { get; set; } = 64;
 
-    /// <summary>Compression worker threads (not part of the build id).</summary>
-    public long Workers { get; set; } = Math.Max(1, Math.Min(8, Environment.ProcessorCount));
+    /// <summary>
+    /// Compression worker threads (not part of the build id): <c>[pack] workers</c>, Auto
+    /// (<see cref="CpuCores.Max"/>) when the file has none; capped at <see cref="CpuCores.Max"/> when packing.
+    /// </summary>
+    public long Workers { get; set; } = CpuCores.Max;
 
     /// <summary>Default LZ4 mode.</summary>
     public string CompressionMode { get; set; } = "hc";
@@ -160,6 +163,12 @@ public sealed class AMPRPackConfig
 
     /// <summary>Globs that must end up packed.</summary>
     public IReadOnlyList<string> RequiredPacked { get; set; } = [];
+
+    /// <summary>
+    /// Leave <see cref="AMPRDiskFiles"/> loose (MkPFS addition). Not a TOML key and not part of the build id;
+    /// <see langword="false"/> packs like ampr_pack.py.
+    /// </summary>
+    public bool KeepOnDisk { get; set; } = true;
 
     /// <summary>Leave large incompressible files loose.</summary>
     public bool AutoLooseLargeFiles { get; set; } = true;
@@ -345,7 +354,7 @@ public sealed class AMPRPackConfig
             IOPageSize = ioPageSize,
             PayloadAlignment = PythonValue.Size(Get(pack, "payload_alignment", ioPageSize)),
             ChunkAlignment = PythonValue.Size(Get(pack, "chunk_alignment", "64B")),
-            Workers = PythonValue.Int(Get(pack, "workers", (long)Math.Max(1, Math.Min(8, Environment.ProcessorCount)))),
+            Workers = PythonValue.Int(Get(pack, "workers", (long)CpuCores.Max)),
             CompressionMode = PythonValue.Str(Get(pack, "compression_mode", "hc")).ToLowerInvariant(),
             CompressionLevel = PythonValue.Int(Get(pack, "compression_level", 12L)),
             Acceleration = PythonValue.Int(Get(pack, "acceleration", 1L)),

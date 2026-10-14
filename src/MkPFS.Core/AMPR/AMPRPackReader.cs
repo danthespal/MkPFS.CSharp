@@ -5,11 +5,13 @@ namespace MkPFS.Core.AMPR;
 
 /// <summary>
 /// Reads and checks decoded chunks of a pack set: opens every volume, validates its header against the manifest,
-/// and verifies each decoded chunk against the CRC sidecar (Python <c>PackReader</c>).
+/// and verifies each decoded chunk against the CRC sidecar (Python <c>PackReader</c>). <see cref="ReadChunk"/> is
+/// safe to call from several threads.
 /// </summary>
 public sealed class AMPRPackReader : IDisposable
 {
     private readonly FileStream[] _volumes;
+    private readonly Microsoft.Win32.SafeHandles.SafeFileHandle[] _handles;
     private readonly (long Begin, long End)[] _payloads;
 
     /// <summary>Open the volumes and CRC sidecar of a loaded manifest.</summary>
@@ -72,6 +74,9 @@ public sealed class AMPRPackReader : IDisposable
         }
 
         _volumes = [.. opened];
+
+        // Taken once: the FileStream.SafeFileHandle getter flushes the stream and is not safe to call concurrently.
+        _handles = [.. opened.Select(stream => stream.SafeFileHandle)];
     }
 
     /// <summary>The manifest.</summary>
@@ -103,10 +108,9 @@ public sealed class AMPRPackReader : IDisposable
             throw new AMPRPackException("chunk is outside pack payload");
         }
 
-        FileStream volume = _volumes[chunk.PackId];
-        volume.Seek((long)chunk.Offset, SeekOrigin.Begin);
+        // Positional reads, so one reader serves parallel verification.
         byte[] stored = new byte[chunk.StoredSize];
-        if (volume.ReadAtLeast(stored, stored.Length, throwOnEndOfStream: false) != stored.Length)
+        if (StreamUtil.ReadAt(_handles[chunk.PackId], stored, (long)chunk.Offset) != stored.Length)
         {
             throw new AMPRPackException("chunk is truncated");
         }

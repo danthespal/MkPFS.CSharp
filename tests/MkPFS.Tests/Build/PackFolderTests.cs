@@ -51,6 +51,26 @@ public sealed class PackFolderTests
     }
 
     [Fact]
+    public void Cpu_count_takes_auto_or_a_count_capped_at_all_but_two_logical_processors()
+    {
+        using TempDir dir = new();
+        string source = Tree(dir);
+        string max = Core.Util.CpuCores.Max.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+        (int exit, string output, string err) = Run("pack", "folder", source, Path.Combine(dir.Path, "a.ffpfsc"), "--cpu-count", "AUTO");
+        Assert.True(exit == 0, err);
+        Assert.Contains($"  CPU cores:         {max} (auto)\n", output, StringComparison.Ordinal);
+
+        (exit, output, err) = Run("pack", "folder", source, Path.Combine(dir.Path, "b.ffpfsc"), "--cpu-count", "10000");
+        Assert.True(exit == 0, err);
+        Assert.Contains($"  CPU cores:         {max}\n", output, StringComparison.Ordinal);
+
+        (exit, _, err) = Run("pack", "folder", source, Path.Combine(dir.Path, "c.ffpfsc"), "--cpu-count", "many");
+        Assert.NotEqual(0, exit);
+        Assert.Contains("--cpu-count must be auto or a whole number, not 'many'", err, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Verify_source_dir_compares_a_wrapped_image_with_its_inner_exfat()
     {
         // Python compares with the outer image and reports every game file missing (oracle finding 17).

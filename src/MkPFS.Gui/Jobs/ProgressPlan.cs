@@ -27,8 +27,14 @@ public static class ProgressPlan
             ("pack", "fpkg") when !Has("--dry-run") => [new("inner", Has("stored") ? 1 : Has("fast") ? 2 : 3), new("write", 1), .. Has("--verify") ? new[] { new ProgressPhase("verify", 1) } : []],
             ("verify", _) when Has("--source-file") || Has("--source-dir") => [new("verify", 1), new("compare", 1)],
             ("repair", _) when !Has("--scan") => [new("scan", 1), new("repair", 1), new("verify", 1)],
-            // Packing compresses every packed byte with LZ4 HC; the image only copies the output.
-            ("ampr", "game" or "compress") when Has("--exfat") => [new("pack", 4), new("exfat", 1)],
+            // Packing compresses every packed byte with LZ4 HC; copying moves the loose files, verifying and comparing
+            // decode the packs again, and the image only copies the output.
+            ("ampr", "game" or "compress") =>
+            [
+                new("pack", 4), new("copy", 1),
+                .. Has("--skip-verify") ? Array.Empty<ProgressPhase>() : [new("verify", 1), new("compare", 1)],
+                .. Has("--exfat") ? new[] { new ProgressPhase("exfat", 1) } : [],
+            ],
             _ => [],
         };
         return phases.Count > 1 ? phases : null;

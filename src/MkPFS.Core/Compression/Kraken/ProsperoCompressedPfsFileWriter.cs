@@ -262,7 +262,7 @@ public static class ProsperoCompressedPfsFileWriter
 
         long cumulativeComp = 0;
         long cumulativeUncomp = 0;
-        int dop = maxDegreeOfParallelism > 0 ? maxDegreeOfParallelism : Environment.ProcessorCount;
+        int dop = maxDegreeOfParallelism > 0 ? maxDegreeOfParallelism : Util.CpuCores.Max;
         if (!compress) dop = 1;
 
         // Blocks are read in order and encoded in batches; each batch is written back in index order, so

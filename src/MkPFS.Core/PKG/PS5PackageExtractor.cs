@@ -87,7 +87,7 @@ public static class PS5PackageExtractor
         }
 
         Lock gate = new();
-        Parallel.ForEach(toWrite, package.OpenInnerStream, (item, _, stored) =>
+        Parallel.ForEach(toWrite, Util.CpuCores.ParallelOptions, package.OpenInnerStream, (item, _, stored) =>
         {
             using (FileStream output = new(item.Target, FileMode.Create, FileAccess.Write, FileShare.None, 1 << 16))
             {

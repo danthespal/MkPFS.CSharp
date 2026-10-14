@@ -45,7 +45,7 @@ public static class FPKGSourceComparer
         }
 
         bool[] same = new bool[inputs.Count];
-        Parallel.For(0, inputs.Count, package.OpenInnerStream, (i, _, stored) =>
+        Parallel.For(0, inputs.Count, Core.Util.CpuCores.ParallelOptions, package.OpenInnerStream, (i, _, stored) =>
         {
             if (pairs[i] is { } actual)
             {

@@ -179,7 +179,7 @@ public sealed class MainWindowTests
         // 8 compression tuning fields, 7 packing options and 7 PFS options.
         Assert.Equal(22, tips.Length);
         Assert.All(tips, t => Assert.DoesNotContain("tip_", t, StringComparison.Ordinal));
-        Assert.Contains(tips, t => t.StartsWith("How many CPU cores compress blocks", StringComparison.Ordinal));
+        Assert.Contains(tips, t => t.StartsWith("How many CPU cores work at the same time", StringComparison.Ordinal));
         window.Close();
     }
 

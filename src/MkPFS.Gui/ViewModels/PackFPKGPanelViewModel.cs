@@ -37,15 +37,15 @@ public sealed partial class PackFPKGPanelViewModel : PanelViewModel
     }
 
     /// <summary>
-    /// Logical processors of this machine: what Auto uses, and the most the picker offers (Kraken waits on memory, so
-    /// simultaneous multithreading pays, unlike zlib).
+    /// Every logical processor of this machine but two (<see cref="MkPFS.Core.Util.CpuCores.Max"/>): the most the
+    /// picker offers (Kraken waits on memory, so simultaneous multithreading pays).
     /// </summary>
-    public int MaxCpu { get; } = Environment.ProcessorCount;
+    public int MaxCpu { get; } = MkPFS.Core.Util.CpuCores.Max;
 
-    /// <summary>What Auto passes: every logical processor, fewer when memory is short.</summary>
+    /// <summary>What Auto passes: <see cref="MaxCpu"/>, fewer when memory is short.</summary>
     public int AutoCpu { get; } = MkPFS.Core.Compression.Kraken.PS5KrakenChunk.MaxParallelism;
 
-    /// <summary>The CPU picker: Auto (every logical processor), then 1 to <see cref="MaxCpu"/>.</summary>
+    /// <summary>The CPU picker: Auto, then 1 to <see cref="MaxCpu"/>.</summary>
     public ObservableCollection<Choice> CpuChoices { get; }
 
     /// <summary><c>--cpu-count</c>: Kraken compression workers.</summary>

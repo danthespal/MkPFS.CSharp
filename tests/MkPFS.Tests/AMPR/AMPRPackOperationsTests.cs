@@ -20,7 +20,7 @@ public sealed class AMPRPackOperationsTests : IDisposable
         Encoding.ASCII.GetBytes(string.Concat(Enumerable.Range(seed, (size / 8) + 1).Select(i => $"blk{i % 97:D4} ")))[..size];
 
     // Packs data/** (two files in nested folders), keeps eboot.bin and sce_sys loose.
-    private string BuildSet(string extraToml = "")
+    private string BuildSet(string extraToml = "", Dictionary<string, byte[]>? extraFiles = null)
     {
         Dictionary<string, byte[]> files = new()
         {
@@ -29,6 +29,10 @@ public sealed class AMPRPackOperationsTests : IDisposable
             ["data/a/one.dat"] = Text(150_000, 3),
             ["data/a/b/two.dat"] = Text(70_000, 4),
         };
+        foreach ((string path, byte[] data) in extraFiles ?? [])
+        {
+            files[path] = data;
+        }
         foreach ((string path, byte[] data) in files)
         {
             string full = Path.Combine(Root, path);
@@ -129,6 +133,30 @@ public sealed class AMPRPackOperationsTests : IDisposable
 
         AMPRPackException error = Assert.Throws<AMPRPackException>(() => AMPRPackTools.Verify(index));
         Assert.Contains(error.Message, new[] { "raw chunk CRC/size mismatch", "LZ4 chunk decompression failed" });
+    }
+
+    [Fact]
+    public void Parallel_compare_reports_the_first_mismatch_in_file_order()
+    {
+        // data/big.dat spans several parallel ranges (64 chunks each); data/z.dat comes after it.
+        string index = BuildSet(extraFiles: new Dictionary<string, byte[]> { ["data/big.dat"] = Text(6_000_000, 7), ["data/z.dat"] = Text(70_000, 8) });
+        Assert.Equal(4, AMPRPackTools.VerifyAgainstRoot(index, Root).Files);
+
+        // A change late in the big file (chunk 80, the second range) and one at the start of the next file.
+        void Flip(string relative, long offset)
+        {
+            using FileStream stream = new(Path.Combine(Root, relative), FileMode.Open, FileAccess.ReadWrite);
+            stream.Position = offset;
+            int value = stream.ReadByte();
+            stream.Position = offset;
+            stream.WriteByte((byte)(value ^ 0x20));
+        }
+
+        Flip("data/z.dat", 10);
+        Flip("data/big.dat", (80L << 16) + 5);
+
+        string message = Assert.Throws<AMPRPackException>(() => AMPRPackTools.VerifyAgainstRoot(index, Root)).Message;
+        Assert.StartsWith($"packed/source mismatch for data/big.dat: logical=0x{(80L << 16) + 5:x}, chunk=80, ", message, StringComparison.Ordinal);
     }
 
     [Fact]

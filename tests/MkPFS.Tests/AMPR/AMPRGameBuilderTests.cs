@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Text;
 using MkPFS.Build;
 using MkPFS.Build.AMPRPack;
 using MkPFS.Build.Exfat;
@@ -8,6 +9,7 @@ using MkPFS.Cli.Output;
 using MkPFS.Core.AMPR;
 using MkPFS.Core.Diagnostics;
 using MkPFS.Core.Exfat;
+using MkPFS.Core.Util;
 
 namespace MkPFS.Tests.AMPR;
 
@@ -63,6 +65,46 @@ public sealed class AMPRGameBuilderTests
     private static Dictionary<string, string> Hashes(string root) =>
         Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories).ToDictionary(
             f => Path.GetRelativePath(root, f), f => Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(f))));
+
+    private sealed class RecordingSink : IProgressSink
+    {
+        public List<(string Phase, long Done, long Total)> Steps { get; } = [];
+
+        public void Step(string phase, long done, long total, long bytesProcessed) => Steps.Add((phase, done, total));
+
+        public void Status(string message)
+        {
+        }
+    }
+
+    [Fact]
+    public void Copy_verify_and_compare_report_progress_and_the_log_names_the_threads()
+    {
+        using TempDir dir = new();
+        string game = Game(dir);
+        ListLog log = new();
+        RecordingSink sink = new();
+
+        AMPRGameOptions options = Options(dir);
+        options.Config.Workers = 1;
+        AMPRGameBuilder.Build(game, Path.Combine(dir.Path, "out"), options, log, progress: sink);
+
+        Assert.Contains(
+            $"  1 compression threads (at most {CpuCores.Max}: {Environment.ProcessorCount} logical processors, 2 kept free; --cpu-count changes it)",
+            log.Lines);
+        Assert.Equal(["copy", "verify", "compare"], sink.Steps.Select(s => s.Phase).Distinct());
+        foreach (string phase in (string[])["copy", "verify", "compare"])
+        {
+            (string _, long done, long total) = sink.Steps.Last(s => s.Phase == phase);
+            Assert.True(done == total && total > 0, $"{phase}: {done}/{total}");
+        }
+
+        // Compare covers both packed files (the level text and the accented copy with one extra character); verify
+        // decodes the chunks they share once.
+        long logical = (Level.Length * 2L) + Encoding.UTF8.GetByteCount("é");
+        Assert.Equal(logical, sink.Steps.Last(s => s.Phase == "compare").Total);
+        Assert.InRange(sink.Steps.Last(s => s.Phase == "verify").Total, 1, logical - 1);
+    }
 
     [Fact]
     public void Output_holds_libraries_index_packs_and_loose_files_and_the_source_is_untouched()

@@ -134,8 +134,10 @@ public sealed class JobRunnerTests
     [InlineData(new[] { "verify", "a.ffpfsc" }, "")]
     [InlineData(new[] { "repair", "a.ffpfsc" }, "scan,repair,verify")]
     [InlineData(new[] { "repair", "a.ffpfsc", "--scan" }, "")]
-    [InlineData(new[] { "ampr", "game", "--root", "g", "--output", "o", "--exfat", "." }, "pack,exfat")]
-    [InlineData(new[] { "ampr", "game", "--root", "g", "--output", "o" }, "")]
+    [InlineData(new[] { "ampr", "game", "--root", "g", "--output", "o", "--exfat", "." }, "pack,copy,verify,compare,exfat")]
+    [InlineData(new[] { "ampr", "game", "--root", "g", "--output", "o" }, "pack,copy,verify,compare")]
+    [InlineData(new[] { "ampr", "compress", "--root", "g", "--output", "o", "--skip-verify" }, "pack,copy")]
+    [InlineData(new[] { "ampr", "compress", "--root", "g", "--output", "o", "--skip-verify", "--exfat", "." }, "pack,copy,exfat")]
     public void Plans_list_the_phases_each_command_reports(string[] args, string phases) =>
         Assert.Equal(phases, string.Join(',', ProgressPlan.For(args)?.Select(p => p.Name) ?? []));
 

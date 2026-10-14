@@ -179,7 +179,7 @@ public sealed class PS5InnerWriter
         // Sizes and module magics take one file-system call or open per file; they run in parallel (open latency,
         // not bandwidth, is the cost with many small files), and the results do not depend on the order.
         bool[] executable = new bool[inputs.Count];
-        Parallel.For(0, inputs.Count, new ParallelOptions { MaxDegreeOfParallelism = Math.Min(Environment.ProcessorCount, 32) }, i =>
+        Parallel.For(0, inputs.Count, new ParallelOptions { MaxDegreeOfParallelism = Math.Min(Core.Util.CpuCores.Max, 32) }, i =>
         {
             _ = inputs[i].Size;
             executable[i] = IsExecutable(inputs[i]);

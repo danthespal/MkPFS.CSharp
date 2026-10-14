@@ -33,6 +33,10 @@
   <data name="ap_act_game" xml:space="preserve"><value>Build playable game (packs + loose files)</value></data>
   <data name="ap_rules_missing" xml:space="preserve"><value>Choose the TOML profile for this game, or a folder of APR traces to build the rules from. Profiles are TOML files shared for each game.</value></data>
   <data name="ap_rules_config" xml:space="preserve"><value>Your TOML profile decides what is packed.</value></data>
+  <data name="ap_rules_bundled" xml:space="preserve"><value>✓ Bundled profile {0}, tested on the PS5 with {1}: {2}. Choose a TOML profile or a trace folder to use your own rules instead.</value></data>
+  <data name="ap_match_title" xml:space="preserve"><value>made for this game</value></data>
+  <data name="ap_match_name" xml:space="preserve"><value>made for this game (matched by its name)</value></data>
+  <data name="ap_match_engine" xml:space="preserve"><value>picked by the engine&apos;s file layout; tested on one game only, so keep the original until the packed game has been played</value></data>
   <data name="ap_traces_label" xml:space="preserve"><value>Trace folder (optional)</value></data>
   <data name="ap_traces_ph" xml:space="preserve"><value>Folder with ampr_commands.bin and ampr_emu.index from the debug AMPR Emu, one run per subfolder</value></data>
   <data name="ap_rules_traces" xml:space="preserve"><value>✓ Rules from traces: {0} recorded run(s) found. Only the files the game read through AMPR are packed; every other file stays loose.</value></data>
@@ -45,7 +49,7 @@
   <data name="ap_game_note" xml:space="preserve"><value>Builds a new folder you can copy to the PS5 and play: your libraries in fakelib/, ampr_emu.index, the LZ4 packs, and every file that stays loose. The game folder is only read. Needs AMPR Emu 0.4.2.1 or newer and a game that uses AMPR.</value></data>
   <data name="ap_lz4" xml:space="preserve"><value>LZ4 Game Compressor: build the rules automatically from the game&apos;s folder structure (no TOML profile or traces needed)</value></data>
   <data name="ap_lz4_note" xml:space="preserve"><value>Packs the files in subfolders, numbered files and known asset types with LZ4 (64 KiB blocks; 16 KiB hot blocks for audio folders). eboot.bin, modules, sce_sys, fakelib, videos, audio streams, images and already compressed files stay loose, and large files that barely compress are left loose after sampling. Needs eboot.bin and sce_sys/param.json, and checks that the output drive has room even if nothing compresses.</value></data>
-  <data name="ap_lz4_level" xml:space="preserve"><value>Compression level (1–4: LZ4 fast; 5–12: LZ4 HC, slower but smaller; default 7)</value></data>
+  <data name="ap_lz4_level" xml:space="preserve"><value>Compression level (1–4: LZ4 fast; 5–12: LZ4 HC, slower but smaller; default 12)</value></data>
   <data name="ap_libs_label" xml:space="preserve"><value>Library Folder (fakelib)</value></data>
   <data name="ap_libs_ph" xml:space="preserve"><value>Folder with libSceAmpr.sprx and other fakelib libraries (optional if the game has them)…</value></data>
   <data name="ap_verify_game" xml:space="preserve"><value>Verify the packs and loose files after building</value></data>
@@ -69,7 +73,6 @@
   <data name="ap_err_remove" xml:space="preserve"><value>✗ Pack manifest and game folder are both required.</value></data>
   <data name="ap_err_runtime" xml:space="preserve"><value>✗ Pack manifest and TOML configuration are both required.</value></data>
   <data name="ap_err_unpack" xml:space="preserve"><value>✗ Pack manifest and output folder are both required.</value></data>
-  <data name="ap_err_workers" xml:space="preserve"><value>✗ Workers must be a whole number from 1 to 256.</value></data>
   <data name="ap_index_label" xml:space="preserve"><value>AMPR Index (optional)</value></data>
   <data name="ap_index_ph" xml:space="preserve"><value>Default: ampr_emu.index in the game folder</value></data>
   <data name="ap_json" xml:space="preserve"><value>JSON output</value></data>
@@ -85,7 +88,6 @@
   <data name="ap_self_contained" xml:space="preserve"><value>Never leave selected files loose (store incompressible blocks uncompressed)</value></data>
   <data name="ap_subtitle" xml:space="preserve"><value>Build and check AMPR Emu LZ4 asset packs for a game folder</value></data>
   <data name="ap_title" xml:space="preserve"><value>AMPR Packs</value></data>
-  <data name="ap_workers" xml:space="preserve"><value>Workers (empty = from the configuration)</value></data>
   <data name="app_subtitle" xml:space="preserve"><value>PlayStation File System</value></data>
   <data name="browse" xml:space="preserve"><value>Browse</value></data>
   <data name="browse_file" xml:space="preserve"><value>File</value></data>
@@ -295,7 +297,7 @@ Partly written output is removed; an in-place repair finishes its rewrite first 
   <data name="version_footer" xml:space="preserve"><value>v{0}</value></data>
   <data name="tip_ct_preset" xml:space="preserve"><value>Quick settings for the compression level and CPU cores. Changing either value selects the matching preset, or Custom.</value></data>
   <data name="tip_ct_level" xml:space="preserve"><value>zlib level for each block: 1 is the fastest, 9 gives the smallest image, 0 stores the blocks uncompressed. The default is 7.</value></data>
-  <data name="tip_ct_cpu" xml:space="preserve"><value>How many CPU cores compress blocks at the same time. Auto uses every core of this computer; choose fewer to keep the computer responsive or to use less memory.</value></data>
+  <data name="tip_ct_cpu" xml:space="preserve"><value>How many CPU cores work at the same time. Auto uses every logical processor but two, so Windows and other programs stay responsive; no choice goes above that. Choose fewer to use less memory.</value></data>
   <data name="tip_ct_block" xml:space="preserve"><value>Size of the blocks the image is split into and compressed one by one. PS5 games use 64 KiB; change it only if you know the target needs another size.</value></data>
   <data name="tip_ct_threshold" xml:space="preserve"><value>A compressed block is kept only if it saves at least this percentage; otherwise it is stored uncompressed. 0 keeps every block that gets smaller.</value></data>
   <data name="tip_ct_max_ratio" xml:space="preserve"><value>A file stays uncompressed when its compressed size would be above this percentage of the original. 100 compresses every file that gets smaller.</value></data>

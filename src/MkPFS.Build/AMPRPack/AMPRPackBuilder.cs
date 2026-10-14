@@ -133,7 +133,7 @@ public static class AMPRPackBuilder
         Dictionary<string, AMPRChunkRecord> dedupe = new(StringComparer.Ordinal);
         List<string> sortedGroups = config.SortedGroupNames();
         using EncoderPool encoders = new();
-        TaskScheduler scheduler = new ConcurrentExclusiveSchedulerPair(TaskScheduler.Default, (int)config.Workers).ConcurrentScheduler;
+        TaskScheduler scheduler = new ConcurrentExclusiveSchedulerPair(TaskScheduler.Default, CpuCores.Resolve(config.Workers)).ConcurrentScheduler;
         foreach (AMPRSelectedFile item in selected)
         {
             string path = AMPRAssetPath.Canonical(item.IndexEntry.Path);
@@ -274,7 +274,7 @@ public static class AMPRPackBuilder
     {
         long blockSize = 1L << item.Rule.BlockShift;
         long remaining = item.Size;
-        int window = (int)Math.Max(2, config.Workers * 2);
+        int window = Math.Max(2, CpuCores.Resolve(config.Workers) * 2);
         Queue<Task<AMPRCompressedBlock>> pending = new();
         while (remaining > 0 || pending.Count > 0)
         {

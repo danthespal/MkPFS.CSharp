@@ -60,6 +60,13 @@ These Python results change (details in [tools/oracle/README.md](tools/oracle/RE
 | Game titles | Use the `param.json` default language instead of the first language in the file (often Arabic). |
 | `ampr_emu.index` | Hashed the way the console looks paths up, so files with non-ASCII names are found. |
 
+### CPU cores
+
+`--cpu-count` takes `auto` or a count. Auto (the default) uses every logical processor but two, which stay free
+for Windows and other programs, and larger counts are capped at that. Python's auto uses `min(16, cores - 1)`.
+Commands without the option (`verify`, `inspect`, `unpack`, `ampr verify`) stay within the same limit. The
+output is the same for any count.
+
 ### Name
 
 The header line reads `MkPFS.CSharp <version> - https://github.com/danthespal/MkPFS.CSharp`. Tools that parse

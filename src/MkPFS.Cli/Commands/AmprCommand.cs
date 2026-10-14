@@ -47,6 +47,23 @@ internal static class AmprCommand
         return command;
     }
 
+    // Hidden: ampr_pack.py behavior for the oracle parity tests (AMPRDiskFiles are packed and removed like any file).
+    private static Option<bool> NoKeepOnDisk() => new("--no-keep-on-disk") { Description = "pack and remove empty files and PlayGo markers like ampr_pack.py", Hidden = true };
+
+    /// <summary><c>--workers</c> (ampr_pack.py) or <c>--cpu-count</c>; left out, the profile's <c>[pack] workers</c> applies.</summary>
+    internal static Option<int?> WorkersOption() =>
+        CpuOption.CreateOptional("--workers", "compression threads (default: auto; ampr pack uses the profile's workers when set)", "--cpu-count");
+
+    /// <summary>The thread count for a <see cref="WorkersOption"/> value; 0 is Auto.</summary>
+    /// <param name="count">Value.</param>
+    /// <returns>Workers for <see cref="AMPRPackConfig.Workers"/>, capped when packing.</returns>
+    internal static long Workers(int count) => count switch
+    {
+        < 0 => throw new AMPRPackException("--workers must not be negative"),
+        0 => CpuCores.Max,
+        _ => count,
+    };
+
     private static Option<string> Required(string name, string description) => new(name) { Description = description, Required = true };
 
     private static Option<string[]> Repeated(string name, string description, string? helpName = null) =>
@@ -64,14 +81,16 @@ internal static class AmprCommand
         Option<string[]> exclude = Repeated("--exclude", "force-loose glob");
         Option<string?> includeFrom = new("--include-from") { Description = "newline-delimited include globs" };
         Option<string?> excludeFrom = new("--exclude-from") { Description = "newline-delimited exclude globs" };
-        Option<int?> workers = new("--workers") { Description = "compression workers" };
+        Option<int?> workers = WorkersOption();
         Option<bool> selfContained = new("--self-contained") { Description = "do not auto-loose explicitly packed files; store incompressible blocks RAW" };
         Option<string[]> requirePacked = Repeated("--require-packed", "fail if a matching logical file would remain loose (repeatable)", "GLOB");
         Option<bool> allowMissing = new("--allow-missing") { Description = "leave missing selected files loose" };
         Option<bool> noProgress = new("--no-progress") { Description = "suppress build progress on stderr; final JSON still goes to stdout" };
+        Option<bool> noKeepOnDisk = NoKeepOnDisk();
         Command command = new("pack", "build pack index and data volumes")
         {
             root, amprIndex, output, config, traces, untracedTypes, include, exclude, includeFrom, excludeFrom, workers, selfContained, requirePacked, allowMissing, noProgress,
+            noKeepOnDisk,
         };
         command.SetAction(parse => Run(ctx, () =>
         {
@@ -83,7 +102,7 @@ internal static class AmprCommand
                 : AMPRPackConfig.Load(configPath is null ? null : Resolve(ctx, configPath));
             if (parse.GetValue(workers) is { } count)
             {
-                loaded.Workers = count is >= 1 and <= 256 ? count : throw new AMPRPackException("--workers must be between 1 and 256");
+                loaded.Workers = Workers(count);
             }
 
             if (parse.GetValue(selfContained))
@@ -95,6 +114,8 @@ internal static class AmprCommand
             {
                 loaded.RequiredPacked = [.. loaded.RequiredPacked, .. required];
             }
+
+            loaded.KeepOnDisk = !parse.GetValue(noKeepOnDisk);
 
             List<string> includes = [.. parse.GetValue(include)!, .. PatternFile(ctx, parse.GetValue(includeFrom))];
             List<string> excludes = [.. parse.GetValue(exclude)!, .. PatternFile(ctx, parse.GetValue(excludeFrom))];
@@ -162,7 +183,13 @@ internal static class AmprCommand
         Option<string?> config = new("--config") { Description = "TOML pack profile for the game (or --traces)" };
         Option<string?> traces = new("--traces") { Description = TracesDescription };
         Option<bool> untracedTypes = new("--pack-untraced-types") { Description = UntracedTypesDescription };
-        Option<int?> workers = new("--workers") { Description = "compression workers" };
+        Option<string?> profile = new("--profile")
+        {
+            Description = "profile tested on the PS5 and shipped with MkPFS (ampr profile bundled); without --config, --traces "
+                + "or --profile the one for the game is picked automatically",
+            HelpName = "ID",
+        };
+        Option<int?> workers = WorkersOption();
         Option<bool> selfContained = new("--self-contained") { Description = "do not auto-loose explicitly packed files; store incompressible blocks RAW" };
         Option<string?> exfat = new("--exfat") { Description = "also build an exFAT image of the output (file, or folder for <titleId>.exfat)" };
         Option<string?> exfatFree = new("--exfat-free-space") { Description = "free space to leave inside the exFAT image, e.g. 2GiB (default: 0); a debug run of AMPR Emu writes its log there" };
@@ -170,21 +197,25 @@ internal static class AmprCommand
         Option<bool> noProgress = new("--no-progress") { Description = "suppress progress on stderr" };
         Command command = new("game", "build a folder that runs from packs as is: libraries, ampr_emu.index, packs and loose files (not in ampr_pack.py)")
         {
-            root, output, fakelib, config, traces, untracedTypes, workers, selfContained, exfat, exfatFree, skipVerify, noProgress,
+            root, output, fakelib, config, traces, untracedTypes, profile, workers, selfContained, exfat, exfatFree, skipVerify, noProgress,
         };
         command.SetAction(parse => Run(ctx, () =>
         {
             ctx.Log.Warning(ExperimentalWarning);
             string? configPath = parse.GetValue(config);
             string? tracesDir = parse.GetValue(traces);
+            string? profileId = parse.GetValue(profile);
             CheckRuleOptions(configPath, tracesDir, parse.GetValue(untracedTypes));
+            if (profileId is not null && (configPath is not null || tracesDir is not null))
+            {
+                throw new AMPRPackException("--profile cannot be used with --config or --traces");
+            }
+
             AMPRPackConfig loaded = tracesDir is not null ? TraceRules(Resolve(ctx, tracesDir), parse.GetValue(untracedTypes), message => ctx.Log.Info(message))
                 : configPath is not null ? Config(ctx, Resolve(ctx, configPath))
-                : throw new AMPRPackException(NoRulesError);
-            if (parse.GetValue(workers) is { } count)
-            {
-                loaded.Workers = count is >= 1 and <= 256 ? count : throw new AMPRPackException("--workers must be between 1 and 256");
-            }
+                : BundledRules(ctx, Resolve(ctx, parse.GetValue(root)!), profileId);
+            // Not like ampr pack: a profile's workers (8 in generated profiles) is not a choice for this machine.
+            loaded.Workers = parse.GetValue(workers) is { } count ? Workers(count) : CpuCores.Max;
 
             if (parse.GetValue(selfContained))
             {
@@ -220,9 +251,40 @@ internal static class AmprCommand
         return command;
     }
 
-    /// <summary><c>ampr game</c> without rules: nothing would be packed.</summary>
+    /// <summary><c>ampr game</c> without rules and no bundled profile for the game: nothing would be packed.</summary>
     internal const string NoRulesError =
-        "ampr game needs the rules to pack with: --config <profile.toml> for the game, or --traces <folder> of APR traces";
+        "ampr game needs the rules to pack with: no bundled profile fits this game, so give --config <profile.toml> for the game, "
+        + "or --traces <folder> of APR traces";
+
+    // Not in ampr_pack.py: a profile tested on the PS5, named with --profile or picked for the game.
+    private static AMPRPackConfig BundledRules(CliContext ctx, string root, string? id)
+    {
+        AMPRBundledMatch match = id is null
+            ? AMPRBundledProfiles.Match(root) ?? throw new AMPRPackException(NoRulesError)
+            : new AMPRBundledMatch(
+                AMPRBundledProfiles.Find(id) ?? throw new AMPRPackException(
+                    $"unknown bundled profile: {id} (known: {string.Join(", ", AMPRBundledProfiles.All.Select(p => p.Id))})"),
+                AMPRBundledMatchKind.TitleId);
+        AMPRBundledProfile chosen = match.Profile;
+        string reason = id is not null ? "chosen with --profile" : BundledMatchText(match.Kind);
+        ctx.Log.Info($"Rules: bundled profile {chosen.Id} ({chosen.Label}), tested on {chosen.Tested}; {reason}");
+        if (id is null && match.Kind == AMPRBundledMatchKind.Engine)
+        {
+            ctx.Log.Warning($"warning: the {chosen.Label} profile was tested on one game only; keep the original until the packed game has been played");
+        }
+
+        return chosen.Load();
+    }
+
+    /// <summary>Why <see cref="AMPRBundledProfiles.Match"/> chose a profile, for the log.</summary>
+    /// <param name="kind">Match kind.</param>
+    /// <returns>Text.</returns>
+    internal static string BundledMatchText(AMPRBundledMatchKind kind) => kind switch
+    {
+        AMPRBundledMatchKind.TitleId => "made for this Title ID",
+        AMPRBundledMatchKind.Name => "made for this game (matched by title name)",
+        _ => "picked by the engine's file layout",
+    };
 
     private static void CheckRuleOptions(string? configPath, string? tracesDir, bool untracedTypes)
     {
@@ -314,7 +376,12 @@ internal static class AmprCommand
         Option<string> index = Required("--index", "pack manifest");
         Option<string[]> file = Repeated("--file", "file glob");
         Option<string?> root = new("--root") { Description = "also reconstruct packed files and compare byte-for-byte with this /app0 root" };
-        Command command = new("verify", "validate every selected packed block") { index, file, root };
+        Option<string?> restoreDiskFiles = new("--restore-disk-files")
+        {
+            Description = "write packed files the PS5 must find on disk (empty files, PlayGo markers, boot files) back into this /app0 folder",
+            HelpName = "DIR",
+        };
+        Command command = new("verify", "validate every selected packed block") { index, file, root, restoreDiskFiles };
         command.SetAction(parse => Run(ctx, () =>
         {
             string indexPath = Resolve(ctx, parse.GetValue(index)!);
@@ -332,6 +399,13 @@ internal static class AmprCommand
                 result["source_compare"] = new Dictionary<string, object?> { ["files"] = compare.Files, ["chunks"] = compare.Chunks, ["bytes"] = compare.Bytes };
             }
 
+            // Not in ampr_pack.py: repairs games packed before MkPFS kept these files loose, or by other tools.
+            if (parse.GetValue(restoreDiskFiles) is { } gameRoot)
+            {
+                AMPRDiskFilesResult disk = AMPRPackTools.RestoreDiskFiles(indexPath, Resolve(ctx, gameRoot), restore: true);
+                result["disk_files"] = new Dictionary<string, object?> { ["missing"] = disk.Missing, ["restored"] = disk.Restored, ["paths"] = disk.Paths };
+            }
+
             PrintJson(ctx, result);
         }));
         return command;
@@ -343,7 +417,8 @@ internal static class AmprCommand
         Option<string> root = Required("--root", "/app0 source directory");
         Option<bool> confirm = new("--confirm") { Description = "perform permanent removal; without it, print a read-only plan" };
         Option<bool> removeEmptyDirs = new("--remove-empty-dirs") { Description = "remove directories left empty by source removal, never the /app0 root" };
-        Command command = new("remove-sources", "verify, then remove local /app0 sources represented by PACK records") { index, root, confirm, removeEmptyDirs };
+        Option<bool> noKeepOnDisk = NoKeepOnDisk();
+        Command command = new("remove-sources", "verify, then remove local /app0 sources represented by PACK records") { index, root, confirm, removeEmptyDirs, noKeepOnDisk };
         command.Aliases.Add("remove-packed-sources");
         command.SetAction(parse => Run(ctx, () =>
         {
@@ -351,7 +426,7 @@ internal static class AmprCommand
             string rootPath = Resolve(ctx, parse.GetValue(root)!);
             if (parse.GetValue(confirm))
             {
-                AMPRRemovalResult removed = AMPRPackMaintenance.RemovePackedSources(indexPath, rootPath, parse.GetValue(removeEmptyDirs));
+                AMPRRemovalResult removed = AMPRPackMaintenance.RemovePackedSources(indexPath, rootPath, parse.GetValue(removeEmptyDirs), !parse.GetValue(noKeepOnDisk));
                 PrintJson(ctx, new Dictionary<string, object?>
                 {
                     ["files"] = removed.Files,
@@ -362,7 +437,7 @@ internal static class AmprCommand
                 return;
             }
 
-            AMPRRemovalPlan plan = AMPRPackMaintenance.RemovalPlan(indexPath, rootPath);
+            AMPRRemovalPlan plan = AMPRPackMaintenance.RemovalPlan(indexPath, rootPath, !parse.GetValue(noKeepOnDisk));
             PrintJson(ctx, new Dictionary<string, object?>
             {
                 ["files"] = plan.Files,

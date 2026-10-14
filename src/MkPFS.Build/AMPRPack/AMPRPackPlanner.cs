@@ -35,6 +35,7 @@ public static class AMPRPackPlanner
         string indexName = config.IndexName.Replace('\\', '/').TrimStart('/');
         string packOutputGlob = AMPRPackPattern.Parse(config.PackPattern).OutputGlob;
         using LZ4Encoder encoder = new();
+        int keptOnDisk = 0;
         for (int fileId = 1; fileId <= entries.Count; fileId++)
         {
             AMPRIndexEntry entry = entries[fileId - 1];
@@ -57,6 +58,13 @@ public static class AMPRPackPlanner
                 || AMPRGlob.Matches(normalized, [packOutputGlob]))
             {
                 rule = AMPRRule.Loose(rule.BlockShift);
+            }
+
+            // Not in ampr_pack.py: the PS5 checks these outside the game, where packed copies are invisible.
+            if (config.KeepOnDisk && rule.Action != "loose" && AMPRDiskFiles.MustStayOnDisk(relative, entry.Size))
+            {
+                rule = AMPRRule.Loose(rule.BlockShift);
+                keptOnDisk++;
             }
 
             string source = Path.Combine([root, .. relative.Split('/')]);
@@ -118,12 +126,18 @@ public static class AMPRPackPlanner
             candidates.Add(candidate with { Rule = rule });
         }
 
+        if (keptOnDisk > 0)
+        {
+            warnings.Add($"kept on disk: {keptOnDisk} files the PS5 reads outside the game (empty files, PlayGo markers, boot files) stay loose");
+        }
+
         Dictionary<int, int> lanes = AssignLanes(candidates, config);
         List<AMPRSelectedFile> result = [.. candidates.Select(c => c with { Lane = lanes.GetValueOrDefault(c.FileId) })];
         if (config.RequiredPacked.Count > 0)
         {
             List<string> missing = [.. result
                 .Where(item => AMPRGlob.Matches(item.Relative, config.RequiredPacked) && item.Rule.Action == "loose")
+                .Where(item => !config.KeepOnDisk || !AMPRDiskFiles.MustStayOnDisk(item.Relative, item.IndexEntry.Size))
                 .Select(item => item.Relative)];
             if (missing.Count > 0)
             {
@@ -281,7 +295,7 @@ public static class AMPRPackPlanner
         return result;
     }
 
-    private static AutoLooseDecision DecideAutoLoose(AMPRSelectedFile item, AMPRPackConfig config, LZ4Encoder encoder, long ioPageSize)
+    internal static AutoLooseDecision DecideAutoLoose(AMPRSelectedFile item, AMPRPackConfig config, LZ4Encoder encoder, long ioPageSize)
     {
         AMPRRule rule = item.Rule;
         if (!config.AutoLooseLargeFiles
@@ -339,7 +353,7 @@ public static class AMPRPackPlanner
         return (info.Length, info.LastWriteTimeUtc);
     }
 
-    private sealed record AutoLooseDecision(bool UseLoose, long SampledBytes, long StoredBytes, long RawBlocks, long SampledBlocks)
+    internal sealed record AutoLooseDecision(bool UseLoose, long SampledBytes, long StoredBytes, long RawBlocks, long SampledBlocks)
     {
         public double SavingsRatio => SampledBytes == 0 ? 0.0 : 1.0 - ((double)StoredBytes / SampledBytes);
 

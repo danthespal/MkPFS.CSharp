@@ -1082,7 +1082,7 @@ public static class PFSInspector
         // the serial walk did, at the first such file in path order.
         byte[]?[] sourceHashes = new byte[]?[common.Count];
         ExceptionDispatchInfo?[] sourceErrors = new ExceptionDispatchInfo?[common.Count];
-        Parallel.For(0, common.Count, i =>
+        Parallel.For(0, common.Count, CpuCores.ParallelOptions, i =>
         {
             try
             {

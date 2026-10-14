@@ -47,11 +47,7 @@ internal static class FPKGPackCommand
         {
             Description = "Folder for the staged inner image, a temporary file about as large as the game (default: next to the package)",
         };
-        Option<int> cpuCount = new("--cpu-count")
-        {
-            Description = "Logical processors for Kraken compression, 0 to 256 (0 = auto, every logical processor)",
-            DefaultValueFactory = _ => 0,
-        };
+        Option<int> cpuCount = CpuOption.Create("--cpu-count", "Logical processors for Kraken compression, 0 to 256 (auto also stays within memory)");
         command.Arguments.Add(source);
         command.Arguments.Add(output);
         foreach (Option option in new Option[] { contentId, passcode, compression, seed, timestamp, noFakeSign, title, appVersion, drmType, cpuCount, tempFolder, dryRun, verify, verbose, json })
@@ -139,7 +135,7 @@ internal static class FPKGPackCommand
                 DrmType = parse.GetValue(drmType)!,
                 TempFolder = parse.GetValue(tempFolder) is { Length: > 0 } temp ? Path.GetFullPath(PathRules.ExpandUser(temp)) : null,
                 Verbose = parse.GetValue(verbose),
-                CpuCount = parse.GetValue(cpuCount) is > 0 and int count ? count : PS5KrakenChunk.MaxParallelism,
+                CpuCount = parse.GetValue(cpuCount) is > 0 and int count ? CpuCores.Resolve(count) : PS5KrakenChunk.MaxParallelism,
             };
 
             return parse.GetValue(dryRun)

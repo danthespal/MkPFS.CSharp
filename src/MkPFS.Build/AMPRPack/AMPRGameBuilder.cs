@@ -55,7 +55,7 @@ public static class AMPRGameBuilder
     /// <param name="options">Settings.</param>
     /// <param name="log">Step messages.</param>
     /// <param name="packProgress">Pack progress.</param>
-    /// <param name="exfatProgress">exFAT progress.</param>
+    /// <param name="progress">Progress of the later phases: <c>copy</c>, <c>verify</c>, <c>compare</c> and <c>exfat</c>.</param>
     /// <returns>Summary.</returns>
     /// <exception cref="BuildException">The inputs cannot give a playable folder, or a check failed.</exception>
     public static AMPRGameResult Build(
@@ -64,7 +64,7 @@ public static class AMPRGameBuilder
         AMPRGameOptions options,
         IMkPFSLog log,
         Action<AMPRBuildProgress>? packProgress = null,
-        IProgressSink? exfatProgress = null)
+        IProgressSink? progress = null)
     {
         sourceRoot = Path.GetFullPath(sourceRoot);
         outputDir = Path.GetFullPath(outputDir);
@@ -90,7 +90,7 @@ public static class AMPRGameBuilder
         AMPRGameResult result;
         try
         {
-            result = BuildInto(sourceRoot, outputDir, libraryDir, options, log, packProgress);
+            result = BuildInto(sourceRoot, outputDir, libraryDir, options, log, packProgress, progress);
         }
         catch
         {
@@ -111,7 +111,7 @@ public static class AMPRGameBuilder
         string written;
         try
         {
-            written = ExfatImageWriter.Write(outputDir, image, null, exfatProgress, options.ExfatFreeBytes);
+            written = ExfatImageWriter.Write(outputDir, image, null, progress, options.ExfatFreeBytes);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
         {
@@ -130,7 +130,8 @@ public static class AMPRGameBuilder
         string libraryDir,
         AMPRGameOptions options,
         IMkPFSLog log,
-        Action<AMPRBuildProgress>? packProgress)
+        Action<AMPRBuildProgress>? packProgress,
+        IProgressSink? progress)
     {
         // 1. Libraries: the source's library folder, then the selected files over it. The index needs their final sizes.
         log.Info($"[1/5] Libraries: {libraryDir}/");
@@ -158,6 +159,8 @@ public static class AMPRGameBuilder
 
         // 3. Packs, read from the source.
         log.Info("[3/5] Packing");
+        log.Info($"  {CpuCores.Resolve(options.Config.Workers)} compression threads (at most {CpuCores.Max}: {Environment.ProcessorCount} logical processors, "
+            + $"{CpuCores.Reserved} kept free; --cpu-count changes it)");
         AMPRBuildResult pack = AMPRPackBuilder.Build(sourceRoot, index, outputDir, options.Config, progress: packProgress);
         foreach (string warning in pack.Warnings)
         {
@@ -177,7 +180,7 @@ public static class AMPRGameBuilder
 
         // 4. Loose files: known only now, because the packer leaves large incompressible files loose by sampling them.
         log.Info("[4/5] Copying loose files");
-        int loose = CopyLooseFiles(sourceRoot, outputDir, libraryDir, pack.Stats.LoosePaths);
+        int loose = CopyLooseFiles(sourceRoot, outputDir, libraryDir, pack.Stats.LoosePaths, progress);
         CopyDirectories(sourceRoot, outputDir);
         log.Info($"  {loose} files copied");
 
@@ -185,7 +188,7 @@ public static class AMPRGameBuilder
         if (options.Verify)
         {
             log.Info("[5/5] Verifying");
-            Verify(sourceRoot, outputDir, pack.IndexPath, log);
+            Verify(sourceRoot, outputDir, pack.IndexPath, log, progress);
         }
         else
         {
@@ -309,23 +312,25 @@ public static class AMPRGameBuilder
         }
     }
 
-    private static int CopyLooseFiles(string source, string output, string libraryDir, IReadOnlyList<string> loosePaths)
+    private static int CopyLooseFiles(string source, string output, string libraryDir, IReadOnlyList<string> loosePaths, IProgressSink? progress)
     {
         string libraryKey = AmprIndex.KeyFor(libraryDir + "/");
+        // Libraries are already final in the output.
+        List<string> copies = [.. loosePaths.Where(relative => !AmprIndex.KeyFor(relative).StartsWith(libraryKey, StringComparison.Ordinal))];
+        long total = progress is null ? 0 : copies.Sum(relative => new FileInfo(AMPRAssetPath.SafeOutputPath(source, relative)).Length);
+        long done = 0;
         int copied = 0;
-        foreach (string relative in loosePaths)
+        progress?.Report("copy", 0, total);
+        foreach (string relative in copies)
         {
-            if (AmprIndex.KeyFor(relative).StartsWith(libraryKey, StringComparison.Ordinal))
-            {
-                continue; // already final in the output
-            }
-
             string from = AMPRAssetPath.SafeOutputPath(source, relative);
             string to = AMPRAssetPath.SafeOutputPath(output, relative);
             Directory.CreateDirectory(Path.GetDirectoryName(to)!);
             File.Copy(from, to, overwrite: false);
             File.SetLastWriteTimeUtc(to, File.GetLastWriteTimeUtc(from));
             copied++;
+            done += progress is null ? 0 : new FileInfo(to).Length;
+            progress?.Report("copy", done, total, done);
         }
 
         return copied;
@@ -366,12 +371,12 @@ public static class AMPRGameBuilder
     }
 
     // Every packed file decodes to the source bytes, and every loose index row is in the output with its size.
-    private static void Verify(string source, string output, string manifest, IMkPFSLog log)
+    private static void Verify(string source, string output, string manifest, IMkPFSLog log, IProgressSink? progress)
     {
         try
         {
-            AMPRVerifyResult blocks = AMPRPackTools.Verify(manifest);
-            AMPRSourceCompareResult compare = AMPRPackTools.VerifyAgainstRoot(manifest, source);
+            AMPRVerifyResult blocks = AMPRPackTools.Verify(manifest, progress: progress);
+            AMPRSourceCompareResult compare = AMPRPackTools.VerifyAgainstRoot(manifest, source, progress: progress);
             log.Info($"  Packs: {blocks.Files} files, {blocks.PhysicalChunks} chunks decoded; {compare.Files} files match the source");
         }
         catch (AMPRPackException ex)

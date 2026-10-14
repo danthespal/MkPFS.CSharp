@@ -150,7 +150,7 @@ public static class PS5PackageVerifier
     private static int FirstFailure(int count, Func<int, bool> check)
     {
         bool[] ok = new bool[count];
-        Parallel.For(0, count, i => ok[i] = check(i));
+        Parallel.For(0, count, CpuCores.ParallelOptions, i => ok[i] = check(i));
         return Array.IndexOf(ok, false);
     }
 
@@ -167,7 +167,7 @@ public static class PS5PackageVerifier
         string?[] errors = new string?[count];
         long done = 0;
         Lock gate = new();
-        Parallel.For(0, count, package.OpenInnerStream, (i, _, stored) =>
+        Parallel.For(0, count, CpuCores.ParallelOptions, package.OpenInnerStream, (i, _, stored) =>
         {
             PS5Chunk chunk = inner.Chunks[i];
             try

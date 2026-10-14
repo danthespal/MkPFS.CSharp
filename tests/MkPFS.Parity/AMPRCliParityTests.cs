@@ -55,7 +55,9 @@ public sealed class AMPRCliParityTests
                 StringWriter stdout = new() { NewLine = "\n" };
                 StringWriter stderr = new() { NewLine = "\n" };
                 CliContext ctx = new(stdout, stderr, useColor: false, utf8: false, progress: true) { WorkingDirectory = work };
-                int exit = MkPFSCli.Run(["ampr", .. argv], ctx);
+                // ampr_pack.py packs and removes empty files and PlayGo markers; the port keeps them on disk by default.
+                string[] run = argv[0] is "pack" or "remove-packed-sources" ? [.. argv, "--no-keep-on-disk"] : argv;
+                int exit = MkPFSCli.Run(["ampr", .. run], ctx);
 
                 // The port warns when a pack run packs nothing (ampr_pack.py stays silent): exactly where the oracle
                 // reported files_packed 0.

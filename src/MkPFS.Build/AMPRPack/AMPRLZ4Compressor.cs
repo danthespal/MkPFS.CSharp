@@ -1,5 +1,7 @@
 using System.Text;
 using MkPFS.Build.PFS;
+using MkPFS.Core.AMPR;
+using MkPFS.Core.Compression;
 using MkPFS.Core.Diagnostics;
 using MkPFS.Core.Util;
 
@@ -11,7 +13,7 @@ public sealed record AMPRLZ4CompressorOptions
     /// <summary>1..12; up to <see cref="AMPRUniversalProfile.FastLevelLimit"/> uses the LZ4 fast encoder, higher ones LZ4 HC.</summary>
     public int Level { get; init; } = AMPRUniversalProfile.DefaultLevel;
 
-    /// <summary>Compression worker threads, or <see langword="null"/> for the default (up to 8).</summary>
+    /// <summary>Compression worker threads, or <see langword="null"/> or 0 for Auto (<see cref="CpuCores.Max"/>, which also caps it).</summary>
     public long? Workers { get; init; }
 
     /// <summary>Folder whose files (AMPR Emu and other fakelib libraries) go into the output's library folder.</summary>
@@ -55,7 +57,7 @@ public static class AMPRLZ4Compressor
     /// <param name="options">Settings.</param>
     /// <param name="log">Step messages.</param>
     /// <param name="packProgress">Pack progress.</param>
-    /// <param name="exfatProgress">exFAT progress.</param>
+    /// <param name="progress">Progress of the phases after packing (<see cref="AMPRGameBuilder.Build"/>).</param>
     /// <returns>Summary.</returns>
     /// <exception cref="BuildException">The inputs cannot give a playable folder, or a check failed.</exception>
     public static AMPRGameResult Build(
@@ -64,7 +66,7 @@ public static class AMPRLZ4Compressor
         AMPRLZ4CompressorOptions options,
         IMkPFSLog log,
         Action<AMPRBuildProgress>? packProgress = null,
-        IProgressSink? exfatProgress = null)
+        IProgressSink? progress = null)
     {
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(log);
@@ -75,9 +77,9 @@ public static class AMPRLZ4Compressor
             throw new BuildException($"compression level must be between 1 and 12, got {options.Level}");
         }
 
-        if (options.Workers is { } workers && workers is < 1 or > 256)
+        if (options.Workers is < 0)
         {
-            throw new BuildException("workers must be between 1 and 256");
+            throw new BuildException("workers must not be negative");
         }
 
         // 1. The source must be a game folder dump: the compressor needs its loader and its parameters.
@@ -103,15 +105,35 @@ public static class AMPRLZ4Compressor
         // 2. Rules from the folder structure.
         string toml = AMPRUniversalProfile.RenderToml(files.Select(f => f.Relative), options.Level);
         AMPRPackConfig config = AMPRUniversalProfile.ToConfig(toml);
-        if (options.Workers is { } count)
+        if (options.Workers is > 0 and { } count)
         {
             config.Workers = count;
         }
 
         string codec = options.Level <= AMPRUniversalProfile.FastLevelLimit ? "LZ4 fast" : $"LZ4 HC level {options.Level}";
         log.Info($"Rules: LZ4 Game Compressor universal profile ({codec}), {config.Rules.Count} rules from the folder structure of {files.Count} files");
+        bool unreal = AMPRUniversalProfile.IsUnrealIoStore(files.Select(f => f.Relative));
+        if (unreal)
+        {
+            log.Info("  Unreal Engine IoStore: .utoc tables and .pak archives stay loose; .ucas containers are packed only if they compress");
+        }
 
-        // 3. Room for the worst case, where nothing compresses (ampr_backend_measure).
+        // 3. What can be packed, before the long copy: a game whose large files are already compressed (Unreal's Oodle
+        // .ucas and .pak) gains next to nothing, and the build would only copy it.
+        long total = files.Where(f => !UnindexedRootFiles.Contains(f.Relative)).Sum(f => f.Size);
+        long packable = PackableBytes(sourceRoot, files, config);
+        if (total > 0 && packable * 10 < total)
+        {
+            log.Warning($"warning: only {Sizes.HumanReadable(packable)} of {Sizes.HumanReadable(total)} can be packed: the large files do not "
+                + $"compress with LZ4 (their data is already compressed{(unreal ? ", like Unreal Engine's Oodle .ucas and .pak" : string.Empty)}), "
+                + "so the packed game would be about as large as the original");
+        }
+        else
+        {
+            log.Info($"  {Sizes.HumanReadable(packable)} of {Sizes.HumanReadable(total)} can be packed (large files sampled)");
+        }
+
+        // 4. Room for the worst case, where nothing compresses (ampr_backend_measure).
         CheckFreeSpace(files, outputDir, options, log);
 
         return AMPRGameBuilder.Build(
@@ -127,7 +149,7 @@ public static class AMPRLZ4Compressor
             },
             log,
             packProgress,
-            exfatProgress);
+            progress);
     }
 
     /// <summary>
@@ -161,6 +183,33 @@ public static class AMPRLZ4Compressor
             physical += (5 + (physical / ((16L << 30) - (128 * 1024))) + (count / 65536)) * page;
             return physical + (16L << 20);
         }
+    }
+
+    // Bytes of the files the rules pack and the planner would keep packed: large files are sampled the way the planner's
+    // auto-loose check samples them, so the result matches what the build will do.
+    private static long PackableBytes(string sourceRoot, List<SourceFile> files, AMPRPackConfig config)
+    {
+        using LZ4Encoder encoder = new();
+        long packable = 0;
+        foreach (SourceFile file in files)
+        {
+            AMPRRule rule = config.SelectRule(file.Relative);
+            if (rule.Action == "loose" || UnindexedRootFiles.Contains(file.Relative)
+                || (config.KeepOnDisk && AMPRDiskFiles.MustStayOnDisk(file.Relative, (ulong)file.Size)))
+            {
+                continue;
+            }
+
+            string source = Path.Combine([sourceRoot, .. file.Relative.Split('/')]);
+            AMPRSelectedFile item = new(0, new AMPRIndexEntry(file.Relative, (ulong)file.Size, 0), source, file.Relative, rule, file.Size, 0, 0);
+            AMPRGroupConfig group = config.Groups[rule.Group];
+            if (!AMPRPackPlanner.DecideAutoLoose(item, config, encoder, group.IOPageSize != 0 ? group.IOPageSize : config.IOPageSize).UseLoose)
+            {
+                packable += file.Size;
+            }
+        }
+
+        return packable;
     }
 
     // Every file of the game, in walk order. Links and existing pack metadata are refused like the compressor does.

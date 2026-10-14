@@ -35,7 +35,7 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
     [NotifyPropertyChangedFor(nameof(ShowPackOptions), nameof(ShowOverwrite), nameof(ShowJson), nameof(ShowConfirm))]
     [NotifyPropertyChangedFor(nameof(ShowGameOptions), nameof(ShowAllowMissing), nameof(ShowExfatPath), nameof(ShowPackNote))]
     [NotifyPropertyChangedFor(nameof(ShowRulesMissing), nameof(ShowRulesConfig), nameof(ShowRulesTraces), nameof(ShowNoTraces))]
-    [NotifyPropertyChangedFor(nameof(UseCompressor), nameof(ShowTraces), nameof(ShowSelfContained))]
+    [NotifyPropertyChangedFor(nameof(UseCompressor), nameof(ShowTraces), nameof(ShowSelfContained), nameof(ShowRulesBundled))]
     public partial Choice Action { get; set; } = ActionChoices[0];
 
     /// <summary>
@@ -45,6 +45,7 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(UseCompressor), nameof(ShowConfig), nameof(ShowTraces), nameof(ShowSelfContained))]
     [NotifyPropertyChangedFor(nameof(ShowRulesMissing), nameof(ShowRulesConfig), nameof(ShowRulesTraces), nameof(ShowNoTraces))]
+    [NotifyPropertyChangedFor(nameof(ShowRulesBundled))]
     public partial bool LZ4Compressor { get; set; }
 
     /// <summary>Compression levels for <c>--level</c>.</summary>
@@ -94,21 +95,21 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
     /// <summary><c>--config</c>: the game's TOML profile; game and pack need it or a trace folder, runtime-config needs it.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowRulesMissing), nameof(ShowRulesConfig), nameof(ShowRulesTraces), nameof(ShowNoTraces))]
+    [NotifyPropertyChangedFor(nameof(ShowRulesBundled))]
     public partial string Config { get; set; } = string.Empty;
 
     /// <summary><c>--traces</c> (game, pack): folder with APR traces of the debug emulator build.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowRulesMissing), nameof(ShowRulesConfig), nameof(ShowRulesTraces), nameof(ShowNoTraces))]
-    [NotifyPropertyChangedFor(nameof(RulesTracesText))]
+    [NotifyPropertyChangedFor(nameof(RulesTracesText), nameof(ShowRulesBundled))]
     public partial string Traces { get; set; } = string.Empty;
 
     /// <summary><c>--pack-untraced-types</c>: also pack untraced files of the traced file types.</summary>
     [ObservableProperty]
     public partial bool UntracedTypes { get; set; }
 
-    /// <summary><c>--workers</c>; empty for the configuration's value.</summary>
-    [ObservableProperty]
-    public partial string Workers { get; set; } = string.Empty;
+    /// <summary><c>--workers</c> (game, pack): Auto or a count, at most every logical processor but two.</summary>
+    public CpuPicker Cpu { get; } = new();
 
     /// <summary><c>--self-contained</c>.</summary>
     [ObservableProperty]
@@ -181,8 +182,29 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
     /// <summary>How many trace runs were found.</summary>
     public string RulesTracesText => Localizer.Instance.Format("ap_rules_traces", _traceRuns ?? 0);
 
-    /// <summary>Neither a TOML profile nor a trace folder is chosen yet (game, pack).</summary>
-    public bool ShowRulesMissing => ShowTraces && Config.Trim().Length == 0 && Traces.Trim().Length == 0;
+    /// <summary>Neither a TOML profile nor a trace folder is chosen yet (game, pack), and no bundled profile fits the game.</summary>
+    public bool ShowRulesMissing => ShowTraces && Config.Trim().Length == 0 && Traces.Trim().Length == 0 && !ShowRulesBundled;
+
+    // Bundled profile for the game folder (game), or null.
+    private Build.AMPRPack.AMPRBundledMatch? _bundled;
+
+    /// <summary>A bundled profile tested on the PS5 fits the game and no profile or traces are chosen (game).</summary>
+    public bool ShowRulesBundled =>
+        Action.Value == "game" && !UseCompressor && Config.Trim().Length == 0 && Traces.Trim().Length == 0 && _bundled is not null;
+
+    /// <summary>Which bundled profile is used, what it was tested on, and why it was picked.</summary>
+    public string RulesBundledText => _bundled is not { } match
+        ? string.Empty
+        : Localizer.Instance.Format(
+            "ap_rules_bundled",
+            match.Profile.Label,
+            match.Profile.Tested,
+            Localizer.Instance[match.Kind switch
+            {
+                Build.AMPRPack.AMPRBundledMatchKind.TitleId => "ap_match_title",
+                Build.AMPRPack.AMPRBundledMatchKind.Name => "ap_match_name",
+                _ => "ap_match_engine",
+            }]);
 
     /// <summary>The user's TOML file decides what is packed.</summary>
     public bool ShowRulesConfig => ShowTraces && Config.Trim().Length > 0 && Traces.Trim().Length == 0;
@@ -214,9 +236,7 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
             "game" or "pack" when !UseCompressor && config.Length > 0 && traces.Length > 0 => Localizer.Instance["ap_err_traces_config"],
             "game" when root.Length == 0 || output.Length == 0 => Localizer.Instance["ap_err_pack"],
             "pack" when root.Length == 0 || output.Length == 0 => Localizer.Instance["ap_err_pack"],
-            "game" or "pack" when !UseCompressor && config.Length == 0 && traces.Length == 0 => Localizer.Instance["ap_err_rules"],
-            "game" or "pack" when Workers.Trim().Length > 0 && !(int.TryParse(Workers.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out int n) && n is >= 1 and <= 256)
-                => Localizer.Instance["ap_err_workers"],
+            "game" or "pack" when !UseCompressor && config.Length == 0 && traces.Length == 0 && !ShowRulesBundled => Localizer.Instance["ap_err_rules"],
             "verify" or "list" or "inspect" when manifest.Length == 0 => Localizer.Instance["ap_err_manifest"],
             "unpack" when manifest.Length == 0 || output.Length == 0 => Localizer.Instance["ap_err_unpack"],
             "runtime-config" when manifest.Length == 0 || config.Length == 0 => Localizer.Instance["ap_err_runtime"],
@@ -236,7 +256,7 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
                 args.AddRange(["--root", root, "--output", output]);
                 AddOption(args, "--fakelib", Libs);
                 args.AddRange(["--level", Level.ToString(CultureInfo.InvariantCulture)]);
-                AddOption(args, "--workers", Workers);
+                args.AddRange(["--workers", Cpu.Count.ToString(CultureInfo.InvariantCulture)]);
                 AddFlag(args, !VerifyGame, "--skip-verify");
                 AddExfat(args, output);
                 break;
@@ -245,8 +265,9 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
                 AddOption(args, "--fakelib", Libs);
                 AddOption(args, "--config", config);
                 AddOption(args, "--traces", traces);
+                AddOption(args, "--profile", ShowRulesBundled ? _bundled!.Profile.Id : string.Empty);
                 AddFlag(args, traces.Length > 0 && UntracedTypes, "--pack-untraced-types");
-                AddOption(args, "--workers", Workers);
+                args.AddRange(["--workers", Cpu.Count.ToString(CultureInfo.InvariantCulture)]);
                 AddFlag(args, SelfContained, "--self-contained");
                 AddFlag(args, !VerifyGame, "--skip-verify");
                 AddExfat(args, output);
@@ -256,7 +277,7 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
                 AddOption(args, "--config", config);
                 AddOption(args, "--traces", traces);
                 AddFlag(args, traces.Length > 0 && UntracedTypes, "--pack-untraced-types");
-                AddOption(args, "--workers", Workers);
+                args.AddRange(["--workers", Cpu.Count.ToString(CultureInfo.InvariantCulture)]);
                 AddFlag(args, SelfContained, "--self-contained");
                 AddFlag(args, AllowMissing, "--allow-missing");
                 break;
@@ -348,12 +369,33 @@ public sealed partial class AmprPackPanelViewModel(Color accent, JobRunner? job 
         }
     }
 
-    /// <summary>Look at the trace folder again and update the rules lines.</summary>
+    /// <summary>Look at the trace folder and the game folder again and update the rules lines.</summary>
     public void RefreshDetection()
     {
         _traceCount?.Cancel();
         _traceRuns = TraceRuns(Traces);
         NotifyTraceLines();
+        DetectBundled(Root);
+    }
+
+    /// <summary>Pick the bundled profile for the game folder; only a few files are looked at.</summary>
+    partial void OnRootChanged(string value) => DetectBundled(value);
+
+    private void DetectBundled(string value)
+    {
+        string folder = value.Trim();
+        try
+        {
+            _bundled = folder.Length > 0 && Directory.Exists(folder) ? Build.AMPRPack.AMPRBundledProfiles.Match(Path.GetFullPath(folder)) : null;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            _bundled = null;
+        }
+
+        OnPropertyChanged(nameof(ShowRulesBundled));
+        OnPropertyChanged(nameof(ShowRulesMissing));
+        OnPropertyChanged(nameof(RulesBundledText));
     }
 
     private void NotifyTraceLines()

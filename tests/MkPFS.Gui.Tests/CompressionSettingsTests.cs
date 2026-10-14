@@ -7,8 +7,8 @@ namespace MkPFS.Gui.Tests;
 [Collection(GuiCollection.Name)]
 public sealed class CompressionSettingsTests
 {
-    // Auto passes every core of this machine (the CLI's own default leaves one free and stops at 16).
-    internal static readonly string[] AutoCpu = ["--cpu-count", MkPFS.Core.Util.CpuTopology.PhysicalCores.ToString(System.Globalization.CultureInfo.InvariantCulture)];
+    // Auto passes every logical processor but two, the most any command uses.
+    internal static readonly string[] AutoCpu = ["--cpu-count", MkPFS.Core.Util.CpuCores.Max.ToString(System.Globalization.CultureInfo.InvariantCulture)];
 
     private static List<string> Args(CompressionSettingsViewModel settings, bool compress = true)
     {
@@ -31,8 +31,8 @@ public sealed class CompressionSettingsTests
     {
         CompressionSettingsViewModel settings = new(allowAutoFit: true, offerSkipExecutables: true);
 
-        Assert.Equal(MkPFS.Core.Util.CpuTopology.PhysicalCores + 1, settings.CpuChoices.Count);
-        Assert.Equal($"Auto ({MkPFS.Core.Util.CpuTopology.PhysicalCores} cores)", settings.CpuChoices[0].Label);
+        Assert.Equal(MkPFS.Core.Util.CpuCores.Max + 1, settings.CpuChoices.Count);
+        Assert.Equal($"Auto ({MkPFS.Core.Util.CpuCores.Max} cores)", settings.CpuChoices[0].Label);
         Assert.Equal("1", settings.CpuChoices[1].Label);
         Assert.Same(settings.CpuChoices[0], settings.CpuChoice);
 

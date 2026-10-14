@@ -31,7 +31,7 @@ internal static class BatchCommand
         inodeBits.AcceptOnlyFromAmong("32", "64");
         Option<bool> caseSensitive = new("--case-sensitive") { Description = "Build a case-sensitive image" };
         Option<bool> caseInsensitive = new("--case-insensitive") { Description = "Set case-insensitive mode bit (default)" };
-        Option<int> cpuCount = new("--cpu-count") { Description = "Number of CPU cores for PFSC compression (0 = auto)" };
+        Option<int> cpuCount = CpuOption.Create("--cpu-count", "CPU cores for PFSC compression");
         Option<int> level = new("--compression-level") { Description = "Zlib compression level (0-9, default: 7)", DefaultValueFactory = _ => 7 };
         Option<string> backend = new("--compression-backend") { Description = "Accepted for compatibility; this port always uses zlib 1.3.1", DefaultValueFactory = _ => "auto" };
         backend.AcceptOnlyFromAmong("auto", "zlib-ng", "zlib", "isal");

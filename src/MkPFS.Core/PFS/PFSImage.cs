@@ -347,7 +347,7 @@ public sealed class PFSImage : IDisposable
             }
 
             long batchFirst = first;
-            Parallel.For(0, count, k =>
+            Parallel.For(0, count, CpuCores.ParallelOptions, k =>
             {
                 if (errors[k] is not null)
                 {
@@ -667,7 +667,7 @@ internal sealed class PFSLogicalStream : Stream
 
         byte[]?[] decoded = new byte[batch.Count][];
         ExceptionDispatchInfo? requested = null;
-        Parallel.For(0, batch.Count, k =>
+        Parallel.For(0, batch.Count, CpuCores.ParallelOptions, k =>
         {
             byte[] block = new byte[blockSize];
             try

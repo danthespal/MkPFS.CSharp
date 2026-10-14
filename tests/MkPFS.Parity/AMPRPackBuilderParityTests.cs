@@ -67,6 +67,7 @@ public sealed class AMPRPackBuilderParityTests
         string root = PrepareRoot(info, work);
         string caseDir = Fixtures.PathOrSkip("ampr", "goldens", caseName);
         AMPRPackConfig config = AMPRPackConfig.Load(info.HasConfig ? Path.Combine(caseDir, "config.toml") : null);
+        config.KeepOnDisk = false;
         List<string> include = [];
         List<string> exclude = [];
         bool allowMissing = false;

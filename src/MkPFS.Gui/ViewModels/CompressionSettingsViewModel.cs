@@ -87,10 +87,13 @@ public sealed partial class CompressionSettingsViewModel : ObservableObject
     /// <summary>Show the executables option.</summary>
     public bool OfferSkipExecutables { get; }
 
-    /// <summary>Physical CPU cores of this machine (not logical processors): what Auto uses, and the most the picker offers.</summary>
-    public int MaxCpu { get; } = MkPFS.Core.Util.CpuTopology.PhysicalCores;
+    /// <summary>
+    /// Every logical processor of this machine but two (<see cref="MkPFS.Core.Util.CpuCores.Max"/>): what Auto uses,
+    /// and the most the picker offers.
+    /// </summary>
+    public int MaxCpu { get; } = MkPFS.Core.Util.CpuCores.Max;
 
-    /// <summary>The CPU core picker: Auto (every core of this machine), then 1 to <see cref="MaxCpu"/>.</summary>
+    /// <summary>The CPU core picker: Auto (<see cref="MaxCpu"/>), then 1 to <see cref="MaxCpu"/>.</summary>
     public System.Collections.ObjectModel.ObservableCollection<Choice> CpuChoices { get; }
 
     /// <summary>The selected entry of <see cref="CpuChoices"/>, kept in step with <see cref="CpuCount"/>.</summary>
@@ -114,7 +117,7 @@ public sealed partial class CompressionSettingsViewModel : ObservableObject
     [ObservableProperty]
     public partial decimal? Level { get; set; } = DefaultLevel;
 
-    /// <summary><c>--cpu-count</c>; 0 is Auto, which uses every core of this machine.</summary>
+    /// <summary><c>--cpu-count</c>; 0 is Auto (<see cref="MaxCpu"/>).</summary>
     [ObservableProperty]
     public partial decimal? CpuCount { get; set; } = 0;
 
@@ -156,7 +159,7 @@ public sealed partial class CompressionSettingsViewModel : ObservableObject
         if (compress)
         {
             Add(args, "--compression-level", Whole(Level, DefaultLevel), DefaultLevel);
-            // The CLI's own default leaves a core free and stops at 16; Auto here means every core.
+            // Auto is passed as its count, so the log shows how many cores the run uses.
             int cpu = Whole(CpuCount, 0);
             args.Add("--cpu-count");
             args.Add((cpu > 0 ? cpu : MaxCpu).ToString(CultureInfo.InvariantCulture));

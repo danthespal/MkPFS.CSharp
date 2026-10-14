@@ -170,12 +170,12 @@ public sealed class AMPRPackOperationsParityTests
         string? error = Error(caseName, "remove_plan");
         if (error is not null)
         {
-            Assert.Equal(error, Assert.Throws<AMPRPackException>(() => AMPRPackMaintenance.RemovalPlan(Index(caseName), Root())).Message);
+            Assert.Equal(error, Assert.Throws<AMPRPackException>(() => AMPRPackMaintenance.RemovalPlan(Index(caseName), Root(), keepOnDisk: false)).Message);
             return;
         }
 
         JsonElement oracle = Stdout(caseName, "remove_plan");
-        AMPRRemovalPlan plan = AMPRPackMaintenance.RemovalPlan(Index(caseName), Root());
+        AMPRRemovalPlan plan = AMPRPackMaintenance.RemovalPlan(Index(caseName), Root(), keepOnDisk: false);
         Assert.True(oracle.GetProperty("dry_run").GetBoolean());
         Assert.Equal(
             (oracle.GetProperty("files").GetInt64(), oracle.GetProperty("present_files").GetInt64(),

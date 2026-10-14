@@ -194,6 +194,12 @@ byte-identical, `--workers 1` and `8` produce identical packs. Build time about 
    mtime, `false` the AMPRIDX3 mtime (`mtime_preserved` vs `no_preserve_mtime`).
 5. MkPFS's `ampr_emu.index` and ampr_emu's `build_ampr_index.py` produce the same bytes for the same tree
    (checked on the `ampr` tree; only mtimes differ when the copy does not keep them).
+6. **Bug (runtime):** the packer packs files the PS5 reads outside the game process, where AMPR Emu cannot
+   serve them: empty files (PlayGo language placeholders), `cache_ps5/pgc_*_dummy_file`, `cache_ps5/playgo.pgm`,
+   and Ghost of Yotei's boot files (black screen; found for LZ4 Compression 1.4.3). The port keeps them loose
+   (`AMPRDiskFiles`), `remove-packed-sources` leaves them, and `verify --restore-disk-files` writes them back.
+   The fixture has an empty file (`assets/text_00.dat`), so the parity tests pass the hidden
+   `--no-keep-on-disk` (`AMPRPackConfig.KeepOnDisk = false`) to get ampr_pack.py's output.
 
 ## `ampr profile` check (`check_ampr_profile.py`)
 

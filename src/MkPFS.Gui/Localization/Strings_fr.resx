@@ -33,6 +33,10 @@
   <data name="ap_act_game" xml:space="preserve"><value>Créer le jeu prêt à lancer (packs + fichiers libres)</value></data>
   <data name="ap_rules_missing" xml:space="preserve"><value>Choisissez le profil TOML de ce jeu, ou un dossier de traces APR pour en tirer les règles. Les profils sont des fichiers TOML partagés pour chaque jeu.</value></data>
   <data name="ap_rules_config" xml:space="preserve"><value>Votre profil TOML décide de ce qui est empaqueté.</value></data>
+  <data name="ap_rules_bundled" xml:space="preserve"><value>✓ Profil fourni {0}, testé sur PS5 avec {1} : {2}. Choisissez un profil TOML ou un dossier de traces pour utiliser vos propres règles.</value></data>
+  <data name="ap_match_title" xml:space="preserve"><value>conçu pour ce jeu</value></data>
+  <data name="ap_match_name" xml:space="preserve"><value>conçu pour ce jeu (reconnu à son nom)</value></data>
+  <data name="ap_match_engine" xml:space="preserve"><value>choisi d’après l’arborescence du moteur ; testé sur un seul jeu, gardez donc l’original jusqu’à avoir joué au jeu empaqueté</value></data>
   <data name="ap_traces_label" xml:space="preserve"><value>Dossier de traces (facultatif)</value></data>
   <data name="ap_traces_ph" xml:space="preserve"><value>Dossier avec ampr_commands.bin et ampr_emu.index de l’AMPR Emu de débogage, une session par sous-dossier</value></data>
   <data name="ap_rules_traces" xml:space="preserve"><value>✓ Règles issues des traces : {0} session(s) enregistrée(s). Seuls les fichiers que le jeu a lus via AMPR sont empaquetés ; les autres restent à part.</value></data>
@@ -45,7 +49,7 @@
   <data name="ap_game_note" xml:space="preserve"><value>Crée un nouveau dossier à copier sur la PS5 pour jouer : vos bibliothèques dans fakelib/, ampr_emu.index, les packs LZ4 et tous les fichiers qui restent libres. Le dossier du jeu est seulement lu. Nécessite AMPR Emu 0.4.2.1 ou plus récent et un jeu qui utilise AMPR.</value></data>
   <data name="ap_lz4" xml:space="preserve"><value>LZ4 Game Compressor : créer les règles automatiquement à partir de l&apos;arborescence du jeu (sans profil TOML ni traces)</value></data>
   <data name="ap_lz4_note" xml:space="preserve"><value>Compresse avec LZ4 les fichiers des sous-dossiers, les fichiers numérotés et les types de ressources connus (blocs de 64 Kio ; blocs « chauds » de 16 Kio pour les dossiers audio). eboot.bin, les modules, sce_sys, fakelib, les vidéos, les flux audio, les images et les fichiers déjà compressés restent libres, et les gros fichiers qui se compressent mal restent libres après échantillonnage. Nécessite eboot.bin et sce_sys/param.json, et vérifie que le lecteur de sortie a assez de place même si rien ne se compresse.</value></data>
-  <data name="ap_lz4_level" xml:space="preserve"><value>Niveau de compression (1–4 : LZ4 rapide ; 5–12 : LZ4 HC, plus lent mais plus petit ; 7 par défaut)</value></data>
+  <data name="ap_lz4_level" xml:space="preserve"><value>Niveau de compression (1–4 : LZ4 rapide ; 5–12 : LZ4 HC, plus lent mais plus petit ; 12 par défaut)</value></data>
   <data name="ap_libs_label" xml:space="preserve"><value>Dossier des bibliothèques (fakelib)</value></data>
   <data name="ap_libs_ph" xml:space="preserve"><value>Dossier avec libSceAmpr.sprx et d'autres bibliothèques fakelib (facultatif si le jeu les a déjà)…</value></data>
   <data name="ap_verify_game" xml:space="preserve"><value>Vérifier les packs et les fichiers libres après la création</value></data>
@@ -69,7 +73,6 @@
   <data name="ap_err_remove" xml:space="preserve"><value>✗ Le manifeste du paquet et le dossier du jeu sont tous deux requis.</value></data>
   <data name="ap_err_runtime" xml:space="preserve"><value>✗ Le manifeste du paquet et la configuration TOML sont tous deux requis.</value></data>
   <data name="ap_err_unpack" xml:space="preserve"><value>✗ Le manifeste du paquet et le dossier de sortie sont tous deux requis.</value></data>
-  <data name="ap_err_workers" xml:space="preserve"><value>✗ Les threads doivent être un entier de 1 à 256.</value></data>
   <data name="ap_index_label" xml:space="preserve"><value>Index AMPR (facultatif)</value></data>
   <data name="ap_index_ph" xml:space="preserve"><value>Par défaut : ampr_emu.index dans le dossier du jeu</value></data>
   <data name="ap_json" xml:space="preserve"><value>Sortie JSON</value></data>
@@ -85,7 +88,6 @@
   <data name="ap_self_contained" xml:space="preserve"><value>Ne jamais laisser libres les fichiers sélectionnés (stocker non compressés les blocs incompressibles)</value></data>
   <data name="ap_subtitle" xml:space="preserve"><value>Créer et vérifier les paquets de ressources LZ4 d’AMPR Emu pour un dossier de jeu</value></data>
   <data name="ap_title" xml:space="preserve"><value>Paquets AMPR</value></data>
-  <data name="ap_workers" xml:space="preserve"><value>Threads (vide = selon la configuration)</value></data>
   <data name="app_subtitle" xml:space="preserve"><value>PlayStation File System</value></data>
   <data name="browse" xml:space="preserve"><value>Parcourir</value></data>
   <data name="browse_file" xml:space="preserve"><value>Fichier</value></data>
@@ -295,7 +297,7 @@ La sortie partiellement écrite est supprimée ; une réparation sur place termi
   <data name="version_footer" xml:space="preserve"><value>v{0}</value></data>
   <data name="tip_ct_preset" xml:space="preserve"><value>Réglages rapides du niveau de compression et des cœurs CPU. Modifier l’une des valeurs sélectionne le préréglage correspondant, ou Personnalisé.</value></data>
   <data name="tip_ct_level" xml:space="preserve"><value>Niveau zlib de chaque bloc : 1 est le plus rapide, 9 donne l’image la plus petite, 0 stocke les blocs sans compression. La valeur par défaut est 7.</value></data>
-  <data name="tip_ct_cpu" xml:space="preserve"><value>Nombre de cœurs CPU qui compressent des blocs en même temps. Auto utilise tous les cœurs de cet ordinateur ; choisissez-en moins pour garder l’ordinateur réactif ou utiliser moins de mémoire.</value></data>
+  <data name="tip_ct_cpu" xml:space="preserve"><value>Nombre de cœurs CPU qui travaillent en même temps. Auto utilise tous les processeurs logiques sauf deux, pour que Windows et les autres programmes restent réactifs ; on ne peut pas en choisir plus. Choisissez-en moins pour utiliser moins de mémoire.</value></data>
   <data name="tip_ct_block" xml:space="preserve"><value>Taille des blocs en lesquels l’image est découpée et compressée un à un. Les jeux PS5 utilisent 64 Kio ; ne la changez que si la cible exige une autre taille.</value></data>
   <data name="tip_ct_threshold" xml:space="preserve"><value>Un bloc compressé n’est gardé que s’il économise au moins ce pourcentage ; sinon il est stocké sans compression. 0 garde tout bloc qui devient plus petit.</value></data>
   <data name="tip_ct_max_ratio" xml:space="preserve"><value>Un fichier reste non compressé si sa taille compressée dépasserait ce pourcentage de l’original. 100 compresse tout fichier qui devient plus petit.</value></data>

@@ -14,8 +14,11 @@ namespace MkPFS.Build.AMPRPack;
 /// </summary>
 public static partial class AMPRUniversalProfile
 {
-    /// <summary>The compressor's default level.</summary>
-    public const int DefaultLevel = 7;
+    /// <summary>
+    /// Default level: LZ4 HC 12, drakmor's ampr_pack.py default. The PS5 compressor app defaults to 7 and its PC CLI to
+    /// 9 to save time on the console's CPU; the level does not change decoding speed, only build time and size.
+    /// </summary>
+    public const int DefaultLevel = 12;
 
     /// <summary>Levels up to this one use the LZ4 fast encoder; higher ones use LZ4 HC at that level.</summary>
     public const int FastLevelLimit = 4;
@@ -36,6 +39,8 @@ public static partial class AMPRUniversalProfile
     /// <summary>
     /// Functional exclusions (<c>safety_patterns.h</c>): loaders, system data and already encoded media stay loose.
     /// <c>fakelib2</c> is added to the compressor's list because ShadowMountPlus mounts it instead of <c>fakelib</c>.
+    /// For Unreal Engine games, <c>*.utoc</c> keeps the IoStore tables loose and <c>**/*.pak</c> (there for pack
+    /// volumes) also keeps Unreal's <c>.pak</c> archives loose.
     /// </summary>
     public static IReadOnlyList<string> SafetyPatterns { get; } = BuildSafetyPatterns();
 
@@ -165,8 +170,33 @@ public static partial class AMPRUniversalProfile
             HotRule(text, ["**/soundbank.*"]);
         }
 
+        if (IsUnrealIoStore(suffixes.Select(suffix => "x" + suffix)))
+        {
+            // Not in the compressor: says why Unreal's own files end up loose or sampled.
+            text.Append("\n# Unreal Engine IoStore: .utoc tables (read whole when a container mounts) and .pak archives stay loose\n");
+            text.Append("# by the safety rule below; .ucas containers are packed only when sampling shows they compress, since\n");
+            text.Append("# Unreal usually compresses them itself (Oodle).\n");
+        }
+
         LooseRule(text, SafetyPatterns);
         return text.ToString();
+    }
+
+    /// <summary>Whether the files include Unreal Engine IoStore containers (<c>.utoc</c> with <c>.ucas</c>).</summary>
+    /// <param name="relativeFiles">File paths.</param>
+    /// <returns><see langword="true"/> for an Unreal Engine game.</returns>
+    public static bool IsUnrealIoStore(IEnumerable<string> relativeFiles)
+    {
+        ArgumentNullException.ThrowIfNull(relativeFiles);
+        bool toc = false;
+        bool cas = false;
+        foreach (string relative in relativeFiles)
+        {
+            toc |= relative.EndsWith(".utoc", StringComparison.OrdinalIgnoreCase);
+            cas |= relative.EndsWith(".ucas", StringComparison.OrdinalIgnoreCase);
+        }
+
+        return toc && cas;
     }
 
     /// <summary>Parse a profile from <see cref="RenderToml"/>.</summary>

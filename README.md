@@ -152,7 +152,8 @@ and unpack it anywhere.
 
 - **Game preview:** pick a game folder or image to see its cover, title, IDs, version, region and APR Emu marker.
 - **Compression tuning:** presets (Fast, Balanced, Max, Low RAM), the zlib level, block size and keep rules.
-  **CPU Cores** offers *Auto*, which uses every physical core (not the logical processors), or any lower count.
+  **CPU Cores** (also on the package and AMPR pages) offers *Auto*, every logical processor but two, or any
+  lower count.
 - **Tooltips:** hover over any Compression Tuning or Advanced option to see what it does.
 - **One progress bar per run:** a run with several steps (pack, then verify and compare) fills one bar,
   and the label names the step, for example `verify (2/3)`.
@@ -223,7 +224,7 @@ For the default exFAT-wrapped `pack folder`, compression stays on with 64 KiB bl
 |---|---|---|
 | `--compress` / `--no-compress` | on | Enable or disable PFSC block compression. |
 | `--compression-level <0-9>` | `7` | zlib compression level. |
-| `--cpu-count <n>` | `0` (auto) | Compression workers. Auto uses up to 16 and leaves one logical CPU free. |
+| `--cpu-count <auto\|n>` | `auto` | Compression workers. Auto uses every logical processor but two, which stay free for Windows and other programs; larger counts are capped at that. |
 | `--block-size <bytes\|auto\|auto-fit>` | `auto` (65536) | Power of two from 4096 to 2097152. `auto-fit` reduces padding (folder packing and the spool builder). |
 | `--threshold-gain <0-100>` | `0` | Keep a compressed block only when it saves at least this percentage. |
 | `--max-compressed-ratio <0-100>` | `100` | Store a file raw when PFSC would exceed this percentage of its size. |
@@ -326,7 +327,7 @@ stores replacements raw, checks their content and cleans unused bytes in the out
 | `--mode <auto\|in-place\|copy>` | `auto` | `auto` copies when there is 1.2× the image size free, else rewrites in place. An interrupted `in-place` repair can leave the image corrupt. |
 | `--report-dir <dir>` | none | Write `summary.json` and `bad_blocks.tsv`. |
 | `--no-slack-cleanup` | off | Leave unused outer bytes unchanged. |
-| `--cpu-count <n>` | `0` (all cores) | Workers for scanning and repair. |
+| `--cpu-count <auto\|n>` | `auto` | Workers for scanning and repair (all logical processors but two at most). |
 
 ## APR Emu
 
@@ -388,6 +389,12 @@ AMPR Emu only serves files that the game reads in ways it intercepts (AMPR reads
 crashes. That is why each game needs its own rules, and why only a test on the console proves that a packed
 game works.
 
+The PS5 itself also checks some files outside the game, where AMPR Emu cannot serve them: empty files, the
+PlayGo markers `cache_ps5/pgc_*_dummy_file` and `cache_ps5/playgo.pgm`, and a few boot files Ghost of Yotei needs
+to get past a black screen. MkPFS always keeps those loose, and `remove-sources` never deletes them. For a game
+packed by an older MkPFS or another tool, `mkpfs ampr verify --index <manifest> --restore-disk-files <game folder>`
+writes them back from the packs.
+
 ### Requirements
 
 | Need | Details |
@@ -396,7 +403,7 @@ game works.
 | Game | An AMPR/APR title (loads `libSceAmpr`). |
 | Emulator | AMPR Emu **0.4.2.1 or newer**, the first release that reads packs; older builds are refused. |
 | Mount | Read-only (`mount_read_only=1` in ShadowMountPlus, the default). |
-| Rules | A **TOML profile** for the game, or **traces** you record yourself. |
+| Rules | A **TOML profile** for the game (MkPFS ships the tested ones), or **traces** you record yourself. |
 
 ### Packing a game
 
@@ -420,6 +427,9 @@ flowchart LR
    mkpfs ampr game --root PPSA12345-app --output PPSA12345-packed --fakelib ampr-emu --config game.toml --exfat .
    ```
 
+   Leave the profile and the trace folder empty when MkPFS ships a profile for the game (see [Bundled profiles](#bundled-profiles)): the page
+   shows which one it picked.
+
 3. Copy the output folder or the `.exfat` image to the PS5. Play past the menu and load a save or a level,
    since some files are only read later.
 4. Delete the original only after that.
@@ -428,16 +438,40 @@ flowchart LR
 that every packed file decodes to the original. The game folder is only read; if a step fails, the output
 folder is emptied.
 
+### Bundled profiles
+
+These profiles were tested on the PS5 and ship with MkPFS. Without `--config` or `--traces`, `ampr game` picks
+one by the game's Title ID, then by its title name (another region), then by the engine's file layout; name one
+with `--profile <id>`.
+
+| Id | Picked for | Tested on |
+|---|---|---|
+| `astrobot` | ASTRO BOT | ASTRO BOT (PPSA21567, 01.019.000) |
+| `ufc6` | EA Sports UFC 6 | EA SPORTS UFC 6 (PPSA23566, 01.004.000) |
+| `insomniac` | Insomniac games (`toc`, `dag` and a `d/` folder at the top) | Marvel's Wolverine (PPSA03671, 01.001.005) |
+| `unity` | Unity games (`StreamingAssets` next to Unity's `Data` files) | God of War Sons of Sparta (PPSA28997, 01.008.001) |
+
+A profile picked by the engine layout was tested on one game only. `mkpfs ampr profile bundled --root <game>`
+shows which profile a game gets, and `--export <folder>` writes the TOML files to edit. Files a profile does not
+name stay loose, so another game version packs less but stays safe.
+
 ### Packing without a profile (LZ4 Game Compressor)
 
 Tick **LZ4 Game Compressor** under **Build playable game** (`ampr compress`) to let MkPFS build the rules from the
 game's folder structure, the way the PS5 [LZ4 Game Compressor](https://github.com/gameboy829/PS5-LZ4-Game-Compressor) homebrew does: files in subfolders, numbered files and known asset types are packed (16 KiB hot blocks for audio
 folders); `eboot.bin`, modules, `sce_sys`, `fakelib`, videos, audio streams, images and already compressed files
-stay loose. Levels 1–4 use LZ4 fast, 5–12 LZ4 HC (default 7). The game folder needs `eboot.bin` and
-`sce_sys/param.json`, and the output drive must have room for the case where nothing compresses.
+stay loose. Levels 1–4 use LZ4 fast, 5–12 LZ4 HC (default 12, like ampr_pack.py). The level only trades build time
+for size: the console decodes every level at the same speed, so pick a lower one only for a quicker build. The game
+folder needs `eboot.bin` and `sce_sys/param.json`, and the output drive must have room for the case where nothing
+compresses.
+
+Before building, `compress` samples the large files and says how much can be packed, with a warning when it is less
+than a tenth of the game. Many Unreal Engine games are like that: their `.ucas` containers and `.pak` archives are
+already compressed with Oodle, so LZ4 saves almost nothing. For Unreal games the `.utoc` tables and `.pak` archives stay
+loose, and a `.ucas` container is packed only if sampling shows it compresses.
 
 ```bash
-mkpfs ampr compress --root PPSA12345-app --output PPSA12345-packed --fakelib ampr-emu --level 7 --exfat .
+mkpfs ampr compress --root PPSA12345-app --output PPSA12345-packed --fakelib ampr-emu --exfat .
 ```
 
 The rules are generic, not tested per game: keep the original until the packed game has been played.
@@ -504,10 +538,10 @@ include = ["eboot.bin", "*.prx", "*.sprx", "sce_sys/*", "sce_module/*", "fakelib
 
 | Subcommand | Required | Purpose |
 |---|---|---|
-| `game` | `--root --output`, and `--config` or `--traces` | Build a folder that runs from packs as is. |
-| `compress` | `--root --output` | Like `game`, with rules generated from the folder structure (`--level 1..12`, default 7). |
+| `game` | `--root --output`; `--config`, `--traces` or `--profile` unless a bundled profile fits | Build a folder that runs from packs as is. |
+| `compress` | `--root --output` | Like `game`, with rules generated from the folder structure (`--level 1..12`, default 12). |
 | `pack` | `--root --ampr-index --output` | Write only the pack set (manifest, volumes, CRC file). |
-| `verify` | `--index` | Decode every chunk; `--root` also compares with the source. |
+| `verify` | `--index` | Decode every chunk; `--root` also compares with the source; `--restore-disk-files <dir>` writes back files the PS5 needs on disk. |
 | `unpack` | `--index --output` | Extract packed files (`--file <glob>`, `--overwrite`, `--no-preserve-mtime`). |
 | `list` | `--index` | One line per file (`--json` for details). |
 | `inspect` | `--index` | Manifest summary, volumes and runtime settings. |
@@ -515,6 +549,7 @@ include = ["eboot.bin", "*.prx", "*.sprx", "sce_sys/*", "sce_module/*", "fakelib
 | `remove-sources` | `--index --root` | Show the source files the packs replace; `--confirm` verifies and deletes them. |
 | `profile generate` | `--output`, and a session folder or `--trace` | Rules from traces; `--report`, `--metrics`, `--runtime-header`. |
 | `profile batch` | `<folder or ZIP> --output-dir` | One profile per trace session and a `summary.json`. |
+| `profile bundled` | none | List the bundled profiles; `--root` shows the one for a game, `--export <dir>` writes them. |
 
 <details>
 <summary><b>Options of <code>ampr game</code> and <code>ampr pack</code></b></summary>
@@ -524,7 +559,8 @@ include = ["eboot.bin", "*.prx", "*.sprx", "sce_sys/*", "sce_module/*", "fakelib
 | `--config <toml>` | none | The game's profile. |
 | `--traces <folder>` | none | Rules from traces instead of a profile. |
 | `--pack-untraced-types` | off | With `--traces`: also pack untraced files of the traced types. |
-| `--workers <n>` | min(8, cores) | Compression threads (1 to 256). |
+| `--profile <id>` | picked for the game | `game`: a [bundled profile](#bundled-profiles). |
+| `--cpu-count <auto\|n>`, `--workers` | `auto` (`pack`: the profile's `workers` when set) | Compression threads; all logical processors but two at most. Verification after `game` uses as many. |
 | `--self-contained` | off | Never leave selected files loose; store incompressible blocks uncompressed. |
 | `--fakelib <dir>` | none | `game`: AMPR Emu and other libraries to add to `fakelib/`. |
 | `--exfat <file or folder>` | none | `game`: also build an exFAT image. |
@@ -539,7 +575,8 @@ include = ["eboot.bin", "*.prx", "*.sprx", "sce_sys/*", "sce_module/*", "fakelib
 
 > [!NOTE]
 > - `ampr pack` and `ampr profile` are ports of ampr_emu's `tools/ampr_pack.py` (4.0) and
->   `tools/ampr_pack_profile.py` (4.1), with the same output byte for byte. `game`, `--traces` and
+>   `tools/ampr_pack_profile.py` (4.1), with the same output byte for byte, except that empty files and PlayGo
+>   markers stay loose (see [How it works](#how-it-works)). `game`, `--traces` and
 >   `--pack-untraced-types` are MkPFS additions; `compress` ports the [PS5 LZ4 Game Compressor](https://github.com/gameboy829/PS5-LZ4-Game-Compressor)'s universal profile.
 > - The release emulator loads at most 2,000,000 files, 16,000,000 chunks and 1,024 volumes; `pack` warns
 >   when a set goes over a limit.
@@ -578,7 +615,7 @@ mkpfs unpack game.pkg out                              # extract the game files
 | `--content-id <id>` | `contentId` of `param.json` | 36-character content id; required when the folder has no `param.json`. |
 | `--passcode <32 chars>` | all zeros | The package key is derived from it. |
 | `--compression <auto\|fast\|stored>` | `auto` | Kraken where it pays; `fast` uses a quicker parse (about twice as fast, a few percent larger); `stored` does not compress. |
-| `--cpu-count <n>` | `0` (auto) | Kraken workers. Auto uses every logical processor (the encoder gains from hyper-threading); the package is the same whatever the count. |
+| `--cpu-count <auto\|n>` | `auto` | Kraken workers. Auto uses every logical processor but two (the encoder gains from hyper-threading), fewer when memory is short; the package is the same whatever the count. |
 | `--verify` | off | Check the finished package and compare it with the folder. |
 | `--dry-run` | off | Check the folder and report what would be packed. |
 | `--no-fake-sign` | off | Pack plain ELF modules unchanged (a debug-mode console only starts fake-signed ones). |
@@ -659,6 +696,7 @@ repository secret (a VirusTotal API key) it also scans every archive and links t
 | [APR Emu](https://github.com/drakmor/ampr_emu) by Drakmor | `ampr_emu.index` and the asset-pack format and tools that `ampr` ports. |
 | [PlayGo stub](https://github.com/drakmor/pgo_stub) by Drakmor | `libScePlayGo.sprx`. |
 | [PS5 LZ4 Game Compressor](https://github.com/gameboy829/PS5-LZ4-Game-Compressor) by gameboy829 (GPL-3.0-or-later) | The universal pack profile, safety exclusions and free-space estimate that `ampr compress` ports. |
+| [LZ4 Compression](https://github.com/theghostonline/PS5-LZ4-Compression) by theghostonline | The files that must stay on disk (Ghost of Yotei list found by edu-ruiz- on Reddit). |
 | [LibProsperoPKG](https://github.com/SvenGDK/LibProsperoPKG) by SvenGDK (GPL-3.0-or-later) | PS5 package research; parts of the PS5 package builder, the Kraken encoder and the Kraken decoder are ported from it (the decoder derives from [ooz](https://github.com/powzix/ooz) by Powzix, GPL-3.0). |
 | [PS5PkgTool](https://github.com/pearlxcore/PS5PKGTool) by pearlxcore (GPL-3.0) | The package format `pack fpkg` reproduces, checked against its output (its engine is used as a black box, not copied). |
 

@@ -39,6 +39,7 @@
     <c:PathField Label="{l:Tr ap_libs_label}" Placeholder="{l:Tr ap_libs_ph}" Mode="Folder" Text="{Binding Libs}" IsVisible="{Binding ShowGameOptions}" />
     <c:PathField Label="{l:Tr ap_config_label}" Placeholder="{l:Tr ap_config_ph}" Mode="Open" Filters="TOML:*.toml|All files:*.*" Text="{Binding Config}" IsVisible="{Binding ShowConfig}" />
     <TextBlock Name="RulesConfig" Text="{l:Tr ap_rules_config}" TextWrapping="Wrap" IsVisible="{Binding ShowRulesConfig}" />
+    <TextBlock Name="RulesBundled" Text="{Binding RulesBundledText}" TextWrapping="Wrap" Foreground="{StaticResource Success}" IsVisible="{Binding ShowRulesBundled}" />
     <TextBlock Name="RulesMissing" Text="{l:Tr ap_rules_missing}" TextWrapping="Wrap" Foreground="{StaticResource Warning}" IsVisible="{Binding ShowRulesMissing}" />
     <c:PathField Label="{l:Tr ap_traces_label}" Placeholder="{l:Tr ap_traces_ph}" Mode="Folder" Text="{Binding Traces}" IsVisible="{Binding ShowTraces}" />
     <TextBlock Name="RulesTraces" Text="{Binding RulesTracesText}" TextWrapping="Wrap" Foreground="{StaticResource Success}" IsVisible="{Binding ShowRulesTraces}" />
@@ -49,9 +50,13 @@
     <Rectangle Classes="separator" />
     <TextBlock Text="{l:Tr options}" Classes="section" Foreground="{Binding Accent}" />
     <StackPanel Spacing="8" IsVisible="{Binding ShowPackOptions}">
-      <StackPanel Spacing="3">
-        <TextBlock Text="{l:Tr ap_workers}" Classes="fieldlabel" />
-        <TextBox Text="{Binding Workers}" Width="120" HorizontalAlignment="Left" />
+      <StackPanel Spacing="3" ToolTip.Tip="{l:Tr tip_ct_cpu}">
+        <TextBlock Text="{l:Tr ct_cpu}" Classes="fieldlabel" />
+        <ComboBox Name="CpuPicker" ItemsSource="{Binding Cpu.Choices}" SelectedItem="{Binding Cpu.Selected}" Width="160" HorizontalAlignment="Left">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:Choice"><TextBlock Text="{Binding Label}" /></DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
       </StackPanel>
       <CheckBox Content="{l:Tr ap_self_contained}" IsChecked="{Binding SelfContained}" IsVisible="{Binding ShowSelfContained}" />
       <CheckBox Content="{l:Tr ap_allow_missing}" IsChecked="{Binding AllowMissing}" IsVisible="{Binding ShowAllowMissing}" />

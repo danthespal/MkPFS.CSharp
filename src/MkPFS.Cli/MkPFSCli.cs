@@ -107,7 +107,7 @@ public static class MkPFSCli
     private static Command BuildPFSCBenchCommand()
     {
         Argument<FileInfo> input = new("file") { Description = "File to encode" };
-        Option<int> workers = new("--cpu-count") { Description = "Compression workers (0 = auto)", DefaultValueFactory = _ => 0 };
+        Option<int> workers = Commands.CpuOption.Create("--cpu-count", "Compression workers");
         Option<int> level = new("--compression-level") { Description = "zlib level", DefaultValueFactory = _ => Zlib.DefaultLevel };
         Command command = new("bench-pfsc", "Measure PFSC encode throughput for one file.") { Hidden = true };
         command.Arguments.Add(input);

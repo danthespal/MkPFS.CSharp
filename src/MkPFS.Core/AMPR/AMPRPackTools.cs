@@ -1,3 +1,7 @@
+using System.Runtime.ExceptionServices;
+using MkPFS.Core.Diagnostics;
+using MkPFS.Core.Util;
+
 namespace MkPFS.Core.AMPR;
 
 /// <summary>Result of <see cref="AMPRPackTools.Verify"/>.</summary>
@@ -17,6 +21,12 @@ public sealed record AMPRSourceCompareResult(long Files, long Chunks, long Bytes
 /// <param name="Files">Files written.</param>
 /// <param name="Bytes">Bytes written.</param>
 public sealed record AMPRExtractResult(long Files, long Bytes);
+
+/// <summary>Result of <see cref="AMPRPackTools.RestoreDiskFiles"/>.</summary>
+/// <param name="Missing">Packed <see cref="AMPRDiskFiles"/> missing from disk or with the wrong size.</param>
+/// <param name="Restored">Files written back.</param>
+/// <param name="Paths">Relative paths of the missing files, in file-id order.</param>
+public sealed record AMPRDiskFilesResult(long Missing, long Restored, IReadOnlyList<string> Paths);
 
 /// <summary>One row of <see cref="AMPRPackTools.List"/>.</summary>
 /// <param name="FileId">File id.</param>
@@ -93,21 +103,26 @@ public static class AMPRPackTools
 
     /// <summary>
     /// Decode every selected packed file once per physical chunk and check sizes and CRCs; also validates the
-    /// runtime settings (Python <c>verify_packs</c>).
+    /// runtime settings (Python <c>verify_packs</c>). The metadata is checked in file order first, then the chunks
+    /// are decoded on <see cref="CpuCores.Max"/> threads; a failure is the first one in file order.
     /// </summary>
     /// <param name="indexPath">Manifest path.</param>
     /// <param name="patterns">File globs.</param>
+    /// <param name="progress">Phase <c>verify</c>, in decoded bytes of the distinct chunks.</param>
     /// <returns>Counters.</returns>
-    public static AMPRVerifyResult Verify(string indexPath, IReadOnlyList<string>? patterns = null)
+    public static AMPRVerifyResult Verify(string indexPath, IReadOnlyList<string>? patterns = null, IProgressSink? progress = null)
     {
         AMPRPackManifest manifest = AMPRPackManifest.Load(indexPath);
         AMPRRuntimeSettings.Read(AMPRPackFormat.RuntimePath(indexPath), manifest.BuildId);
-        Dictionary<(int Pack, ulong Offset, int Stored), (int Codec, int Raw, uint Crc)> seen = [];
-        long files = 0;
-        long chunks = 0;
-        long stored = 0;
-        long raw = 0;
         using AMPRPackReader reader = new(manifest);
+
+        // 1. Metadata in file order: chunks shared by several files must agree, and every file's chunks add up to
+        // its size (ReadChunk later checks each decoded size against its record).
+        Dictionary<(int Pack, ulong Offset, int Stored), (int Codec, int Raw, uint Crc)> seen = [];
+        List<int> distinct = [];
+        long files = 0;
+        long stored = 0;
+        long rawBytes = 0;
         foreach (int fileId in SelectedFileIds(manifest, patterns ?? []))
         {
             AMPRFileRecord record = manifest.Files[fileId - 1];
@@ -123,6 +138,7 @@ public static class AMPRPackTools
                 AMPRChunkRecord chunk = manifest.Chunks[chunkIndex];
                 (int, ulong, int) physical = (chunk.PackId, chunk.Offset, chunk.StoredSize);
                 (int, int, uint) descriptor = (chunk.Codec, chunk.RawSize, reader.ChunkCrcs[chunkIndex]);
+                total += (ulong)chunk.RawSize;
                 if (seen.TryGetValue(physical, out (int, int, uint) prior))
                 {
                     if (prior != descriptor)
@@ -130,15 +146,13 @@ public static class AMPRPackTools
                         throw new AMPRPackException("one physical chunk has conflicting metadata");
                     }
 
-                    total += (ulong)chunk.RawSize;
                     continue;
                 }
 
-                total += (ulong)reader.ReadChunk(chunkIndex).Length;
                 seen[physical] = descriptor;
-                chunks++;
+                distinct.Add(chunkIndex);
                 stored += chunk.StoredSize;
-                raw += chunk.RawSize;
+                rawBytes += chunk.RawSize;
             }
 
             if (total != record.LogicalSize)
@@ -149,22 +163,42 @@ public static class AMPRPackTools
             files++;
         }
 
-        return new AMPRVerifyResult(files, chunks, stored, raw);
+        // 2. Decode and CRC-check every distinct chunk once, in parallel ranges.
+        ParallelProgress report = new(progress, "verify", rawBytes);
+        int ranges = (distinct.Count + ChunksPerRange - 1) / ChunksPerRange;
+        RunInOrder(ranges, range =>
+        {
+            for (int i = range * ChunksPerRange; i < Math.Min(distinct.Count, (range + 1) * ChunksPerRange); i++)
+            {
+                report.Add(reader.ReadChunk(distinct[i]).Length);
+            }
+        });
+
+        return new AMPRVerifyResult(files, distinct.Count, stored, rawBytes);
     }
 
-    /// <summary>Rebuild every selected packed file and compare it byte for byte with the source tree (Python <c>verify_packs_against_root</c>).</summary>
+    /// <summary>
+    /// Rebuild every selected packed file and compare it byte for byte with the source tree (Python
+    /// <c>verify_packs_against_root</c>). Sources and sizes are checked in file order first, then chunk ranges are
+    /// decoded and compared on <see cref="CpuCores.Max"/> threads; a failure is the first one in file order.
+    /// </summary>
     /// <param name="indexPath">Manifest path.</param>
     /// <param name="root"><c>/app0</c> source tree.</param>
     /// <param name="patterns">File globs.</param>
+    /// <param name="progress">Phase <c>compare</c>, in logical bytes of the selected packed files.</param>
     /// <returns>Counters.</returns>
-    public static AMPRSourceCompareResult VerifyAgainstRoot(string indexPath, string root, IReadOnlyList<string>? patterns = null)
+    public static AMPRSourceCompareResult VerifyAgainstRoot(
+        string indexPath, string root, IReadOnlyList<string>? patterns = null, IProgressSink? progress = null)
     {
         AMPRPackManifest manifest = AMPRPackManifest.Load(indexPath);
         root = Path.GetFullPath(root);
-        long files = 0;
+        using AMPRPackReader reader = new(manifest);
+
+        // 1. In file order: every source exists with the manifest size, and every file's chunks add up to it.
+        List<(string Relative, string Path, AMPRFileRecord Record)> sources = [];
+        List<(int Source, int FirstLocal, int Count, long Offset)> ranges = [];
         long chunks = 0;
         long bytes = 0;
-        using AMPRPackReader reader = new(manifest);
         foreach (int fileId in SelectedFileIds(manifest, patterns ?? []))
         {
             AMPRFileRecord record = manifest.Files[fileId - 1];
@@ -186,48 +220,67 @@ public static class AMPRPackTools
                 throw new AMPRPackException($"source size mismatch for {relative}: manifest={record.LogicalSize}, disk={info.Length}");
             }
 
-            long logicalOffset = 0;
-            using (FileStream source = File.OpenRead(sourcePath))
+            long offset = 0;
+            for (int local = 0; local < record.ChunkCount; local += ChunksPerRange)
             {
-                int local = 0;
-                foreach (byte[] packed in reader.ReadFile(fileId))
+                int count = (int)Math.Min(ChunksPerRange, record.ChunkCount - (uint)local);
+                ranges.Add((sources.Count, local, count, offset));
+                for (int k = 0; k < count; k++)
                 {
-                    byte[] sourceRaw = new byte[packed.Length];
-                    if (source.ReadAtLeast(sourceRaw, sourceRaw.Length, throwOnEndOfStream: false) != sourceRaw.Length)
-                    {
-                        throw new AMPRPackException($"source truncated for {relative} at 0x{logicalOffset:x}");
-                    }
-
-                    int mismatch = sourceRaw.AsSpan().CommonPrefixLength(packed);
-                    if (mismatch < packed.Length)
-                    {
-                        AMPRChunkRecord chunk = manifest.Chunks[(int)record.FirstChunk + local];
-                        throw new AMPRPackException(
-                            $"packed/source mismatch for {relative}: logical=0x{logicalOffset + mismatch:x}, chunk={local}, "
-                            + $"pack={chunk.PackId}, physical=0x{chunk.Offset:x}, source=0x{sourceRaw[mismatch]:x2}, packed=0x{packed[mismatch]:x2}");
-                    }
-
-                    logicalOffset += packed.Length;
-                    bytes += packed.Length;
-                    chunks++;
-                    local++;
-                }
-
-                if (source.ReadByte() != -1)
-                {
-                    throw new AMPRPackException($"source grew while comparing: {relative}");
+                    offset += manifest.Chunks[(int)record.FirstChunk + local + k].RawSize;
                 }
             }
 
-            if ((ulong)logicalOffset != record.LogicalSize)
+            if ((ulong)offset != record.LogicalSize)
             {
-                throw new AMPRPackException($"reconstructed size mismatch for {relative}: expected={record.LogicalSize}, got={logicalOffset}");
+                throw new AMPRPackException($"reconstructed size mismatch for {relative}: expected={record.LogicalSize}, got={offset}");
             }
 
-            files++;
+            sources.Add((relative, sourcePath, record));
+            chunks += record.ChunkCount;
+            bytes += offset;
         }
 
-        return new AMPRSourceCompareResult(files, chunks, bytes);
+        // 2. Decode and compare in parallel; each range reads its part of the source by position.
+        ParallelProgress report = new(progress, "compare", bytes);
+        RunInOrder(ranges.Count, i =>
+        {
+            (int sourceIndex, int firstLocal, int count, long offset) = ranges[i];
+            (string relative, string sourcePath, AMPRFileRecord record) = sources[sourceIndex];
+            using Microsoft.Win32.SafeHandles.SafeFileHandle handle = File.OpenHandle(sourcePath);
+            for (int local = firstLocal; local < firstLocal + count; local++)
+            {
+                AMPRChunkRecord chunk = manifest.Chunks[(int)record.FirstChunk + local];
+                byte[] packed = reader.ReadChunk((int)record.FirstChunk + local);
+                byte[] sourceRaw = new byte[packed.Length];
+                if (StreamUtil.ReadAt(handle, sourceRaw, offset) != sourceRaw.Length)
+                {
+                    throw new AMPRPackException($"source truncated for {relative} at 0x{offset:x}");
+                }
+
+                int mismatch = sourceRaw.AsSpan().CommonPrefixLength(packed);
+                if (mismatch < packed.Length)
+                {
+                    throw new AMPRPackException(
+                        $"packed/source mismatch for {relative}: logical=0x{offset + mismatch:x}, chunk={local}, "
+                        + $"pack={chunk.PackId}, physical=0x{chunk.Offset:x}, source=0x{sourceRaw[mismatch]:x2}, packed=0x{packed[mismatch]:x2}");
+                }
+
+                offset += packed.Length;
+                report.Add(packed.Length);
+            }
+        });
+
+        // 3. A source that changed size while it was compared.
+        foreach ((string relative, string sourcePath, AMPRFileRecord record) in sources)
+        {
+            if ((ulong)new FileInfo(sourcePath).Length > record.LogicalSize)
+            {
+                throw new AMPRPackException($"source grew while comparing: {relative}");
+            }
+        }
+
+        return new AMPRSourceCompareResult(sources.Count, chunks, bytes);
     }
 
     /// <summary>Write selected packed files under <paramref name="outputDir"/> (Python <c>extract_packs</c>).</summary>
@@ -260,37 +313,140 @@ public static class AMPRPackTools
                 throw new AMPRPackException($"destination exists: {destination}");
             }
 
-            string temp = Path.Combine(Path.GetDirectoryName(destination)!, $".{Path.GetFileName(destination)}.tmp-{Environment.ProcessId}");
-            try
-            {
-                using (FileStream handle = new(temp, FileMode.Create, FileAccess.Write, FileShare.None))
-                {
-                    foreach (byte[] raw in reader.ReadFile(fileId))
-                    {
-                        handle.Write(raw);
-                        bytes += raw.Length;
-                    }
-
-                    handle.Flush(flushToDisk: true);
-                }
-
-                File.Move(temp, destination, overwrite: true);
-                if (preserveMTime)
-                {
-                    DateTime time = DateTime.UnixEpoch.AddSeconds(record.MTime);
-                    File.SetLastWriteTimeUtc(destination, time);
-                    File.SetLastAccessTimeUtc(destination, time);
-                }
-
-                files++;
-            }
-            finally
-            {
-                File.Delete(temp);
-            }
+            bytes += WriteFile(reader, fileId, record, destination, preserveMTime);
+            files++;
         }
 
         return new AMPRExtractResult(files, bytes);
+    }
+
+    /// <summary>
+    /// Find packed <see cref="AMPRDiskFiles"/> missing from the <c>/app0</c> folder that holds the packs, and
+    /// optionally write them back from the packs with their manifest mtime (MkPFS addition, LZ4 Compression 1.4.3
+    /// <c>ampr_pack_restore_disk_files</c>). The manifest is not changed, so the game still reads the packed copy.
+    /// </summary>
+    /// <param name="indexPath">Manifest path.</param>
+    /// <param name="root"><c>/app0</c> folder of the packed game.</param>
+    /// <param name="restore">Write the missing files; otherwise only count them.</param>
+    /// <returns>Counters and paths.</returns>
+    public static AMPRDiskFilesResult RestoreDiskFiles(string indexPath, string root, bool restore)
+    {
+        AMPRPackManifest manifest = AMPRPackManifest.Load(indexPath);
+        List<string> missing = [];
+        long restored = 0;
+        using AMPRPackReader reader = new(manifest);
+        for (int fileId = 1; fileId <= manifest.Files.Count; fileId++)
+        {
+            AMPRFileRecord record = manifest.Files[fileId - 1];
+            string relative = AMPRAssetPath.Relative(manifest.FilePath(fileId));
+            if (!record.IsPacked || !AMPRDiskFiles.MustStayOnDisk(relative, record.LogicalSize))
+            {
+                continue;
+            }
+
+            string destination = AMPRAssetPath.SafeOutputPath(root, relative);
+            FileInfo info = new(destination);
+            if (info.Exists && info.LinkTarget is null && (ulong)info.Length == record.LogicalSize)
+            {
+                continue;
+            }
+
+            missing.Add(relative);
+            if (restore)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+                WriteFile(reader, fileId, record, destination, preserveMTime: true);
+                restored++;
+            }
+        }
+
+        return new AMPRDiskFilesResult(missing.Count, restored, missing);
+    }
+
+    // Chunks one parallel work item decodes: 4 MiB at the default 64 KiB block size.
+    private const int ChunksPerRange = 64;
+
+    // Run work(0..count-1) on CpuCores.Max threads. When items fail, the one with the lowest index is rethrown, which is
+    // the failure a loop in file order meets first; items after a failure are skipped.
+    private static void RunInOrder(int count, Action<int> work)
+    {
+        int failedAt = int.MaxValue;
+        ExceptionDispatchInfo? failure = null;
+        object gate = new();
+        Parallel.For(0, count, new ParallelOptions { MaxDegreeOfParallelism = CpuCores.Max }, (i, state) =>
+        {
+            try
+            {
+                work(i);
+            }
+            catch (Exception exc) when (exc is AMPRPackException or IOException or UnauthorizedAccessException or InvalidDataException)
+            {
+                lock (gate)
+                {
+                    if (i < failedAt)
+                    {
+                        failedAt = i;
+                        failure = ExceptionDispatchInfo.Capture(exc);
+                    }
+                }
+
+                state.Break();
+            }
+        });
+        failure?.Throw();
+    }
+
+    // Progress shared by parallel workers: bytes add up atomically, and the sink is called by one thread at a time.
+    private sealed class ParallelProgress(IProgressSink? sink, string phase, long total)
+    {
+        private readonly object _gate = new();
+        private long _done;
+
+        public void Add(long bytes)
+        {
+            long done = Interlocked.Add(ref _done, bytes);
+            if (sink is not null)
+            {
+                lock (_gate)
+                {
+                    sink.Report(phase, done, total, done);
+                }
+            }
+        }
+    }
+
+    // Decode one packed file through a temporary file next to the destination, then move it into place.
+    private static long WriteFile(AMPRPackReader reader, int fileId, AMPRFileRecord record, string destination, bool preserveMTime)
+    {
+        long bytes = 0;
+        string temp = Path.Combine(Path.GetDirectoryName(destination)!, $".{Path.GetFileName(destination)}.tmp-{Environment.ProcessId}");
+        try
+        {
+            using (FileStream handle = new(temp, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
+                foreach (byte[] raw in reader.ReadFile(fileId))
+                {
+                    handle.Write(raw);
+                    bytes += raw.Length;
+                }
+
+                handle.Flush(flushToDisk: true);
+            }
+
+            File.Move(temp, destination, overwrite: true);
+            if (preserveMTime)
+            {
+                DateTime time = DateTime.UnixEpoch.AddSeconds(record.MTime);
+                File.SetLastWriteTimeUtc(destination, time);
+                File.SetLastAccessTimeUtc(destination, time);
+            }
+        }
+        finally
+        {
+            File.Delete(temp);
+        }
+
+        return bytes;
     }
 
     /// <summary>Per-file placement summary (Python <c>list_manifest</c>).</summary>

@@ -23,7 +23,7 @@ internal static class AmprCompressCommand
             Description = $"compression level 1..12: up to {AMPRUniversalProfile.FastLevelLimit} uses LZ4 fast, higher LZ4 HC (default: {AMPRUniversalProfile.DefaultLevel})",
             DefaultValueFactory = _ => AMPRUniversalProfile.DefaultLevel,
         };
-        Option<int?> workers = new("--workers") { Description = "compression workers" };
+        Option<int?> workers = AmprCommand.WorkersOption();
         Option<string?> exfat = new("--exfat") { Description = "also build an exFAT image of the output (file, or folder for <titleId>.exfat)" };
         Option<string?> exfatFree = new("--exfat-free-space") { Description = "free space to leave inside the exFAT image, e.g. 2GiB (default: 0)" };
         Option<bool> skipVerify = new("--skip-verify") { Description = "do not verify the packs and loose files after the build" };
@@ -41,10 +41,14 @@ internal static class AmprCompressCommand
                 throw new AMPRPackException("--level must be between 1 and 12");
             }
 
-            int? count = parse.GetValue(workers);
-            if (count is not null and (< 1 or > 256))
+            long? count = parse.GetValue(workers) is { } value ? AmprCommand.Workers(value) : null;
+
+            // The generic rules are untested per game; a tested profile is the safer choice when one fits.
+            string rootPath = AmprCommand.Resolve(ctx, parse.GetValue(root)!);
+            if (AMPRBundledProfiles.Match(rootPath) is { } match)
             {
-                throw new AMPRPackException("--workers must be between 1 and 256");
+                ctx.Log.Info($"A profile tested on the PS5 fits this game ({match.Profile.Label}, {AmprCommand.BundledMatchText(match.Kind)}): "
+                    + $"mkpfs ampr game --profile {match.Profile.Id} uses it instead of the generic rules");
             }
 
             string? image = parse.GetValue(exfat);
@@ -63,7 +67,7 @@ internal static class AmprCompressCommand
             try
             {
                 AMPRLZ4Compressor.Build(
-                    AmprCommand.Resolve(ctx, parse.GetValue(root)!),
+                    rootPath,
                     AmprCommand.Resolve(ctx, parse.GetValue(output)!),
                     options,
                     ctx.Log,

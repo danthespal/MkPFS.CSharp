@@ -60,14 +60,14 @@ public sealed class AMPRLZ4CompressorTests
         Assert.Equal(["**/*.bin", "**/*.dds", "**/*.res"], config.Rules[2].Include);
         Assert.Equal(AMPRUniversalProfile.SafetyPatterns, config.Rules[^1].Include);
         Assert.Equal("loose", config.DefaultAction);
-        Assert.Equal(("hc", 7L), (config.CompressionMode, config.CompressionLevel));
+        Assert.Equal(("hc", 12L), (config.CompressionMode, config.CompressionLevel));
         Assert.Equal("ampr_assets-{group}-lane{lane:02d}-vol{volume:02d}-{id:03d}.pak", config.PackPattern);
         Assert.Equal(new AMPRGroupConfig("assets", 4, "balanced", 16L << 30), config.Groups["assets"]);
         Assert.Equal(new AMPRRuntimeSettings(256L << 20, 64L << 20, 8, 1), config.Runtime);
-        Assert.Equal(Math.Max(1, Math.Min(8, Environment.ProcessorCount)), config.Workers);
+        Assert.Equal(Core.Util.CpuCores.Max, config.Workers);
 
         AMPRRule Rule(string path) => config.SelectRule(path);
-        Assert.Equal(("compress", "mixed", 16, "hc", 7L), (Rule("data/level.res").Action, Rule("data/level.res").Layout, Rule("data/level.res").BlockShift, Rule("data/level.res").Mode, Rule("data/level.res").Level));
+        Assert.Equal(("compress", "mixed", 16, "hc", 12L), (Rule("data/level.res").Action, Rule("data/level.res").Layout, Rule("data/level.res").BlockShift, Rule("data/level.res").Mode, Rule("data/level.res").Level));
         Assert.Equal("compress", Rule("data.001").Action);
         Assert.Equal(("compress", "random", 14, true), (Rule("data/sound/voice.bin").Action, Rule("data/sound/voice.bin").Layout, Rule("data/sound/voice.bin").BlockShift, Rule("data/sound/voice.bin").Hot));
         Assert.Equal(("random", true), (Rule("data/soundbank.pck").Layout, Rule("data/soundbank.pck").Hot));
@@ -126,8 +126,10 @@ public sealed class AMPRLZ4CompressorTests
         AMPRGameResult result = AMPRLZ4Compressor.Build(game, output, new AMPRLZ4CompressorOptions { LibsDir = Path.Combine(dir.Path, "libs") }, log);
 
         Assert.Equal(before, Hashes(game));
-        Assert.Contains(log.Lines, l => l.StartsWith("Rules: LZ4 Game Compressor universal profile (LZ4 HC level 7), 4 rules", StringComparison.Ordinal));
+        Assert.Contains(log.Lines, l => l.StartsWith("Rules: LZ4 Game Compressor universal profile (LZ4 HC level 12), 4 rules", StringComparison.Ordinal));
         Assert.Contains("[5/5] Verifying", log.Lines);
+        Assert.Contains(log.Lines, l => l.EndsWith(" can be packed (large files sampled)", StringComparison.Ordinal));
+        Assert.DoesNotContain(log.Lines, l => l.StartsWith("warning: only ", StringComparison.Ordinal) || l.Contains("Unreal", StringComparison.Ordinal));
         Assert.Equal(2, result.Pack.Stats.FilesPacked);
         Assert.True(result.Pack.Stats.ChunksLZ4 > 0);
         Assert.Equal(PackCapable, File.ReadAllText(Path.Combine(output, "fakelib", "libSceAmpr.sprx")));
@@ -169,7 +171,7 @@ public sealed class AMPRLZ4CompressorTests
             Assert.Throws<BuildException>(() => AMPRLZ4Compressor.Build(game, output, o, new ListLog())).Message;
 
         Assert.Equal("compression level must be between 1 and 12, got 13", Error(options with { Level = 13 }));
-        Assert.Equal("workers must be between 1 and 256", Error(options with { Workers = 0 }));
+        Assert.Equal("workers must not be negative", Error(options with { Workers = -1 }));
         Assert.StartsWith("game folder not found", Assert.Throws<BuildException>(
             () => AMPRLZ4Compressor.Build(Path.Combine(dir.Path, "nope"), output, options, new ListLog())).Message, StringComparison.Ordinal);
 
@@ -209,11 +211,60 @@ public sealed class AMPRLZ4CompressorTests
         }
 
         Assert.Equal((2, "error: --level must be between 1 and 12"), Fails("--level", "13"));
-        Assert.Equal((2, "error: --workers must be between 1 and 256"), Fails("--workers", "0"));
+        Assert.Equal((2, "error: --workers must not be negative"), Fails("--workers", "-1"));
         Assert.Equal((2, "error: --exfat-free-space needs --exfat"), Fails("--exfat-free-space", "1GiB"));
         Assert.Equal(
             (2, "error: fakelib/libSceAmpr.sprx cannot read asset packs; use AMPR Emu 0.4.2.1 or newer from https://github.com/drakmor/ampr_emu/releases"),
             Fails());
         Assert.False(Directory.Exists(Path.Combine(dir.Path, "out2")));
+    }
+
+    [Fact]
+    public void A_game_with_nothing_to_pack_is_reported_before_the_build()
+    {
+        // Only loose types: a video, the loader and system files.
+        using TempDir dir = new();
+        dir.File("game/sce_sys/param.json", """{"titleId":"PPSA01234"}""");
+        dir.File("game/eboot.bin", "eboot");
+        dir.File("game/movies/intro.bk2", Level);
+        dir.File("libs/libSceAmpr.sprx", PackCapable);
+        ListLog log = new();
+
+        AMPRLZ4Compressor.Build(Path.Combine(dir.Path, "game"), Path.Combine(dir.Path, "out"), new AMPRLZ4CompressorOptions { LibsDir = Path.Combine(dir.Path, "libs") }, log);
+
+        int warning = log.Lines.FindIndex(l => l.StartsWith("warning: only 0.00 B of ", StringComparison.Ordinal));
+        Assert.True(warning >= 0, string.Join('\n', log.Lines));
+        Assert.EndsWith("can be packed: the large files do not compress with LZ4 (their data is already compressed), so the packed game would be about as large as the original", log.Lines[warning], StringComparison.Ordinal);
+        Assert.True(warning < log.Lines.IndexOf("[1/5] Libraries: fakelib/"), "the warning comes before the build");
+    }
+
+    [Fact]
+    public void Unreal_games_say_why_their_containers_stay_loose()
+    {
+        string[] unreal = ["eboot.bin", "game/content/paks/game-ps5.utoc", "game/content/paks/game-ps5.ucas", "game/content/paks/game-ps5.pak"];
+        Assert.True(AMPRUniversalProfile.IsUnrealIoStore(unreal));
+        Assert.False(AMPRUniversalProfile.IsUnrealIoStore(unreal.Where(f => !f.EndsWith(".utoc", StringComparison.Ordinal))));
+
+        string toml = AMPRUniversalProfile.RenderToml(unreal, 12);
+        Assert.Contains("# Unreal Engine IoStore: .utoc tables", toml, StringComparison.Ordinal);
+        Assert.DoesNotContain("Unreal", AMPRUniversalProfile.RenderToml(Tree, 12), StringComparison.Ordinal);
+
+        // The comment explains the rules; it does not change them.
+        AMPRPackConfig config = AMPRUniversalProfile.ToConfig(toml);
+        Assert.Equal("loose", config.SelectRule("game/content/paks/game-ps5.utoc").Action);
+        Assert.Equal("loose", config.SelectRule("game/content/paks/game-ps5.pak").Action);
+        Assert.Equal("compress", config.SelectRule("game/content/paks/game-ps5.ucas").Action);
+
+        using TempDir dir = new();
+        dir.File("game/sce_sys/param.json", """{"titleId":"PPSA01234"}""");
+        foreach (string file in unreal)
+        {
+            dir.File("game/" + file, Level);
+        }
+
+        dir.File("libs/libSceAmpr.sprx", PackCapable);
+        ListLog log = new();
+        AMPRLZ4Compressor.Build(Path.Combine(dir.Path, "game"), Path.Combine(dir.Path, "out"), new AMPRLZ4CompressorOptions { LibsDir = Path.Combine(dir.Path, "libs") }, log);
+        Assert.Contains("  Unreal Engine IoStore: .utoc tables and .pak archives stay loose; .ucas containers are packed only if they compress", log.Lines);
     }
 }

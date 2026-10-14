@@ -180,7 +180,7 @@ internal sealed class PackOptions
     private readonly Option<int> _inodeBits = new("--inode-bits") { Description = "Inode width mode bit (32 or 64, default: 32)", DefaultValueFactory = _ => 32 };
     private readonly Option<bool> _caseSensitive = new("--case-sensitive") { Description = "Build a case-sensitive image" };
     private readonly Option<bool> _caseInsensitive = new("--case-insensitive") { Description = "Set case-insensitive mode bit (default)" };
-    private readonly Option<int> _cpuCount = new("--cpu-count") { Description = "Number of CPU cores for PFSC compression (0 = auto min(16, max(1, cpu_count() - 1)), non-zero = max(1, user value))" };
+    private readonly Option<int> _cpuCount = CpuOption.Create("--cpu-count", "CPU cores for PFSC compression");
     private readonly Option<int> _level = new("--compression-level") { Description = "Zlib compression level (0-9, default: 7)", DefaultValueFactory = _ => 7 };
     private readonly Option<string> _backend = new("--compression-backend") { Description = "Accepted for compatibility; this port always uses zlib 1.3.1", DefaultValueFactory = _ => "auto" };
     private readonly Option<int> _maxRatio = new("--max-compressed-ratio") { Description = "Maximum PFSC size as percent of the raw file size (0-100, default: 100)", DefaultValueFactory = _ => 100 };
@@ -303,7 +303,7 @@ internal static class PackReport
         if (config.Compress)
         {
             ctx.Info($"  Threshold gain:    {config.ThresholdGain}%");
-            string cpu = config.CpuCount == 0 ? $"{PFSCEncoder.ResolveWorkerCount(0)} (auto)" : Math.Max(1, config.CpuCount).ToString(System.Globalization.CultureInfo.InvariantCulture);
+            string cpu = config.CpuCount == 0 ? $"{PFSCEncoder.ResolveWorkerCount(0)} (auto)" : PFSCEncoder.ResolveWorkerCount(config.CpuCount).ToString(System.Globalization.CultureInfo.InvariantCulture);
             ctx.Info($"  CPU cores:         {cpu}");
             ctx.Info($"  Zlib level:        {config.ZlibLevel}");
             ctx.Info($"  Max PFSC ratio:    {config.MaxCompressedRatio}%");

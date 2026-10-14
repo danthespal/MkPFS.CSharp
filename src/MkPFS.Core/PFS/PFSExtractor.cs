@@ -391,7 +391,7 @@ public static class PFSExtractor
             {
                 string?[] hashes = new string?[sourceFiles.Count];
                 ExceptionDispatchInfo?[] failures = new ExceptionDispatchInfo?[sourceFiles.Count];
-                Parallel.For(0, sourceFiles.Count, i =>
+                Parallel.For(0, sourceFiles.Count, CpuCores.ParallelOptions, i =>
                 {
                     try
                     {

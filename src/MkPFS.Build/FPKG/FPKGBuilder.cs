@@ -34,7 +34,10 @@ public sealed class FPKGBuildOptions
     /// <summary>Kraken mode only: parse greedily, about twice as fast for a few percent of size.</summary>
     public bool Fast { get; init; }
 
-    /// <summary>CPU cores for Kraken compression and encryption; 0 is <see cref="PS5KrakenChunk.MaxParallelism"/>.</summary>
+    /// <summary>
+    /// CPU cores for Kraken compression and encryption; 0 is <see cref="PS5KrakenChunk.MaxParallelism"/>, and larger
+    /// counts are capped at <see cref="Core.Util.CpuCores.Max"/>.
+    /// </summary>
     public int CpuCount { get; init; }
 
     /// <summary>Fake-sign plain ELF modules.</summary>
@@ -157,7 +160,7 @@ public static class FPKGBuilder
         // signatures of pfs_image.dat) are taken as it is written. ----
         PS5InnerWriter inner = PS5InnerWriter.Plan(view.InnerFiles, seconds, nanoseconds, options.Compress);
         inner.EngineGapFill = options.EngineGapFill;
-        int workers = options.CpuCount > 0 ? options.CpuCount : PS5KrakenChunk.MaxParallelism;
+        int workers = options.CpuCount > 0 ? Core.Util.CpuCores.Resolve(options.CpuCount) : PS5KrakenChunk.MaxParallelism;
         inner.Workers = workers;
         inner.Fast = options.Fast;
         using FileStream innerFile = new(innerPath, FileMode.Create, FileAccess.ReadWrite, FileShare.None, IOBuffer, FileOptions.DeleteOnClose);

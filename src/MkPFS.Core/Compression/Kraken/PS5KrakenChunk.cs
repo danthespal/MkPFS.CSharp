@@ -12,12 +12,13 @@ public sealed record PS5KrakenChunk(byte[] Payload, int FirstLength, int SecondL
     public const int SubChunkSize = 0x20000;
 
     /// <summary>
-    /// Default number of chunks encoded at once: every logical processor, since the encoder waits on memory and
-    /// gains from simultaneous multithreading. Each holds about 20 MiB of working arrays plus its batch share, so the
-    /// count is also capped at one worker per 64 MiB of half the memory available to the process.
+    /// Default number of chunks encoded at once: <see cref="Util.CpuCores.Max"/> (logical processors, since the
+    /// encoder waits on memory and gains from simultaneous multithreading, minus two kept free). Each holds about
+    /// 20 MiB of working arrays plus its batch share, so the count is also capped at one worker per 64 MiB of half the
+    /// memory available to the process.
     /// </summary>
     public static int MaxParallelism =>
-        (int)Math.Clamp(GC.GetGCMemoryInfo().TotalAvailableMemoryBytes / 2 / (64L << 20), 1, Environment.ProcessorCount);
+        (int)Math.Clamp(GC.GetGCMemoryInfo().TotalAvailableMemoryBytes / 2 / (64L << 20), 1, Util.CpuCores.Max);
 
     /// <summary>Release the encoder's pooled working arrays (after a build).</summary>
     public static void ReleaseScratch() => KrakenScratch.Trim();

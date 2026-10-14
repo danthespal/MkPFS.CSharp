@@ -247,10 +247,11 @@ public sealed class PFSCTests
     }
 
     [Fact]
-    public void ResolveWorkerCount_matches_python_policy()
+    public void ResolveWorkerCount_keeps_two_logical_processors_free()
     {
-        Assert.Equal(Math.Min(16, Math.Max(1, Environment.ProcessorCount - 1)), PFSCEncoder.ResolveWorkerCount(0));
-        Assert.Equal(3, PFSCEncoder.ResolveWorkerCount(3));
+        Assert.Equal(Core.Util.CpuCores.Max, PFSCEncoder.ResolveWorkerCount(0));
+        Assert.Equal(1, PFSCEncoder.ResolveWorkerCount(1));
+        Assert.Equal(Core.Util.CpuCores.Max, PFSCEncoder.ResolveWorkerCount(10_000));
         Assert.Throws<ArgumentOutOfRangeException>(() => PFSCEncoder.ResolveWorkerCount(-1));
     }
 

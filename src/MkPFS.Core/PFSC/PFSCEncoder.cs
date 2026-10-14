@@ -83,14 +83,17 @@ public static class PFSCEncoder
 {
     private const int BlockSize = PFSConstants.PFSCLogicalBlockSize;
 
-    /// <summary>Resolve a CLI CPU count: 0 means <c>min(16, max(1, cores - 1))</c> (Python <c>resolve_compression_worker_count</c>).</summary>
+    /// <summary>
+    /// Resolve a CLI CPU count with <see cref="CpuCores.Resolve"/>: 0 is Auto, every logical processor but two, and
+    /// larger counts are capped at that. Python <c>resolve_compression_worker_count</c> uses <c>min(16, cores - 1)</c>;
+    /// the image is the same for any count.
+    /// </summary>
     /// <param name="requested">Requested count, 0 for auto.</param>
     /// <returns>Worker count ≥ 1.</returns>
     public static int ResolveWorkerCount(int requested)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(requested);
-        int resolved = requested == 0 ? Math.Min(16, Math.Max(1, Environment.ProcessorCount - 1)) : requested;
-        return Math.Max(1, resolved);
+        return CpuCores.Resolve(requested);
     }
 
     /// <summary>
