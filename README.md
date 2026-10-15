@@ -468,7 +468,8 @@ compresses.
 Before building, `compress` samples the large files and says how much can be packed, with a warning when it is less
 than a tenth of the game. Many Unreal Engine games are like that: their `.ucas` containers and `.pak` archives are
 already compressed with Oodle, so LZ4 saves almost nothing. For Unreal games the `.utoc` tables and `.pak` archives stay
-loose, and a `.ucas` container is packed only if sampling shows it compresses.
+loose, and a `.ucas` container is packed only if sampling shows it compresses. Remedy games (Alan Wake 2) keep their
+`.rmdtoc` pack tables loose, because the game opens them without APR; their `.rmdblob` data is still packed.
 
 ```bash
 mkpfs ampr compress --root PPSA12345-app --output PPSA12345-packed --fakelib ampr-emu --exfat .

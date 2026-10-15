@@ -40,7 +40,9 @@ public static partial class AMPRUniversalProfile
     /// Functional exclusions (<c>safety_patterns.h</c>): loaders, system data and already encoded media stay loose.
     /// <c>fakelib2</c> is added to the compressor's list because ShadowMountPlus mounts it instead of <c>fakelib</c>.
     /// For Unreal Engine games, <c>*.utoc</c> keeps the IoStore tables loose and <c>**/*.pak</c> (there for pack
-    /// volumes) also keeps Unreal's <c>.pak</c> archives loose.
+    /// volumes) also keeps Unreal's <c>.pak</c> archives loose. <c>*.rmdtoc</c> is added too: Remedy's Northlight games
+    /// (Alan Wake 2) open their pack tables with plain <c>sceKernelOpen</c>, which AMPR Emu does not serve from packs,
+    /// and stop with "No packfiles found!"; their <c>.rmdblob</c> data is read through APR and is still packed.
     /// </summary>
     public static IReadOnlyList<string> SafetyPatterns { get; } = BuildSafetyPatterns();
 
@@ -229,6 +231,9 @@ public static partial class AMPRUniversalProfile
                 Both("*." + extension);
             }
         }
+
+        // Not in the compressor: Remedy pack tables are opened without APR (see SafetyPatterns).
+        Both("*.rmdtoc");
 
         foreach (string directory in (string[])["decrypted", "sce_module", "sce_sys", "system", "mods", "save", "fakelib", "fakelib2", "_DUPLEX_", "trophy2", "uds"])
         {

@@ -239,6 +239,23 @@ public sealed class AMPRLZ4CompressorTests
     }
 
     [Fact]
+    public void Remedy_pack_tables_stay_loose_and_their_blobs_are_packed()
+    {
+        // Alan Wake 2 (PPSA02572) opens data_pack2/*.rmdtoc with plain sceKernelOpen and reads the blobs through APR.
+        string[] remedy =
+        [
+            "eboot.bin", "data_pack2/prospero/base-generic.rmdtoc", "data_pack2/prospero/base-generic-000.rmdblob",
+            "data_pack2/prospero/base-en.rmdtoc", "data_pack2/generic/base-generic-000.rmdblob",
+        ];
+        AMPRPackConfig config = AMPRUniversalProfile.ToConfig(AMPRUniversalProfile.RenderToml(remedy, 12));
+
+        Assert.Equal("loose", config.SelectRule("data_pack2/prospero/base-generic.rmdtoc").Action);
+        Assert.Equal("loose", config.SelectRule("data_pack2/prospero/base-en.rmdtoc").Action);
+        Assert.Equal("compress", config.SelectRule("data_pack2/prospero/base-generic-000.rmdblob").Action);
+        Assert.Equal("compress", config.SelectRule("data_pack2/generic/base-generic-000.rmdblob").Action);
+    }
+
+    [Fact]
     public void Unreal_games_say_why_their_containers_stay_loose()
     {
         string[] unreal = ["eboot.bin", "game/content/paks/game-ps5.utoc", "game/content/paks/game-ps5.ucas", "game/content/paks/game-ps5.pak"];
